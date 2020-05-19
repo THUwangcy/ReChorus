@@ -87,22 +87,18 @@ class SLRC(BaseModel):
         # Find information related to the target item:
         # - category id
         # - time intervals w.r.t. recent relational interactions (-1 if not existing)
-        category_ids = list()
+        category_ids = np.array([[self.item2cate[x] for x in candidate_lst] for candidate_lst in item_ids])
         relational_intervals = list()
-        for i, candidate_lst in enumerate(item_ids):
-            intervals_lst = list()
-            for r_idx in range(0, self.relation_num):
-                intervals = np.ones_like(candidate_lst) * -1.
+        for r_idx in range(0, self.relation_num):
+            intervals = np.ones_like(item_ids) * -1.
+            for i, candidate_lst in enumerate(item_ids):
                 for j, target_item in enumerate(candidate_lst):
                     for k in range(len(history_items[i]))[::-1]:
                         if (history_items[i][k], r_idx, target_item) in corpus.triplet_set:
-                            intervals[j] = times[i] - history_times[i][k]
+                            intervals[i][j] = times[i] - history_times[i][k]
                             break
-                intervals_lst.append(intervals)
-            relational_intervals.append(np.stack(intervals_lst, axis=1))
-            category_ids.append([self.item2cate[x] for x in candidate_lst])
-        relational_intervals = np.array(relational_intervals) / self.time_scalar
-        category_ids = np.array(category_ids)
+            relational_intervals.append(intervals)
+        relational_intervals = np.stack(relational_intervals, axis=2) / self.time_scalar
 
         feed_dict = {
             'user_id': utils.numpy_to_torch(user_ids),                          # [batch_size]
