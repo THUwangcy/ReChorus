@@ -29,16 +29,16 @@ class NARM(GRU4Rec):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        i_ids = feed_dict['item_id']
-        history = feed_dict['history_items']  # [real_batch_size, history_max]
-        lengths = feed_dict['lengths']        # [real_batch_size]
+        i_ids = feed_dict['item_id']          # [batch_size, -1]
+        history = feed_dict['history_items']  # [batch_size, history_max]
+        lengths = feed_dict['lengths']        # [batch_size]
         batch_size = feed_dict['batch_size']
 
         # Embedding Layer
         i_ids = i_ids.view(batch_size, -1)
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
-        self.embedding_l2.extend([i_vectors, his_vectors])
+        self.embedding_l2.extend([i_vectors.view(-1, self.emb_size), his_vectors])
 
         # Encoding Layer
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
@@ -48,8 +48,8 @@ class NARM(GRU4Rec):
         output_l, hidden_l = self.encoder_l(history_packed, None)
         output_l, _ = torch.nn.utils.rnn.pad_packed_sequence(output_l, batch_first=True)
         unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
-        output_l = output_l.index_select(dim=0, index=unsort_idx)  # B * H * V
-        hidden_g = hidden_g[-1].index_select(dim=0, index=unsort_idx)  # B * V
+        output_l = output_l.index_select(dim=0, index=unsort_idx)      # [batch_size, history_max, emb_size]
+        hidden_g = hidden_g[-1].index_select(dim=0, index=unsort_idx)  # [batch_size, emb_size]
 
         # Attention Layer
         attention_g = self.A1(hidden_g)
@@ -62,7 +62,7 @@ class NARM(GRU4Rec):
 
         # Prediction Layer
         pred_vector = self.out(torch.cat((hidden_g, c_l), dim=1))
-        prediction = (pred_vector[:, None, :] * i_vectors).sum(dim=-1).flatten()
+        prediction = (pred_vector[:, None, :] * i_vectors).sum(dim=-1)
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict

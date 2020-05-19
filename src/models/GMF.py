@@ -35,27 +35,26 @@ class GMF(BaseModel):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        u_ids = feed_dict['user_id']  # [real_batch_size]
-        i_ids = feed_dict['item_id']
+        u_ids = feed_dict['user_id']  # [batch_size]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
         batch_size = feed_dict['batch_size']
 
-        i_ids = i_ids.view(batch_size, -1)
         u_vectors = self.u_embeddings(u_ids)
         i_vectors = self.i_embeddings(i_ids)
-        self.embedding_l2.extend([u_vectors, i_vectors])
+        self.embedding_l2.extend([u_vectors, i_vectors.view(-1, self.emb_size)])
 
         mf_vector = u_vectors[:, None, :] * i_vectors
         for i in range(len(self.layers) - 1):
             mf_vector = getattr(self, 'layer_%d' % i)(mf_vector).relu()
             mf_vector = torch.nn.Dropout(p=self.dropout)(mf_vector)
 
-        prediction = self.prediction(mf_vector).flatten()
+        prediction = self.prediction(mf_vector)
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def loss(self, feed_dict, predictions):
-        loss = torch.nn.BCEWithLogitsLoss()(predictions, feed_dict['label'])
+        loss = torch.nn.BCEWithLogitsLoss()(predictions.flatten(), feed_dict['label'].flatten())
         return loss
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
@@ -75,13 +74,13 @@ class GMF(BaseModel):
             neg_items = data['neg_items'][batch_start: batch_start + real_batch_size].tolist()
 
         neg_labels = np.zeros_like(neg_items, dtype=np.float64)
-        labels = np.concatenate((np.expand_dims(labels, -1), neg_labels), axis=1).reshape(-1)
-        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1).reshape(-1)
+        labels = np.concatenate((np.expand_dims(labels, -1), neg_labels), axis=1)
+        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
 
         feed_dict = {
-            'user_id': utils.numpy_to_torch(user_ids),  # [real_batch_size]
-            'item_id': utils.numpy_to_torch(item_ids),
-            'label': utils.numpy_to_torch(labels),
+            'user_id': utils.numpy_to_torch(user_ids),  # [batch_size]
+            'item_id': utils.numpy_to_torch(item_ids),  # [batch_size, -1]
+            'label': utils.numpy_to_torch(labels),      # [batch_size, -1]
             'batch_size': real_batch_size
         }
         return feed_dict

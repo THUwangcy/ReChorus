@@ -55,22 +55,30 @@ class BaseRunner(object):
         self.main_metric = self.metrics[0]
         self.main_topk = self.topk[0]
         self.main_key = '{}@{}'.format(self.main_metric, self.main_topk)  # early stop based on main_key
-        self.dev_results, self.test_results = [], []
+        self.dev_results, self.test_results = list(), list()
 
     def _build_optimizer(self, model):
         optimizer_name = self.optimizer_name.lower()
         if optimizer_name == 'gd':
             logging.info("Optimizer: GD")
-            optimizer = torch.optim.SGD(model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
+            optimizer = torch.optim.SGD(
+                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2
+            )
         elif optimizer_name == 'adagrad':
             logging.info("Optimizer: Adagrad")
-            optimizer = torch.optim.Adagrad(model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
+            optimizer = torch.optim.Adagrad(
+                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2
+            )
         elif optimizer_name == 'adadelta':
             logging.info("Optimizer: Adadelta")
-            optimizer = torch.optim.Adadelta(model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
+            optimizer = torch.optim.Adadelta(
+                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2
+            )
         elif optimizer_name == 'adam':
             logging.info("Optimizer: Adam")
-            optimizer = torch.optim.Adam(model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
+            optimizer = torch.optim.Adam(
+                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2
+            )
         else:
             raise ValueError("Unknown Optimizer: " + self.optimizer_name)
         return optimizer
@@ -97,7 +105,7 @@ class BaseRunner(object):
                 # Fit
                 last_batch, mean_loss, mean_l2 = self.fit(model, corpus, epoch_train_data, epoch=epoch + 1)
 
-                # Check selective tensors
+                # Observe selective tensors
                 if self.check_epoch > 0 and epoch % self.check_epoch == 0:
                     last_batch['mean_loss'] = mean_loss
                     last_batch['mean_l2'] = mean_l2
@@ -158,9 +166,6 @@ class BaseRunner(object):
             model.optimizer.step()
             loss_lst.append(loss.detach().cpu().data.numpy())
             l2_lst.append(l2.detach().cpu().data.numpy())
-        model.eval()
-        gc.collect()
-        torch.cuda.empty_cache()
         return output_dict, np.mean(loss_lst), np.mean(l2_lst)
 
     def eval_termination(self):
@@ -174,24 +179,24 @@ class BaseRunner(object):
     def evaluate(self, model, corpus, phase, topks, metrics):
         """
         Evaluate the results for an input set.
-        Need candidates to be continuous in flatten predictions, and ground-truth item poses the first.
-        Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
-                 flatten predictions order: [1,3,4,2,5,6]
         :return: result dict (key: metric@k)
         """
-        flatten_predictions = self.predict(model, corpus, phase)
-        n_candidates = len(flatten_predictions) // len(corpus.data_df[phase])
-        assert n_candidates * len(corpus.data_df[phase]) == len(flatten_predictions)
-        predictions = np.reshape(flatten_predictions, (-1, n_candidates))
+        predictions = self.predict(model, corpus, phase)
         return utils.topk_evaluate_method(predictions, topks, metrics)
 
     def predict(self, model, corpus, phase):
+        """
+        The returned prediction is a 2D-array, each row corresponds to all the candidates,
+        and the ground-truth item poses the first.
+        Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
+                 predictions order: [[1,3,4], [2,5,6]]
+        """
         gc.collect()
         torch.cuda.empty_cache()
         batches = model.prepare_batches(corpus, corpus.data_df[phase], self.eval_batch_size, phase=phase)
 
         model.eval()
-        predictions = []
+        predictions = list()
         for batch in tqdm(batches, leave=False, ncols=100, mininterval=1, desc='Predict'):
             prediction = model(batch)['prediction']
             predictions.extend(prediction.cpu().data.numpy())

@@ -28,26 +28,25 @@ class BPR(BaseModel):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        u_ids = feed_dict['user_id']  # [real_batch_size]
-        i_ids = feed_dict['item_id']
+        u_ids = feed_dict['user_id']  # [batch_size]
+        i_ids = feed_dict['item_id']  # [batch_size, n_candidates]
         batch_size = feed_dict['batch_size']
 
-        i_ids = i_ids.view(batch_size, -1)
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
         u_bias = self.user_bias(u_ids)
         i_bias = self.item_bias(i_ids).squeeze(-1)
-        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors])
+        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors.view(-1, self.emb_size)])
 
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)
-        prediction = (prediction + u_bias + i_bias).flatten()
+        prediction = prediction + u_bias + i_bias
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
         feed_dict = BaseModel.get_feed_dict(self, corpus, data, batch_start, batch_size, phase)
         real_batch_size = feed_dict['batch_size']
         user_ids = data['user_id'][batch_start: batch_start + real_batch_size].values
-        feed_dict['user_id'] = utils.numpy_to_torch(user_ids)  # [real_batch_size]
+        feed_dict['user_id'] = utils.numpy_to_torch(user_ids)  # [batch_size]
         return feed_dict

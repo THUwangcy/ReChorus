@@ -41,10 +41,11 @@ class SLRC(BaseModel):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        u_ids = feed_dict['user_id']
-        i_ids = feed_dict['item_id']
-        c_ids = feed_dict['category_id']
-        r_interval = feed_dict['relational_interval']  # [-1, relation_num]
+        u_ids = feed_dict['user_id']                   # [batch_size]
+        i_ids = feed_dict['item_id']                   # [batch_size, -1]
+        c_ids = feed_dict['category_id']               # [batch_size, -1]
+        r_interval = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
+        batch_size = feed_dict['batch_size']
 
         # Excitation
         alphas, pis = self.alphas(c_ids), self.pis(c_ids) + 0.5
@@ -55,20 +56,20 @@ class SLRC(BaseModel):
         norm_dist = torch.distributions.normal.Normal(mus, sigmas)
         exp_dist = torch.distributions.exponential.Exponential(betas)
         decay = pis * exp_dist.log_prob(delta_t).exp() + (1. - pis) * norm_dist.log_prob(delta_t).exp()
-        excitation = (alphas * decay * mask).sum(1)
+        excitation = (alphas * decay * mask).sum(-1)  # [batch_size, -1]
 
         # Base Intensity (CF)
-        u_bias = self.user_bias(u_ids).squeeze(-1)
+        u_bias = self.user_bias(u_ids)
         i_bias = self.item_bias(i_ids).squeeze(-1)
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
-        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors])
-        base_intensity = (cf_u_vectors * cf_i_vectors).sum(dim=-1)
+        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors.view(-1, self.emb_size)])
+        base_intensity = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(-1)
         base_intensity = base_intensity + u_bias + i_bias
 
         prediction = base_intensity + excitation
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
@@ -81,32 +82,33 @@ class SLRC(BaseModel):
         times = data['time'][batch_start: batch_start + real_batch_size].values
 
         neg_items = self.get_neg_items(corpus, data, batch_start, real_batch_size, phase)
-        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1).reshape(-1)
-        n_candidates = len(item_ids) // len(user_ids)
-        user_ids = np.expand_dims(user_ids, 1).repeat(n_candidates, axis=1).reshape(-1)
-        times = np.expand_dims(times, 1).repeat(n_candidates, axis=1).reshape(-1)
-        history_items = np.expand_dims(history_items, 1).repeat(n_candidates, axis=1).reshape(-1)
-        history_times = np.expand_dims(history_times, 1).repeat(n_candidates, axis=1).reshape(-1)
+        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
 
         # Find information related to the target item:
         # - category id
         # - time intervals w.r.t. recent relational interactions (-1 if not existing)
-        category_ids = np.array([self.item2cate[x] for x in item_ids])
-        intervals_lst = list()
-        for r_idx in range(0, self.relation_num):
-            intervals = np.ones_like(item_ids) * -1.
-            for i in range(len(item_ids)):
-                for j in range(len(history_items[i]))[::-1]:
-                    if (history_items[i][j], r_idx, item_ids[i]) in corpus.triplet_set:
-                        intervals[i] = times[i] - history_times[i][j]
-                        break
-            intervals_lst.append(intervals)
-        relational_intervals = np.stack(intervals_lst, axis=1) / self.time_scalar
+        category_ids = list()
+        relational_intervals = list()
+        for i, candidate_lst in enumerate(item_ids):
+            intervals_lst = list()
+            for r_idx in range(0, self.relation_num):
+                intervals = np.ones_like(candidate_lst) * -1.
+                for j, target_item in enumerate(candidate_lst):
+                    for k in range(len(history_items[i]))[::-1]:
+                        if (history_items[i][k], r_idx, target_item) in corpus.triplet_set:
+                            intervals[j] = times[i] - history_times[i][k]
+                            break
+                intervals_lst.append(intervals)
+            relational_intervals.append(np.stack(intervals_lst, axis=1))
+            category_ids.append([self.item2cate[x] for x in candidate_lst])
+        relational_intervals = np.array(relational_intervals) / self.time_scalar
+        category_ids = np.array(category_ids)
 
         feed_dict = {
-            'user_id': utils.numpy_to_torch(user_ids),
-            'item_id': utils.numpy_to_torch(item_ids),
-            'category_id': utils.numpy_to_torch(category_ids),
-            'relational_interval': utils.numpy_to_torch(relational_intervals),  # [-1, relation_num]
+            'user_id': utils.numpy_to_torch(user_ids),                          # [batch_size]
+            'item_id': utils.numpy_to_torch(item_ids),                          # [batch_size, -1]
+            'category_id': utils.numpy_to_torch(category_ids),                  # [batch_size, -1]
+            'relational_interval': utils.numpy_to_torch(relational_intervals),  # [batch_size, -1, relation_num]
+            'batch_size': real_batch_size
         }
         return feed_dict

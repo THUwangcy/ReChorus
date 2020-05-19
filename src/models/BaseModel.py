@@ -11,6 +11,9 @@ from utils import utils
 
 
 class BaseModel(torch.nn.Module):
+    loader = 'DataLoader'
+    runner = 'BaseRunner'
+
     @staticmethod
     def parse_model_args(parser, model_name='BaseModel'):
         parser.add_argument('--model_path', type=str, default='',
@@ -51,9 +54,10 @@ class BaseModel(torch.nn.Module):
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
         i_ids = feed_dict['item_id']
+        batch_size = feed_dict['batch_size']
         i_bias = self.item_bias(i_ids).squeeze(-1)
         self.embedding_l2.append(i_bias)
-        out_dict = {'prediction': i_bias, 'check': self.check_list}
+        out_dict = {'prediction': i_bias.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
@@ -68,9 +72,9 @@ class BaseModel(torch.nn.Module):
         batch_end = min(len(data), batch_start + batch_size)
         real_batch_size = batch_end - batch_start
         item_ids = data['item_id'][batch_start: batch_start + real_batch_size].values
-        neg_items = self.get_neg_items(corpus, data, batch_start, real_batch_size, phase)
-        # concatenate ground-truth item and corresponding negative items, and then flatten to 1 dimension
-        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1).reshape(-1)
+        neg_items = self.get_neg_items(corpus, data, batch_start, real_batch_size, phase)  # [batch_size, num_neg]
+        # concatenate ground-truth item and corresponding negative items
+        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
         feed_dict = {'item_id': utils.numpy_to_torch(item_ids), 'batch_size': real_batch_size}
         return feed_dict
 
@@ -85,7 +89,7 @@ class BaseModel(torch.nn.Module):
         # generate the list of all batches of the given data
         num_example = len(data)
         total_batch = int((num_example + batch_size - 1) / batch_size)
-        batches = []
+        batches = list()
         for batch in tqdm(range(total_batch), leave=False, ncols=100, mininterval=1, desc='Prepare Batches'):
             batches.append(self.get_feed_dict(corpus, data, batch * batch_size, batch_size, phase))
 
@@ -106,7 +110,7 @@ class BaseModel(torch.nn.Module):
 
     def loss(self, feed_dict, predictions):
         # for numerical stability, use '-softplus(-x)' instead of 'log_sigmoid(x)'
-        pos_pred, neg_pred = predictions[::2], predictions[1::2]
+        pos_pred, neg_pred = predictions[:, 0], predictions[:, 1]
         loss = F.softplus(-(pos_pred - neg_pred)).mean()
         return loss
 

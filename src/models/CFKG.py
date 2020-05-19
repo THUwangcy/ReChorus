@@ -36,22 +36,23 @@ class CFKG(BaseModel):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        head_ids = feed_dict['head_id']
-        tail_ids = feed_dict['tail_id']
-        relation_ids = feed_dict['relation_id']
+        head_ids = feed_dict['head_id']          # [batch_size]
+        relation_ids = feed_dict['relation_id']  # [batch_size]
+        tail_ids = feed_dict['tail_id']          # [batch_size, -1]
+        batch_size = feed_dict['batch_size']
 
         head_vectors = self.e_embeddings(head_ids)
         tail_vectors = self.e_embeddings(tail_ids)
         relation_vectors = self.r_embeddings(relation_ids)
-        self.embedding_l2.extend([head_vectors, tail_vectors, relation_vectors])
+        self.embedding_l2.extend([head_vectors, tail_vectors.view(-1, self.emb_size), relation_vectors])
 
-        prediction = -((head_vectors + relation_vectors - tail_vectors)**2).sum(dim=-1)
+        prediction = -(((head_vectors + relation_vectors)[:, None, :] - tail_vectors)**2).sum(-1)
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def loss(self, feed_dict, predictions):
-        real_batch_size = feed_dict['batch_size']
+        real_batch_size, predictions = feed_dict['batch_size'], predictions.flatten()
         pos_pred, neg_pred = predictions[:real_batch_size * 2], predictions[real_batch_size * 2:]
         loss = self.loss_function(pos_pred, neg_pred, utils.numpy_to_torch(np.ones(real_batch_size * 2)))
         return loss.double()
@@ -70,21 +71,20 @@ class CFKG(BaseModel):
             neg_heads = neg_heads + (relation_ids > 0).astype(int) * self.user_num
             head_ids = np.concatenate((head_ids, head_ids, head_ids, neg_heads))
             tail_ids = np.concatenate((tail_ids, tail_ids, neg_tails, tail_ids))
+            tail_ids = np.expand_dims(tail_ids, -1)
             relation_ids = np.tile(relation_ids, 4)
         else:
             head_ids = data['user_id'][batch_start: batch_start + real_batch_size].values
             item_ids = data['item_id'][batch_start: batch_start + real_batch_size].values
             neg_items = data['neg_items'][batch_start: batch_start + real_batch_size].tolist()
-            tail_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1).reshape(-1)
-            n_candidates = len(tail_ids) // len(head_ids)
-            head_ids = np.expand_dims(head_ids, -1).repeat(n_candidates, axis=1).reshape(-1)
+            tail_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
             relation_ids = np.zeros_like(head_ids)
         tail_ids = tail_ids + self.user_num
 
         feed_dict = {
-            'head_id': utils.numpy_to_torch(head_ids),
-            'tail_id': utils.numpy_to_torch(tail_ids),
-            'relation_id': utils.numpy_to_torch(relation_ids),
+            'head_id': utils.numpy_to_torch(head_ids),          # [batch_size]
+            'relation_id': utils.numpy_to_torch(relation_ids),  # [batch_size]
+            'tail_id': utils.numpy_to_torch(tail_ids),          # [batch_size, -1]
             'batch_size': real_batch_size
         }
         return feed_dict

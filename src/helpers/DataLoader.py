@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 
+import os
 import time
 import pickle
 import argparse
@@ -114,6 +115,6 @@ if __name__ == '__main__':
     args.path = '../../data/'
     corpus = DataLoader(args)
 
-    corpus_path = '{}/{}/Corpus.pkl'.format(args.path, args.dataset)
+    corpus_path = os.path.join(args.path, args.dataset, 'Corpus.pkl')
     logging.info('Save corpus to {}'.format(corpus_path))
     pickle.dump(corpus, open(corpus_path, 'wb'))

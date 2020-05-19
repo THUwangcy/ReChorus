@@ -30,15 +30,14 @@ class GRU4Rec(BaseModel):
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
-        i_ids = feed_dict['item_id']
-        history = feed_dict['history_items']   # [real_batch_size, history_max]
-        lengths = feed_dict['lengths']         # [real_batch_size]
+        i_ids = feed_dict['item_id']           # [batch_size, -1]
+        history = feed_dict['history_items']   # [batch_size, history_max]
+        lengths = feed_dict['lengths']         # [batch_size]
         batch_size = feed_dict['batch_size']
 
-        i_ids = i_ids.view(batch_size, -1)
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
-        self.embedding_l2.extend([i_vectors, his_vectors])
+        self.embedding_l2.extend([i_vectors.view(-1, self.emb_size), his_vectors])
 
         # Sort and Pack
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
@@ -54,9 +53,9 @@ class GRU4Rec(BaseModel):
         rnn_vector = sort_rnn_vector.index_select(dim=0, index=unsort_idx)
 
         # Predicts
-        prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1).flatten()
+        prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1)
 
-        out_dict = {'prediction': prediction, 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):

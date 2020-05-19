@@ -9,8 +9,7 @@ import numpy as np
 import torch
 
 from models import  *
-from helpers import DataLoader
-from helpers import BaseRunner
+from helpers import *
 from utils import utils
 
 
@@ -46,12 +45,12 @@ def main():
     logging.info("# cuda devices: {}".format(torch.cuda.device_count()))
 
     # Load data
-    corpus_path = '{}/{}/Corpus.pkl'.format(args.path, args.dataset)
+    corpus_path = os.path.join(args.path, args.dataset, 'Corpus.pkl')
     if not args.regenerate and os.path.exists(corpus_path):
         logging.info('Load corpus from {}'.format(corpus_path))
         corpus = pickle.load(open(corpus_path, 'rb'))
     else:
-        corpus = DataLoader.DataLoader(args)
+        corpus = loader_name(args)
         logging.info('Save corpus to {}'.format(corpus_path))
         pickle.dump(corpus, open(corpus_path, 'wb'))
 
@@ -65,7 +64,7 @@ def main():
         model = model.cuda()
 
     # Run model
-    runner = BaseRunner.BaseRunner(args)
+    runner = runner_name(args)
     logging.info('Test Before Training: ' + runner.print_res(model, corpus))
     if args.load > 0:
         model.load_model()
@@ -82,18 +81,22 @@ if __name__ == '__main__':
     init_parser.add_argument('--model_name', type=str, default='Chorus', help='Choose a model to run.')
     init_args, init_extras = init_parser.parse_known_args()
     model_name = eval('{0}.{0}'.format(init_args.model_name))
+    loader_name = eval('{0}.{0}'.format(model_name.loader))
+    runner_name = eval('{0}.{0}'.format(model_name.runner))
 
     # Args
     parser = argparse.ArgumentParser(description='')
     parser = parse_global_args(parser)
-    parser = DataLoader.DataLoader.parse_data_args(parser)
-    parser = BaseRunner.BaseRunner.parse_runner_args(parser)
+    parser = loader_name.parse_data_args(parser)
+    parser = runner_name.parse_runner_args(parser)
     parser = model_name.parse_model_args(parser)
     args, extras = parser.parse_known_args()
 
     # Logging configuration
-    log_file_name = [init_args.model_name, args.dataset, str(args.random_seed), 'optimizer=' + args.optimizer,
-                     'lr=' + str(args.lr), 'l2=' + str(args.l2), 'dropout=' + str(args.dropout)]
+    log_file_name = [
+        init_args.model_name, args.dataset, str(args.random_seed),
+        'lr=' + str(args.lr), 'l2=' + str(args.l2)
+    ]
     if 'Chorus' in init_args.model_name:
         log_file_name += ['margin=' + str(args.margin), 'scale=' + str(args.lr_scale)]
     log_file_name = '__'.join(log_file_name).replace(' ', '__')
