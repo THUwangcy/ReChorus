@@ -63,13 +63,13 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | √ |
 | [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | √ |              |              |
 | [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | √ |              |              |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | √ |              |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4244 | 0.3005 |    11s    |              | √ |              |
 | [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |
 
 
 
-For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We attempt to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better score is achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/utils/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
+For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/utils/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
 
 
@@ -78,6 +78,12 @@ For fair comparison, the batch size is fixed to 256, and the embedding size is s
 This is also our public implementation for the paper:
 
 *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](). In SIGIR'20.*
+
+Checkout to `SIGIR20` branch to reproduce the results.
+
+```
+git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
+```
 
 **Please cite this paper if you use our codes. Thanks!**
 
