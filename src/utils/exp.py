@@ -10,7 +10,7 @@ import numpy as np
 
 
 # Repeat experiments in run.sh and save results to csv
-# Example: python utils/run.py
+# Example: python utils/exp.py
 
 
 def parse_args():

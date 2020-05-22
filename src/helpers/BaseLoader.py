@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 
 
-class DataLoader(object):
+class BaseLoader(object):
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--path', type=str, default='../data/',
                             help='Input data dir.')
-        parser.add_argument('--dataset', type=str, default='Home_and_Kitchen',
+        parser.add_argument('--dataset', type=str, default='Grocery_and_Gourmet_Food',
                             help='Choose a dataset.')
         parser.add_argument('--sep', type=str, default='\t',
                             help='sep of csv file.')
@@ -110,11 +110,11 @@ class DataLoader(object):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser = DataLoader.parse_data_args(parser)
+    parser = BaseLoader.parse_data_args(parser)
     args, extras = parser.parse_known_args()
 
     args.path = '../../data/'
-    corpus = DataLoader(args)
+    corpus = BaseLoader(args)
 
     corpus_path = os.path.join(args.path, args.dataset, 'Corpus.pkl')
     logging.info('Save corpus to {}'.format(corpus_path))

@@ -11,7 +11,7 @@ from utils import utils
 
 
 class BaseModel(torch.nn.Module):
-    loader = 'DataLoader'
+    loader = 'BaseLoader'
     runner = 'BaseRunner'
     extra_log_args = []
 
@@ -61,7 +61,7 @@ class BaseModel(torch.nn.Module):
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
         """
         Generate a batch of the given data, which will be fed into forward function.
-        :param corpus: DataLoader object
+        :param corpus: Loader object
         :param data: DataFrame in corpus.data_df (may be shuffled)
         :param batch_start: batch start index
         :param batch_size: batch size
@@ -85,6 +85,7 @@ class BaseModel(torch.nn.Module):
             return self.batches_buffer[buffer_key]
 
         # generate the list of all batches of the given data
+        # TODO: multi-thread preparation
         num_example = len(data)
         total_batch = int((num_example + batch_size - 1) / batch_size)
         batches = list()
