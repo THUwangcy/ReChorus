@@ -19,7 +19,7 @@ With this framework, we can easily compare different state-of-the-art models und
 
 ## Getting Started
 
-1. Install [Anaconda](https://docs.conda.io/en/latest/miniconda.html) with Python $\geq$ 3.5
+1. Install [Anaconda](https://docs.conda.io/en/latest/miniconda.html) with Python >= 3.5
 2. Clone the repository and install requirements
 
 ```bash
@@ -47,7 +47,7 @@ We have implemented the following methods (still updating):
 - GMF (WWW'17): [Neural Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3038912.3052569)
 - Tensor (RecSys'10): [N-dimensional Tensor Factorization for Context-aware Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/1864708.1864727)
 - GRU4Rec (ICLR'16): [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939)
-- NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
+- NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
 - CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540)
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): Knowledge- and Time-aware Item Modeling for Sequential Recommendation
@@ -60,12 +60,12 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
 | [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3242 | 0.2223 |   2.5s    |              |              |              |
 | [GMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GMF.py) | 0.3178 | 0.2195 |   2.9s    |              |              |              |
-| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | $\checkmark$ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | $\checkmark$ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | $\checkmark$ |              |              |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | $\checkmark$ |              |
-| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | $\checkmark$ | $\checkmark$ | $\checkmark$ |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | $\checkmark$ | $\checkmark$ | $\checkmark$ |
+| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | ✔️️ |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | ✔️️ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | ✔️️ |              |              |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | ✔️️ |              |
+| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | ✔️️ | ✔️️ | ✔️️ |
+| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | ✔️️ | ✔️️ | ✔️️ |
 
 
 
@@ -77,7 +77,7 @@ For fair comparison, the batch size is fixed to 256, and the embedding size is s
 
 This is also our public implementation for the paper:
 
-Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. 2020. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](). In SIGIR'20.*
+*Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](). In SIGIR'20.*
 
 **Please cite this paper if you use our codes. Thanks!**
 
