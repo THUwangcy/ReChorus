@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import logging
 import datetime
 import torch
 import numpy as np
@@ -112,7 +111,7 @@ def format_arg_str(args, max_len=20):
 def check_dir(file_name):
     dir_path = os.path.dirname(file_name)
     if not os.path.exists(dir_path):
-        logging.info('make dirs:' + dir_path)
+        print('make dirs:', dir_path)
         os.makedirs(dir_path)
 
 

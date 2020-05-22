@@ -13,6 +13,7 @@ from utils import utils
 class BaseModel(torch.nn.Module):
     loader = 'DataLoader'
     runner = 'BaseRunner'
+    extra_log_args = []
 
     @staticmethod
     def parse_model_args(parser, model_name='BaseModel'):
@@ -33,12 +34,10 @@ class BaseModel(torch.nn.Module):
         super(BaseModel, self).__init__()
         self.model_path = model_path
         self.batches_buffer = dict()  # save batches of dev and test set
-        self.check_list = list()  # observe tensors in check_list
-        self.embedding_l2 = list()  # manually calculate l2 of embeddings in embedding_l2
+        self.check_list = list()      # observe tensors in check_list every check_epoch
+        self.embedding_l2 = list()    # manually calculate l2 of embeddings in embedding_l2
 
         self._define_params()
-        logging.debug(list(self.parameters()))
-
         self.total_parameters = self.count_variables()
         logging.info('#params: %d' % self.total_parameters)
 
@@ -54,10 +53,9 @@ class BaseModel(torch.nn.Module):
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []
         i_ids = feed_dict['item_id']
-        batch_size = feed_dict['batch_size']
-        i_bias = self.item_bias(i_ids).squeeze(-1)
+        i_bias = self.item_bias(i_ids)
         self.embedding_l2.append(i_bias)
-        out_dict = {'prediction': i_bias.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': i_bias.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
@@ -109,7 +107,7 @@ class BaseModel(torch.nn.Module):
         return neg_items
 
     def loss(self, feed_dict, predictions):
-        # for numerical stability, use '-softplus(-x)' instead of 'log_sigmoid(x)'
+        # BPR ranking loss. For numerical stability, we use '-softplus(-x)' instead of 'log_sigmoid(x)'
         pos_pred, neg_pred = predictions[:, 0], predictions[:, 1]
         loss = F.softplus(-(pos_pred - neg_pred)).mean()
         return loss
@@ -149,7 +147,7 @@ class BaseModel(torch.nn.Module):
         return l2
 
     def check(self, out_dict):
-        # observe selective tensors in forward.
+        # observe selected tensors during forward.
         logging.info('')
         for i, t in enumerate(self.check_list):
             d = np.array(t[1].detach().cpu())

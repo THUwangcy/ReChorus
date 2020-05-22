@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-export PYTHONPATH=../
+#!/bin/sh -x
 
 # Grocery_and_Gourmet_Food
  python main.py --model_name Chorus --emb_size 64 --margin 1 --lr 5e-4 --l2 1e-5 --check_epoch 10 --epoch 50 --early_stop 0 --batch_size 512 --dataset 'Grocery_and_Gourmet_Food' --stage 1
@@ -66,3 +64,4 @@ export PYTHONPATH=../
  python main.py --model_name GMF --lr 1e-4 --l2 0 --dataset 'Home_and_Kitchen'
 
  python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 0 --dataset 'Home_and_Kitchen'
+

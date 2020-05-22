@@ -10,6 +10,8 @@ from models.SLRC import SLRC
 
 
 class Chorus(SLRC):
+    extra_log_args = ['margin', 'lr_scale', 'stage']
+
     @staticmethod
     def parse_model_args(parser, model_name='Chorus'):
         parser.add_argument('--stage', type=int, default=2,

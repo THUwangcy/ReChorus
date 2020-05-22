@@ -9,7 +9,8 @@ import traceback
 import numpy as np
 
 
-# python utils/run.py
+# Repeat experiments in run.sh and save results to csv
+# Example: python utils/run.py
 
 
 def parse_args():
@@ -28,7 +29,7 @@ def parse_args():
                         help='Repeat times of each command.')
     parser.add_argument('--skip', type=int, default=0,
                         help='skip number.')
-    parser.add_argument('--gpu', type=str, default='1',
+    parser.add_argument('--gpu', type=str, default='0',
                         help='Set CUDA_VISIBLE_DEVICES')
     return parser.parse_args()
 

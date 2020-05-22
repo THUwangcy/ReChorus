@@ -92,10 +92,8 @@ class BaseRunner(object):
         return self.time[1] - tmp_time
 
     def train(self, model, corpus):
-        assert corpus.data_df['train'] is not None
-        self._check_time(start=True)
-
         try:
+            self._check_time(start=True)
             for epoch in range(self.epoch):
                 self._check_time()
                 # Shuffle training data
@@ -105,7 +103,7 @@ class BaseRunner(object):
                 # Fit
                 last_batch, mean_loss, mean_l2 = self.fit(model, corpus, epoch_train_data, epoch=epoch + 1)
 
-                # Observe selective tensors
+                # Observe selected tensors
                 if self.check_epoch > 0 and epoch % self.check_epoch == 0:
                     last_batch['mean_loss'] = mean_loss
                     last_batch['mean_l2'] = mean_l2

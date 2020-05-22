@@ -10,12 +10,11 @@ import pandas as pd
 
 
 class DataLoader(object):
-
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--path', type=str, default='../data/',
                             help='Input data dir.')
-        parser.add_argument('--dataset', type=str, default='Automotive',
+        parser.add_argument('--dataset', type=str, default='Home_and_Kitchen',
                             help='Choose a dataset.')
         parser.add_argument('--sep', type=str, default='\t',
                             help='sep of csv file.')
@@ -32,11 +31,11 @@ class DataLoader(object):
         t0 = time.time()
         self._load_data()
         self._append_info()
-        logging.info('Done! [{:<.2f} s]'.format(time.time() - t0))
+        logging.info('Done! [{:<.2f} s]'.format(time.time() - t0) + os.linesep)
 
     def _load_data(self):
         logging.info('Loading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
-        self.data_df = dict()
+        self.data_df, self.item_meta_df = dict(), pd.DataFrame()
         self._load_preprocessed_df()
 
         logging.info('Formating data type...')
@@ -100,10 +99,12 @@ class DataLoader(object):
             self.user_clicked_set[uid] = set([x[0] for x in user_his_dict[uid]])
 
     def _load_preprocessed_df(self):
-        self.item_meta_df = pd.read_csv('{}/{}/item_meta.csv'.format(self.prefix, self.dataset), sep=self.sep)
-        self.data_df['train'] = pd.read_csv('{}/{}/train.csv'.format(self.prefix, self.dataset), sep=self.sep)
-        self.data_df['dev'] = pd.read_csv('{}/{}/dev.csv'.format(self.prefix, self.dataset), sep=self.sep)
-        self.data_df['test'] = pd.read_csv('{}/{}/test.csv'.format(self.prefix, self.dataset), sep=self.sep)
+        item_meta_path = os.path.join(self.prefix, self.dataset, 'item_meta.csv')
+        if os.path.exists(item_meta_path):
+            self.item_meta_df = pd.read_csv(item_meta_path, sep=self.sep)
+        self.data_df['train'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'train.csv'), sep=self.sep)
+        self.data_df['dev'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'dev.csv'), sep=self.sep)
+        self.data_df['test'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'test.csv'), sep=self.sep)
 
 
 if __name__ == '__main__':

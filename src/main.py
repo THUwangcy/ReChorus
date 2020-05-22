@@ -78,7 +78,7 @@ def main():
 
 if __name__ == '__main__':
     init_parser = argparse.ArgumentParser(description='Model')
-    init_parser.add_argument('--model_name', type=str, default='Chorus', help='Choose a model to run.')
+    init_parser.add_argument('--model_name', type=str, default='BPR', help='Choose a model to run.')
     init_args, init_extras = init_parser.parse_known_args()
     model_name = eval('{0}.{0}'.format(init_args.model_name))
     loader_name = eval('{0}.{0}'.format(model_name.loader))
@@ -93,20 +93,16 @@ if __name__ == '__main__':
     args, extras = parser.parse_known_args()
 
     # Logging configuration
-    log_file_name = [
-        init_args.model_name, args.dataset, str(args.random_seed),
-        'lr=' + str(args.lr), 'l2=' + str(args.l2)
-    ]
-    if 'Chorus' in init_args.model_name:
-        log_file_name += ['margin=' + str(args.margin), 'scale=' + str(args.lr_scale)]
-    log_file_name = '__'.join(log_file_name).replace(' ', '__')
+    log_args = [init_args.model_name, args.dataset, str(args.random_seed)]
+    for arg in ['lr', 'l2'] + model_name.extra_log_args:
+        log_args.append(arg + '=' + str(eval('args.' + arg)))
+    log_file_name = '__'.join(log_args).replace(' ', '__')
     if args.log_file == '':
         args.log_file = '../log/{}.txt'.format(log_file_name)
     if args.model_path == '':
         args.model_path = '../model/{}/{}.pt'.format(init_args.model_name, log_file_name)
-    utils.check_dir(args.log_file)
-    utils.check_dir(args.model_path)
 
+    utils.check_dir(args.log_file)
     logging.basicConfig(filename=args.log_file, level=args.verbose)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
     logging.info(init_args)
