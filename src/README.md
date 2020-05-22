@@ -44,7 +44,7 @@ class NewModel(BaseModel):
         # generate prediction (ranking score according to tensors in feed_dict)
         self.check_list = []
         batch_size = feed_dict['batch_size']
-				prediction = ...
+	prediction = ...
         out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
         return out_dict
 
