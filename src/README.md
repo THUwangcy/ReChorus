@@ -2,7 +2,7 @@
 
 `main.py` serves as the entrance of our framework, and there are three main packages. We first describe the structure of the code and then introduce how to define a new model.
 
-## Structure
+### Structure
 
 - `helpers\`
   - `BaseLoader.py`: load dataset csv into DataFrame and append necessary information (e.g. interaction history)
@@ -18,7 +18,7 @@
 
 
 
-## Define a New Model
+### Define a New Model
 
 Generally we should define a new class inheriting *BaseModel*, and implement at least these major functions:
 
