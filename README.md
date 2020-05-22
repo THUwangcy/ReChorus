@@ -3,7 +3,7 @@ This repository provides a general PyTorch framework for Top-K recommendation wi
 
 - [Loader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseLoader.py): load dataset into DataFrame and append necessary information to each instance
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/model/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores, which will be used in the runner
+- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores, which will be used in the runner
 
 
 
@@ -60,12 +60,12 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
 | [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3242 | 0.2223 |   2.5s    |              |              |              |
 | [GMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GMF.py) | 0.3178 | 0.2195 |   2.9s    |              |              |              |
-| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | ✔️️ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | ✔️️ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | ✔️️ |              |              |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | ✔️️ |              |
-| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | ✔️️ | ✔️️ | ✔️️ |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | ✔️️ | ✔️️ | ✔️️ |
+| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | √ |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | √ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | √ |              |              |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | √ |              |
+| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
+| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |
 
 
 
