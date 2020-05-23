@@ -3,7 +3,7 @@ This repository provides a general PyTorch framework for Top-K recommendation wi
 
 - [Loader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseLoader.py): load dataset into DataFrame and append necessary information to each instance
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores, which will be used in the runner
+- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores
 
 
 
