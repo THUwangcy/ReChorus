@@ -10,7 +10,7 @@ This repository provides a general PyTorch framework for Top-K recommendation wi
 With this framework, we can easily compare different state-of-the-art models under the same experimental setting. The characteristics of our framework can be summarized as follows:
 
 - **Light**: the framework is accomplished in less than a thousand lines of code, and a new model can be defined with dozens of lines of code
-- **Efficient**: around 85-90% GPU utilization during training for deep models, and special implementations for Top-K recommendation evaluation
+- **Efficient**: around 85-90% GPU utilization during training for deep models, and special implementations for the evaluation of Top-K recommendation
 - **Neat**: clean codes with adequate comments, as well as beautiful training logs
 - **Specializing**: concentrate on your model design in a single model file, including batch preparation, parameter definition, prediction, etc. 
 - **Flexible**: implement new loaders or runners for different datasets and experimental settings, and each model can be assigned with different helpers
