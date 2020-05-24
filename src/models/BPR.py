@@ -15,9 +15,7 @@ class BPR(BaseModel):
 
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
-        self.user_num = corpus.n_users
-        self.item_num = corpus.n_items
-        BaseModel.__init__(self, model_path=args.model_path)
+        BaseModel.__init__(self, args, corpus)
 
     def _define_params(self):
         self.u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
@@ -30,7 +28,6 @@ class BPR(BaseModel):
         self.check_list, self.embedding_l2 = [], []
         u_ids = feed_dict['user_id']  # [batch_size]
         i_ids = feed_dict['item_id']  # [batch_size, n_candidates]
-        batch_size = feed_dict['batch_size']
 
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
@@ -41,7 +38,7 @@ class BPR(BaseModel):
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)
         prediction = prediction + u_bias + i_bias
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):

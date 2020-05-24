@@ -30,9 +30,12 @@ class BaseModel(torch.nn.Module):
         elif 'Embedding' in str(type(m)):
             torch.nn.init.normal_(m.weight, mean=0.0, std=0.01)
 
-    def __init__(self, model_path):
+    def __init__(self, args, corpus):
         super(BaseModel, self).__init__()
-        self.model_path = model_path
+        self.model_path = args.model_path
+        self.user_num = corpus.n_users
+        self.item_num = corpus.n_items
+
         self.batches_buffer = dict()  # save batches of dev and test set
         self.check_list = list()  # observe tensors in check_list every check_epoch
         self.embedding_l2 = list()  # manually calculate l2 of used embeddings in the list, not necessary to maintain

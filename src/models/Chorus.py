@@ -25,16 +25,14 @@ class Chorus(SLRC):
         return SLRC.parse_model_args(parser, model_name)
 
     def __init__(self, args, corpus):
-        self.emb_size = args.emb_size
-        self.time_scalar = args.time_scalar
         self.stage = args.stage
+        self.kg_lr = args.lr_scale * args.lr
         self.margin = args.margin
         self.base_method = args.base_method
-        self.kg_lr = args.lr_scale * args.lr
 
         assert self.stage in [1, 2]
         self.pretrain_path = '../model/KG/KG__{}__emb_size={}__margin={}.pt'\
-            .format(corpus.dataset, self.emb_size, self.margin)
+            .format(corpus.dataset, args.emb_size, self.margin)
         if self.stage == 1:
             args.model_path = self.pretrain_path
 
@@ -101,7 +99,6 @@ class Chorus(SLRC):
         i_ids = feed_dict['item_id']                   # [batch_size, -1]
         c_ids = feed_dict['category_id']               # [batch_size, -1]
         r_interval = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
-        batch_size = feed_dict['batch_size']
 
         u_vectors = self.u_embeddings(u_ids)
         i_vectors = self.i_embeddings(i_ids)
@@ -129,7 +126,7 @@ class Chorus(SLRC):
             i_bias = self.item_bias(i_ids).squeeze(-1)
             prediction = (u_vectors[:, None, :] * chorus_vectors).sum(-1)
             prediction = prediction + u_bias + i_bias
-        return prediction.view(batch_size, -1)
+        return prediction.view(feed_dict['batch_size'], -1)
 
     def kg_forward(self, feed_dict):
         head_ids = feed_dict['head_id']          # [batch_size]

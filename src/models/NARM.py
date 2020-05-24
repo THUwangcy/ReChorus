@@ -32,7 +32,6 @@ class NARM(GRU4Rec):
         i_ids = feed_dict['item_id']          # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
         lengths = feed_dict['lengths']        # [batch_size]
-        batch_size = feed_dict['batch_size']
 
         # Embedding Layer
         i_vectors = self.i_embeddings(i_ids)
@@ -63,5 +62,5 @@ class NARM(GRU4Rec):
         pred_vector = self.out(torch.cat((hidden_g, c_l), dim=1))
         prediction = (pred_vector[:, None, :] * i_vectors).sum(dim=-1)
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict

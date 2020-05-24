@@ -17,10 +17,9 @@ class GRU4Rec(BaseModel):
         return BaseModel.parse_model_args(parser, model_name)
 
     def __init__(self, args, corpus):
-        self.item_num = corpus.n_items
         self.emb_size = args.emb_size
         self.hidden_size = args.hidden_size
-        BaseModel.__init__(self, model_path=args.model_path)
+        BaseModel.__init__(self, args, corpus)
 
     def _define_params(self):
         self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
@@ -33,7 +32,6 @@ class GRU4Rec(BaseModel):
         i_ids = feed_dict['item_id']           # [batch_size, -1]
         history = feed_dict['history_items']   # [batch_size, history_max]
         lengths = feed_dict['lengths']         # [batch_size]
-        batch_size = feed_dict['batch_size']
 
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
@@ -55,7 +53,7 @@ class GRU4Rec(BaseModel):
         # Predicts
         prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1)
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):

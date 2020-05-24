@@ -19,12 +19,10 @@ class SLRC(BaseModel):
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
         self.time_scalar = args.time_scalar
-        self.user_num = corpus.n_users
-        self.item_num = corpus.n_items
         self.relation_num = corpus.n_relations
         self.category_num = corpus.item_meta_df['category'].max() + 1
         self.item2cate = dict(zip(corpus.item_meta_df['item_id'].values, corpus.item_meta_df['category'].values))
-        BaseModel.__init__(self, model_path=args.model_path)
+        BaseModel.__init__(self, args, corpus)
 
     def _define_params(self):
         self.u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
@@ -45,7 +43,6 @@ class SLRC(BaseModel):
         i_ids = feed_dict['item_id']                   # [batch_size, -1]
         c_ids = feed_dict['category_id']               # [batch_size, -1]
         r_interval = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
-        batch_size = feed_dict['batch_size']
 
         # Excitation
         alphas, pis = self.alphas(c_ids), self.pis(c_ids) + 0.5
@@ -69,7 +66,7 @@ class SLRC(BaseModel):
 
         prediction = base_intensity + excitation
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):

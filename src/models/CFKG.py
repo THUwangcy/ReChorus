@@ -20,10 +20,8 @@ class CFKG(BaseModel):
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
         self.margin = args.margin
-        self.user_num = corpus.n_users
-        self.item_num = corpus.n_items
         self.relation_num = corpus.n_relations
-        BaseModel.__init__(self, model_path=args.model_path)
+        BaseModel.__init__(self, args, corpus)
 
     def _define_params(self):
         # user and item embedding

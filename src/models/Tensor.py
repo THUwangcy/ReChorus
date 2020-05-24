@@ -14,8 +14,8 @@ class Tensor(BPR):
         return BPR.parse_model_args(parser, model_name)
 
     def __init__(self, args, corpus):
-        self.min_time = corpus.min_time
         self.time_bin = args.time_bin
+        self.min_time = corpus.min_time
         self.time_bin_width = (corpus.max_time - self.min_time + 1.) / self.time_bin
         BPR.__init__(self, args, corpus)
 
@@ -30,9 +30,7 @@ class Tensor(BPR):
         u_ids = feed_dict['user_id']  # [batch_size]
         t_ids = feed_dict['time_id']  # [batch_size]
         i_ids = feed_dict['item_id']  # [batch_size, -1]
-        batch_size = feed_dict['batch_size']
 
-        i_ids = i_ids.view(batch_size, -1)
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
         u_t_vectors = self.u_t_embeddings(t_ids)
@@ -45,7 +43,7 @@ class Tensor(BPR):
                       (cf_u_vectors * u_t_vectors)[:, None, :]).sum(dim=-1)
         prediction = prediction + u_bias + i_bias
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
