@@ -36,7 +36,7 @@ class BPR(BaseModel):
         cf_i_vectors = self.i_embeddings(i_ids)
         u_bias = self.user_bias(u_ids)
         i_bias = self.item_bias(i_ids).squeeze(-1)
-        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors.view(-1, self.emb_size)])
+        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors])
 
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)
         prediction = prediction + u_bias + i_bias

@@ -44,7 +44,7 @@ class CFKG(BaseModel):
         head_vectors = self.e_embeddings(head_ids)
         tail_vectors = self.e_embeddings(tail_ids)
         relation_vectors = self.r_embeddings(relation_ids)
-        self.embedding_l2.extend([head_vectors, tail_vectors.view(-1, self.emb_size), relation_vectors])
+        self.embedding_l2.extend([head_vectors, tail_vectors, relation_vectors])
 
         prediction = -(((head_vectors + relation_vectors)[:, None, :] - tail_vectors)**2).sum(-1)
 

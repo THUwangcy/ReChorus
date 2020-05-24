@@ -35,10 +35,9 @@ class NARM(GRU4Rec):
         batch_size = feed_dict['batch_size']
 
         # Embedding Layer
-        i_ids = i_ids.view(batch_size, -1)
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
-        self.embedding_l2.extend([i_vectors.view(-1, self.emb_size), his_vectors])
+        self.embedding_l2.extend([i_vectors, his_vectors])
 
         # Encoding Layer
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))

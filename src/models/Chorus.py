@@ -105,7 +105,7 @@ class Chorus(SLRC):
 
         u_vectors = self.u_embeddings(u_ids)
         i_vectors = self.i_embeddings(i_ids)
-        self.embedding_l2.extend([u_vectors, i_vectors.view(-1, self.emb_size)])
+        self.embedding_l2.extend([u_vectors, i_vectors])
 
         # Temporal Kernel Function
         betas = (self.betas(c_ids) + 1).clamp(min=1e-10, max=10)

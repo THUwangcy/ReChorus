@@ -34,8 +34,8 @@ class BaseModel(torch.nn.Module):
         super(BaseModel, self).__init__()
         self.model_path = model_path
         self.batches_buffer = dict()  # save batches of dev and test set
-        self.check_list = list()      # observe tensors in check_list every check_epoch
-        self.embedding_l2 = list()    # manually calculate l2 of embeddings in embedding_l2
+        self.check_list = list()  # observe tensors in check_list every check_epoch
+        self.embedding_l2 = list()  # manually calculate l2 of used embeddings in the list, not necessary to maintain
 
         self._define_params()
         self.total_parameters = self.count_variables()
@@ -48,7 +48,7 @@ class BaseModel(torch.nn.Module):
     """
     def _define_params(self):
         self.item_bias = torch.nn.Embedding(self.item_num, 1)
-        self.embeddings = ['item_bias']
+        self.embeddings = ['item_bias']  # exclude direct l2 calculation of these embeddings, not necessary to maintain
 
     def forward(self, feed_dict):
         self.check_list, self.embedding_l2 = [], []

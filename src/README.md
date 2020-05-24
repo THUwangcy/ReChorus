@@ -1,6 +1,6 @@
 ## Source Code	
 
-`main.py` serves as the entrance of our framework, and there are three main packages. We first describe the structure of the code and then introduce how to define a new model.
+`main.py` serves as the entrance of our framework, and there are three main packages. 
 
 ### Structure
 
@@ -42,14 +42,13 @@ class NewModel(BaseModel):
 
     def forward(self, feed_dict):
         # generate prediction (ranking score according to tensors in feed_dict)
-        self.check_list = []
         batch_size = feed_dict['batch_size']
-				prediction = ...
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
+        prediction = ...
+        out_dict = {'prediction': prediction.view(batch_size, -1)}
         return out_dict
 
     def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
-      	"""
+        """
         Generate feed dict of the given data, which will be fed into forward function.
         :param corpus: Loader object
         :param data: DataFrame in corpus.data_df (may be shuffled)
@@ -64,5 +63,5 @@ class NewModel(BaseModel):
 
 
 
-If the training procedure is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `get_neg_items`,  `customize_parameters`...), which needs a better understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also reimplement a new runner class to adapt to different experimental settings.
+If the training procedure is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `get_neg_items`,  `customize_parameters`...), which needs a deeper understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also implement a new runner class to accommodate different experimental settings.
 

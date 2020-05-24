@@ -3,16 +3,16 @@ This repository provides a general PyTorch framework for Top-K recommendation wi
 
 - [Loader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseLoader.py): load dataset into DataFrame and append necessary information to each instance
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores, which will be used in the runner
+- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores
 
 
 
 With this framework, we can easily compare different state-of-the-art models under the same experimental setting. The characteristics of our framework can be summarized as follows:
 
 - **Light**: the framework is accomplished in less than a thousand lines of code, and a new model can be defined with dozens of lines of code
-- **Efficient**: around 85-90% GPU utilization during training for deep models, and special implementations for Top-K recommendation evaluation
+- **Efficient**: around 85-90% GPU utilization during training for deep models, and special implementations for the evaluation of Top-K recommendation
 - **Neat**: clean codes with adequate comments, as well as beautiful training logs
-- **Specializing**: concentrate on your model design in a single model file, including batch preparation, parameter definition, prediction, etc. 
+- **Specializing**: concentrate on your model design in a single model file
 - **Flexible**: implement new loaders or runners for different datasets and experimental settings, and each model can be assigned with different helpers
 
 
@@ -44,10 +44,11 @@ python main.py --model_name BPR --emb_size 64 --lr 1e-3 --dataset Grocery_and_Go
 We have implemented the following methods (still updating):
 
 - BPR (UAI'09): [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page)
-- GMF (WWW'17): [Neural Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3038912.3052569)
+- NCF (WWW'17): [Neural Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3038912.3052569)
 - Tensor (RecSys'10): [N-dimensional Tensor Factorization for Context-aware Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/1864708.1864727)
 - GRU4Rec (ICLR'16): [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939)
 - NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
+- SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
 - CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540)
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): Knowledge- and Time-aware Item Modeling for Sequential Recommendation
@@ -58,12 +59,13 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 
 | Model                                                        |  HR@5  | NDCG@5 | Time/iter |  Sequential  |  Knowledge   |  Time-aware  |
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
-| [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3242 | 0.2223 |   2.5s    |              |              |              |
-| [GMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GMF.py) | 0.3178 | 0.2195 |   2.9s    |              |              |              |
-| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | √ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | √ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | √ |              |              |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4244 | 0.3005 |    11s    |              | √ |              |
+| [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3329 | 0.2297 |   2.5s    |              |              |              |
+| [NCF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NCF.py) | 0.3232 | 0.2234 |   2.9s    |              |              |              |
+| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3542 | 0.2658 |   3.2s    |              |              | √ |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3619 | 0.2580 |    11s    | √ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3614 | 0.2585 |    22s    | √ |              |              |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.4280 | 0.3061 | 7.2s | √ | | |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4228 | 0.3012 |    11s    |              | √ |              |
 | [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |
 

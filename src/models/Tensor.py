@@ -39,7 +39,7 @@ class Tensor(BPR):
         i_t_vectors = self.i_t_embeddings(t_ids)
         u_bias = self.user_bias(u_ids)
         i_bias = self.item_bias(i_ids).squeeze()
-        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors.view(-1, self.emb_size), u_t_vectors, i_t_vectors])
+        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors, u_t_vectors, i_t_vectors])
 
         prediction = ((cf_u_vectors + i_t_vectors)[:, None, :] * cf_i_vectors +
                       (cf_u_vectors * u_t_vectors)[:, None, :]).sum(dim=-1)

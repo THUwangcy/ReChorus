@@ -37,7 +37,7 @@ class GRU4Rec(BaseModel):
 
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
-        self.embedding_l2.extend([i_vectors.view(-1, self.emb_size), his_vectors])
+        self.embedding_l2.extend([i_vectors, his_vectors])
 
         # Sort and Pack
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))

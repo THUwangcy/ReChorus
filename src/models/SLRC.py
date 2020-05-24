@@ -63,7 +63,7 @@ class SLRC(BaseModel):
         i_bias = self.item_bias(i_ids).squeeze(-1)
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
-        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors.view(-1, self.emb_size)])
+        self.embedding_l2.extend([cf_u_vectors, cf_i_vectors])
         base_intensity = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(-1)
         base_intensity = base_intensity + u_bias + i_bias
 
