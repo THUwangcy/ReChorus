@@ -62,8 +62,8 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3329 | 0.2297 |   2.5s    |              |              |              |
 | [NCF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NCF.py) | 0.3232 | 0.2234 |   2.9s    |              |              |              |
 | [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3542 | 0.2658 |   3.2s    |              |              | √ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3619 | 0.2580 |    11s    | √ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3614 | 0.2585 |    22s    | √ |              |              |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3619 | 0.2580 |    7.2s    | √ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3614 | 0.2585 |    13s    | √ |              |              |
 | [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.4280 | 0.3061 | 7.2s | √ | | |
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4228 | 0.3012 |    11s    |              | √ |              |
 | [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
