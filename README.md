@@ -12,7 +12,7 @@ With this framework, we can easily compare different state-of-the-art models und
 - **Light**: the framework is accomplished in less than a thousand lines of code, and a new model can be defined with dozens of lines of code
 - **Efficient**: around 85-90% GPU utilization during training for deep models, and special implementations for the evaluation of Top-K recommendation
 - **Neat**: clean codes with adequate comments, as well as beautiful training logs
-- **Specializing**: concentrate on your model design in a single model file
+- **Agile**: concentrate on your model design in a single model file and implement new models quickly
 - **Flexible**: implement new loaders or runners for different datasets and experimental settings, and each model can be assigned with different helpers
 
 
