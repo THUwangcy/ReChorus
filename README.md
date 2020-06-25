@@ -3,7 +3,7 @@ This repository provides a general PyTorch framework for Top-K recommendation wi
 
 - [Loader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseLoader.py): load dataset into DataFrame and append necessary information to each instance
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): prepare batches according to DataFrames in the loader, and define how to generate ranking scores
+- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches according to DataFrames in the loader
 
 
 
@@ -49,9 +49,10 @@ We have implemented the following methods (still updating):
 - GRU4Rec (ICLR'16): [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939)
 - NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
 - SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
+- TiSASRec (WSDM'20): [Time Interval Aware Self-Attention for Sequential Recommendation](https://dl.acm.org/doi/pdf/10.1145/3336191.3371786)
 - CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540)
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
-- Chorus (SIGIR'20): Knowledge- and Time-aware Item Modeling for Sequential Recommendation
+- Chorus (SIGIR'20): [Knowledge- and Time-aware Item Modeling for Sequential Recommendation]()
 
 
 
@@ -64,7 +65,8 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3542 | 0.2658 |   3.2s    |              |              | √ |
 | [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3619 | 0.2580 |    7.2s    | √ |              |              |
 | [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3614 | 0.2585 |    13s    | √ |              |              |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.4280 | 0.3061 | 7.2s | √ | | |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.4242 | 0.3043 | 7.2s | √ | | |
+| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/TiSASRec.py) | 0.4272 | 0.3069 | 40s | √ | | √ |
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4228 | 0.3012 |    11s    |              | √ |              |
 | [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |

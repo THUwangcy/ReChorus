@@ -28,6 +28,7 @@ class SASRec(GRU4Rec):
 
         self.Q = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
         self.K = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.V = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
         self.W1 = torch.nn.Linear(self.emb_size, self.emb_size)
         self.W2 = torch.nn.Linear(self.emb_size, self.emb_size)
 
@@ -59,19 +60,22 @@ class SASRec(GRU4Rec):
         attention_mask = 1 - valid_his.unsqueeze(1).repeat(1, seq_len, 1)
         for i in range(self.num_layers):
             residual = his_vectors
-            query, key = self.Q(his_vectors), self.K(his_vectors)  # [batch_size, history_max, emb_size]
             # self-attention
+            query, key, value = self.Q(his_vectors), self.K(his_vectors), self.V(his_vectors)
             scale = self.emb_size ** -0.5
-            context = utils.scaled_dot_product_attention(query, key, key, scale=scale, attn_mask=attention_mask)
+            his_vectors = utils.scaled_dot_product_attention(query, key, value, scale=scale, attn_mask=attention_mask)
             # mlp forward
-            context = self.W1(context).relu()
-            his_vectors = self.W2(context)  # [batch_size, history_max, emb_size]
+            his_vectors = self.W1(his_vectors).relu()
+            his_vectors = self.W2(his_vectors)  # [batch_size, history_max, emb_size]
             # dropout, residual and layer_norm
             his_vectors = self.dropout_layer(his_vectors)
             his_vectors = self.layer_norm(residual + his_vectors)
+            # ↑ layer norm in the end is shown to be more effective
+        his_vectors = his_vectors * valid_his[:, :, None].double()
 
-        his_vector = (his_vectors * valid_his[:, :, None].double()).sum(1)  # [batch_size, emb_size]
-        his_vector = his_vector / lengths[:, None].double()
+        # his_vector = (his_vectors * (position == 1).double()[:, :, None]).sum(1)
+        his_vector = his_vectors.sum(1) / lengths[:, None].double()
+        # ↑ average pooling is shown to be more effective than the most recent embedding
 
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
 

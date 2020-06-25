@@ -1,10 +1,10 @@
-## Dataset
+# Dataset
 
-We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `preprocess.ipynb` to download and build datasets for other categories.
+We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `Amazon.ipynb` to download and build Amazon datasets for other categories.
 
 
 
-Our framework can also easily work with other datasets. We describe the required files below (recommend to open `preprocess.ipynb` to observe the format of dataset files):
+Our framework can also easily work with other datasets. We describe the required files below (recommend to open `Amazon.ipynb` to observe the format of dataset files):
 
 
 
@@ -22,7 +22,7 @@ Our framework can also easily work with other datasets. We describe the required
 - The last column is the list of negative items in terms of the ground-truth item.
 - The number of negative items need to be the same for a specific set, but it can be different between dev and test sets.
 
-![dev/test data format](http://snappyimages.nextwavesrl.netdna-cdn.com/img/d5427cd138ad9ec87190973cb5ffcfc9.png)
+![dev/test data format](../log/_static/format_test.png)
 
 
 
@@ -33,7 +33,7 @@ Our framework can also easily work with other datasets. We describe the required
 - `<attribute>` is the attributes of an item, such as category, brand and so on. SLRC and Chorus model need category information.
 - `r_<relation>` is the relations between items, and its value is a list of items (can be empty []). Assume `item_id` is `i`, if `j` appears in `r_<relation>`, then `(i, relation, j)` holds in the knowledge graph. Note that the corresponding header here must start with "r_" to be distinguished from attributes.
 
-![dev/test data format](http://snappyimages.nextwavesrl.netdna-cdn.com/img/56e1473d62039d4853e8360731640930.png)
+![meta data format](../log/_static/format_meta.png)
 
 
 

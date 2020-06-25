@@ -61,7 +61,7 @@ class BaseLoader(object):
         self.relation_df['tail'] = tails
 
         logging.info('Counting dataset statistics...')
-        self.all_df = pd.concat([df[['user_id', 'item_id', 'time']] for df in self.data_df.values()])
+        self.all_df = pd.concat([self.data_df[key][['user_id', 'item_id', 'time']] for key in ['train', 'dev', 'test']])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
         self.n_clicks = len(self.all_df)
         self.min_time, self.max_time = self.all_df['time'].min(), self.all_df['time'].max()

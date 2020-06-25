@@ -38,7 +38,7 @@ class BaseModel(torch.nn.Module):
 
         self.batches_buffer = dict()  # save batches of dev and test set
         self.check_list = list()  # observe tensors in check_list every check_epoch
-        self.embedding_l2 = list()  # manually calculate l2 of used embeddings in the list, not necessary to maintain
+        self.embedding_l2 = list()  # manually calculate l2 of used embeddings in the list, not necessary
 
         self._define_params()
         self.total_parameters = self.count_variables()
