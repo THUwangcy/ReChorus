@@ -1,24 +1,31 @@
 # -*- coding: UTF-8 -*-
 
-import os
 import torch
-from tqdm import tqdm
 import logging
 import numpy as np
+from tqdm import tqdm
 import torch.nn.functional as F
+from torch.utils.data import Dataset as BaseDataset
+from torch.nn.utils.rnn import pad_sequence
 
 from utils import utils
 
 
 class BaseModel(torch.nn.Module):
-    loader = 'BaseLoader'
+    reader = 'BaseReader'
     runner = 'BaseRunner'
     extra_log_args = []
 
     @staticmethod
-    def parse_model_args(parser, model_name='BaseModel'):
+    def parse_model_args(parser):
         parser.add_argument('--model_path', type=str, default='',
                             help='Model save path.')
+        parser.add_argument('--num_neg', type=int, default=1,
+                            help='The number of negative items during training.')
+        parser.add_argument('--dropout', type=float, default=0.2,
+                            help='Dropout probability for each deep layer')
+        parser.add_argument('--buffer', type=int, default=1,
+                            help='Whether to buffer feed dicts for dev/test')
         return parser
 
     @staticmethod
@@ -33,87 +40,47 @@ class BaseModel(torch.nn.Module):
     def __init__(self, args, corpus):
         super(BaseModel, self).__init__()
         self.model_path = args.model_path
-        self.user_num = corpus.n_users
+        self.num_neg = args.num_neg
+        self.dropout = args.dropout
+        self.buffer = args.buffer
         self.item_num = corpus.n_items
-
-        self.batches_buffer = dict()  # save batches of dev and test set
+        self.optimizer = None
         self.check_list = list()  # observe tensors in check_list every check_epoch
-        self.embedding_l2 = list()  # manually calculate l2 of used embeddings in the list, not necessary
 
         self._define_params()
         self.total_parameters = self.count_variables()
         logging.info('#params: %d' % self.total_parameters)
-
-        self.optimizer = None
 
     """
     Methods must to override
     """
     def _define_params(self):
         self.item_bias = torch.nn.Embedding(self.item_num, 1)
-        self.embeddings = ['item_bias']  # exclude direct l2 calculation of these embeddings, not necessary to maintain
 
     def forward(self, feed_dict):
-        self.check_list, self.embedding_l2 = [], []
+        """
+        :param feed_dict: batch prepared in Dataset
+        :return: prediction with shape [batch_size, n_candidates]
+        """
         i_ids = feed_dict['item_id']
-        i_bias = self.item_bias(i_ids)
-        self.embedding_l2.append(i_bias)
-        out_dict = {'prediction': i_bias.view(feed_dict['batch_size'], -1), 'check': self.check_list}
-        return out_dict
-
-    def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
-        """
-        Generate a batch of the given data, which will be fed into forward function.
-        :param corpus: Loader object
-        :param data: DataFrame in corpus.data_df (may be shuffled)
-        :param batch_start: batch start index
-        :param batch_size: batch size
-        :param phase: 'train', 'dev' or 'test'
-        """
-        batch_end = min(len(data), batch_start + batch_size)
-        real_batch_size = batch_end - batch_start
-        item_ids = data['item_id'][batch_start: batch_start + real_batch_size].values
-        neg_items = self.get_neg_items(corpus, data, batch_start, real_batch_size, phase)  # [batch_size, num_neg]
-        # concatenate ground-truth item and corresponding negative items
-        item_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
-        feed_dict = {'item_id': utils.numpy_to_torch(item_ids), 'batch_size': real_batch_size}
-        return feed_dict
+        prediction = self.item_bias(i_ids)
+        return prediction.view(feed_dict['batch_size'], -1)
 
     """
     Methods optional to override
     """
-    def prepare_batches(self, corpus, data, batch_size, phase):
-        buffer_key = '_'.join([phase, str(batch_size)])
-        if buffer_key in self.batches_buffer:
-            return self.batches_buffer[buffer_key]
-
-        # generate the list of all batches of the given data
-        # TODO: multi-thread preparation
-        num_example = len(data)
-        total_batch = int((num_example + batch_size - 1) / batch_size)
-        batches = list()
-        for batch in tqdm(range(total_batch), leave=False, ncols=100, mininterval=1, desc='Prepare Batches'):
-            batches.append(self.get_feed_dict(corpus, data, batch * batch_size, batch_size, phase))
-
-        if phase != 'train':
-            self.batches_buffer[buffer_key] = batches
-        return batches
-
-    def get_neg_items(self, corpus, data, batch_start, real_batch_size, phase):
-        if phase == 'train':  # for training, sample paired negative items that haven't been interacted
-            user_ids = data['user_id'][batch_start: batch_start + real_batch_size].values
-            neg_items = np.random.randint(1, self.item_num, size=(real_batch_size, 1))
-            for i in range(real_batch_size):
-                while neg_items[i][0] in corpus.user_clicked_set[user_ids[i]]:
-                    neg_items[i][0] = np.random.randint(1, self.item_num)
-        else:  # for dev and test, negative items are prepared in advance
-            neg_items = data['neg_items'][batch_start: batch_start + real_batch_size].tolist()
-        return neg_items
-
-    def loss(self, feed_dict, predictions):
-        # BPR ranking loss. For numerical stability, we use '-softplus(-x)' instead of 'log_sigmoid(x)'
-        pos_pred, neg_pred = predictions[:, 0], predictions[:, 1]
+    def loss(self, predictions):
+        """
+        BPR ranking loss with optimization on multiple negative samples
+        @{Recurrent neural networks with top-k gains for session-based recommendations}
+        :param predictions: [batch_size, -1], the first column for positive, the rest for negative
+        :return:
+        """
+        pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
+        neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
+        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
         loss = F.softplus(-(pos_pred - neg_pred)).mean()
+        # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
     def customize_parameters(self):
@@ -124,43 +91,12 @@ class BaseModel(torch.nn.Module):
                 bias_p.append(p)
             else:
                 weight_p.append(p)
-        optimize_dict = [{'params': weight_p}, {'params': bias_p, 'weight_decay': 0.0}]
+        optimize_dict = [{'params': weight_p}, {'params': bias_p, 'weight_decay': 0}]
         return optimize_dict
 
-    def actions_before_train(self):
-        pass
-
-    def actions_after_train(self):
-        pass
-
-    """"""
-
-    def count_variables(self):
-        total_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return total_parameters
-
-    def l2(self):
-        # calculate l2 of a batch manually for observation
-        l2 = utils.numpy_to_torch(np.array(0.0, dtype=np.float64), gpu=True)
-        for name, p in filter(lambda x: x[1].requires_grad, self.named_parameters()):
-            if ('bias' not in name) and (name.split('.')[0] not in self.embeddings):
-                l2 += (p ** 2).sum()
-        # only include embeddings utilized in the current batch
-        for p in self.embedding_l2:
-            l2 += (p ** 2).sum() / p.shape[0]
-        return l2
-
-    def check(self, out_dict):
-        # observe selected tensors during forward.
-        logging.info('')
-        for i, t in enumerate(self.check_list):
-            d = np.array(t[1].detach().cpu())
-            logging.info(os.linesep.join(
-                [t[0] + '\t' + str(d.shape), np.array2string(d, threshold=20)]
-            ) + os.linesep)
-        loss, l2 = out_dict['mean_loss'], out_dict['mean_l2']
-        logging.info('loss = %.4f, l2 = %.4f' % (loss, l2))
-
+    """
+    Auxiliary methods
+    """
     def save_model(self, model_path=None):
         if model_path is None:
             model_path = self.model_path
@@ -173,3 +109,75 @@ class BaseModel(torch.nn.Module):
             model_path = self.model_path
         self.load_state_dict(torch.load(model_path))
         logging.info('Load model from ' + model_path)
+
+    def count_variables(self):
+        total_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return total_parameters
+
+    def actions_before_train(self):
+        pass
+
+    def actions_after_train(self):
+        pass
+
+    """
+    Define dataset class for the model
+    """
+    class Dataset(BaseDataset):
+        def __init__(self, model, corpus, phase):
+            self.model = model
+            self.corpus = corpus
+            self.phase = phase
+            self.data = utils.df_to_dict(corpus.data_df[phase])
+            # ↑ DataFrame is not compatible with multi-thread operations
+            self.neg_items = None if phase == 'train' else self.data['neg_items']
+            # ↑ Sample negative items before each epoch during training
+            self.buffer_dict = dict()
+            self.buffer = self.model.buffer and self.phase != 'train'
+
+            self._prepare()
+
+        def __len__(self):
+            for key in self.data:
+                return len(self.data[key])
+
+        def __getitem__(self, index):
+            return self.buffer_dict[index] if self.buffer else self._get_feed_dict(index)
+
+        # Prepare model-specific variables and buffer feed dicts
+        def _prepare(self):
+            if self.buffer:
+                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1,
+                              desc=str('Prepare ' + self.phase)):
+                    self.buffer_dict[i] = self._get_feed_dict(i)
+
+        # Key method to construct input data for a single instance
+        def _get_feed_dict(self, index):
+            target_item = self.data['item_id'][index]
+            neg_items = self.neg_items[index]
+            item_ids = np.concatenate([[target_item], neg_items])
+            feed_dict = {'item_id': item_ids}
+            return feed_dict
+
+        # Sample negative items for all the instances (called before each epoch)
+        def negative_sampling(self):
+            self.neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
+            for i, u in enumerate(self.data['user_id']):
+                user_clicked_set = self.corpus.user_clicked_set[u]
+                for j in range(self.model.num_neg):
+                    while self.neg_items[i][j] in user_clicked_set:
+                        self.neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
+
+        # Collate a batch according to the list of feed dicts
+        def collate_batch(self, feed_dicts):
+            feed_dict = dict()
+            for key in feed_dicts[0]:
+                stack_val = np.array([d[key] for d in feed_dicts])
+                if stack_val.dtype == np.object:  # inconsistent length (e.g. history)
+                    feed_dict[key] = pad_sequence([torch.from_numpy(x) for x in stack_val], batch_first=True)
+                else:
+                    feed_dict[key] = torch.from_numpy(stack_val)
+            feed_dict['batch_size'] = len(feed_dicts)
+            feed_dict['phase'] = self.phase
+            return feed_dict
+

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 
-class BaseLoader(object):
+class BaseReader(object):
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--path', type=str, default='../data/',
@@ -29,14 +29,14 @@ class BaseLoader(object):
         self.history_max = args.history_max
 
         t0 = time.time()
-        self._load_data()
+        self._read_data()
         self._append_info()
         logging.info('Done! [{:<.2f} s]'.format(time.time() - t0) + os.linesep)
 
-    def _load_data(self):
-        logging.info('Loading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
+    def _read_data(self):
+        logging.info('Reading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
         self.data_df, self.item_meta_df = dict(), pd.DataFrame()
-        self._load_preprocessed_df()
+        self._read_preprocessed_df()
 
         logging.info('Formating data type...')
         for df in list(self.data_df.values()) + [self.item_meta_df]:
@@ -48,9 +48,9 @@ class BaseLoader(object):
         relation_types = [r for r in self.item_meta_df.columns if r.startswith('r_')]
         heads, relations, tails = [], [], []
         for idx in range(len(self.item_meta_df)):
-            head_item = self.item_meta_df.iloc[idx]['item_id']
+            head_item = self.item_meta_df['item_id'][idx]
             for r_idx, r in enumerate(relation_types):
-                for tail_item in self.item_meta_df.iloc[idx][r]:
+                for tail_item in self.item_meta_df[r][idx]:
                     heads.append(head_item)
                     relations.append(r_idx + 1)
                     tails.append(tail_item)
@@ -63,12 +63,9 @@ class BaseLoader(object):
         logging.info('Counting dataset statistics...')
         self.all_df = pd.concat([self.data_df[key][['user_id', 'item_id', 'time']] for key in ['train', 'dev', 'test']])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
-        self.n_clicks = len(self.all_df)
-        self.min_time, self.max_time = self.all_df['time'].min(), self.all_df['time'].max()
         self.n_relations = self.relation_df['relation'].max() + 1
-        self.n_triplets = len(self.relation_df)
-        logging.info('"# users": {}, "# items": {}, "# clicks": {}'.format(self.n_users, self.n_items, self.n_clicks))
-        logging.info('"# relations": {}, "# triplets": {}'.format(self.n_relations, self.n_triplets))
+        logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(self.n_users, self.n_items, len(self.all_df)))
+        logging.info('"# relation": {}, "# triplet": {}'.format(self.n_relations, len(self.relation_df)))
 
     def _append_info(self):
         """
@@ -81,7 +78,7 @@ class BaseLoader(object):
         for key in ['train', 'dev', 'test']:
             df = self.data_df[key]
             i_history, t_history = [], []
-            for uid, iid, t in zip(df['user_id'].tolist(), df['item_id'].tolist(), df['time'].tolist()):
+            for uid, iid, t in zip(df['user_id'], df['item_id'], df['time']):
                 if uid not in user_his_dict:
                     user_his_dict[uid] = []
                 i_history.append([x[0] for x in user_his_dict[uid]])
@@ -98,23 +95,23 @@ class BaseLoader(object):
         for uid in user_his_dict:
             self.user_clicked_set[uid] = set([x[0] for x in user_his_dict[uid]])
 
-    def _load_preprocessed_df(self):
+    def _read_preprocessed_df(self):
+        for key in ['train', 'dev', 'test']:
+            self.data_df[key] = pd.read_csv(os.path.join(self.prefix, self.dataset, key + '.csv'), sep=self.sep)
+
         item_meta_path = os.path.join(self.prefix, self.dataset, 'item_meta.csv')
         if os.path.exists(item_meta_path):
             self.item_meta_df = pd.read_csv(item_meta_path, sep=self.sep)
-        self.data_df['train'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'train.csv'), sep=self.sep)
-        self.data_df['dev'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'dev.csv'), sep=self.sep)
-        self.data_df['test'] = pd.read_csv(os.path.join(self.prefix, self.dataset, 'test.csv'), sep=self.sep)
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser = BaseLoader.parse_data_args(parser)
+    parser = BaseReader.parse_data_args(parser)
     args, extras = parser.parse_known_args()
 
     args.path = '../../data/'
-    corpus = BaseLoader(args)
+    corpus = BaseReader(args)
 
     corpus_path = os.path.join(args.path, args.dataset, 'Corpus.pkl')
     logging.info('Save corpus to {}'.format(corpus_path))

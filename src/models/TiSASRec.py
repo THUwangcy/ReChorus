@@ -4,15 +4,14 @@ import torch
 import numpy as np
 
 from models.SASRec import SASRec
-from utils import utils
 
 
 class TiSASRec(SASRec):
     @staticmethod
-    def parse_model_args(parser, model_name='TiSASRec'):
+    def parse_model_args(parser):
         parser.add_argument('--time_max', type=int, default=256,
                             help='Max time intervals.')
-        return SASRec.parse_model_args(parser, model_name)
+        return SASRec.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.max_time = args.time_max
@@ -24,7 +23,7 @@ class TiSASRec(SASRec):
             min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFF)
             corpus.user_min_interval[u] = min_interval
 
-        SASRec.__init__(self, args, corpus)
+        super().__init__(args, corpus)
 
     def _define_params(self):
         self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
@@ -32,18 +31,18 @@ class TiSASRec(SASRec):
         self.p_v_embeddings = torch.nn.Embedding(self.max_his + 1, self.emb_size)
         self.t_k_embeddings = torch.nn.Embedding(self.max_time + 1, self.emb_size)
         self.t_v_embeddings = torch.nn.Embedding(self.max_time + 1, self.emb_size)
-        self.embeddings = ['i_embeddings', 'p_k_embeddings', 'p_v_embeddings', 't_k_embeddings', 't_v_embeddings']
 
         self.Q = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
         self.K = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
         self.V = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
         self.W1 = torch.nn.Linear(self.emb_size, self.emb_size)
         self.W2 = torch.nn.Linear(self.emb_size, self.emb_size)
+
         self.dropout_layer = torch.nn.Dropout(p=self.dropout)
         self.layer_norm = torch.nn.LayerNorm(self.emb_size)
 
     def forward(self, feed_dict):
-        self.check_list, self.embedding_l2 = [], []
+        self.check_list = []
         i_ids = feed_dict['item_id']                  # [batch_size, -1]
         i_history = feed_dict['history_items']        # [batch_size, history_max]
         t_history = feed_dict['history_times']        # [batch_size, history_max]
@@ -54,26 +53,23 @@ class TiSASRec(SASRec):
         valid_his = (i_history > 0).byte()
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(i_history)
-        self.embedding_l2.extend([i_vectors, his_vectors])
 
-        # position embedding
+        # Position embedding
         # lengths:  [4, 2, 5]
         # position: [[4, 3, 2, 1, 0], [2, 1, 0, 0, 0], [5, 4, 3, 2, 1]]
         position = self.len_range[:seq_len].unsqueeze(0).repeat(batch_size, 1)
         position = (lengths[:, None] - position) * valid_his.long()
         pos_k_vectors = self.p_k_embeddings(position)
         pos_v_vectors = self.p_v_embeddings(position)
-        self.embedding_l2.extend([pos_k_vectors, pos_v_vectors])
 
-        # interval embedding
+        # Interval embedding
         interval_matrix = (t_history[:, :, None] - t_history[:, None, :]).abs()
         interval_matrix = (interval_matrix / user_min_t.view(-1, 1, 1)).long().clamp(0, self.max_time)
         inter_k_vectors = self.t_k_embeddings(interval_matrix)
         inter_v_vectors = self.t_v_embeddings(interval_matrix)
-        self.embedding_l2.extend([inter_k_vectors, inter_v_vectors])
 
-        # self-attention
-        attention_mask = 1 - valid_his.unsqueeze(1).repeat(1, seq_len, 1)
+        # Self-attention
+        attn_mask = 1 - valid_his.unsqueeze(1).repeat(1, seq_len, 1)
         for i in range(self.num_layers):
             residual = his_vectors
             query = self.Q(his_vectors)
@@ -82,7 +78,7 @@ class TiSASRec(SASRec):
             attention = torch.bmm(query, key.transpose(1, 2))  # [batch_size, history_max, history_max]
             attention += (query[:, :, None, :] * inter_k_vectors).sum(-1)
             attention = attention * (self.emb_size ** -0.5)
-            attention = (attention - attention.max()).masked_fill(attention_mask, -np.inf)
+            attention = (attention - attention.max()).masked_fill(attn_mask, -np.inf)
             attention = attention.softmax(dim=-1)
             context = torch.bmm(attention, value)  # [batch_size, history_max, emb_size]
             context += (attention[:, :, :, None] * inter_v_vectors).sum(2)
@@ -99,18 +95,13 @@ class TiSASRec(SASRec):
         # ↑ average pooling is shown to be more effective than the most recent embedding
 
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
+        return prediction.view(batch_size, -1)
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
-        return out_dict
-
-    def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
-        feed_dict = SASRec.get_feed_dict(self, corpus, data, batch_start, batch_size, phase)
-        real_batch_size = feed_dict['batch_size']
-        user_ids = data['user_id'][batch_start: batch_start + real_batch_size].values
-        history_times = data['time_his'][batch_start: batch_start + real_batch_size].values
-        user_min_intervals = np.array([corpus.user_min_interval[u] for u in user_ids])
-
-        feed_dict['history_times'] = utils.numpy_to_torch(utils.pad_lst(history_times)).double()
-        feed_dict['user_min_intervals'] = utils.numpy_to_torch(user_min_intervals).double()
-
-        return feed_dict
+    class Dataset(SASRec.Dataset):
+        def _get_feed_dict(self, index):
+            feed_dict = super()._get_feed_dict(index)
+            user_id = self.data['user_id'][index]
+            min_interval = self.corpus.user_min_interval[user_id]
+            feed_dict['history_times'] = np.array(self.data['time_his'][index])
+            feed_dict['user_min_intervals'] = min_interval
+            return feed_dict

@@ -8,14 +8,14 @@ from models.GRU4Rec import GRU4Rec
 
 class NARM(GRU4Rec):
     @staticmethod
-    def parse_model_args(parser, model_name='NARM'):
+    def parse_model_args(parser):
         parser.add_argument('--attention_size', type=int, default=50,
                             help='Size of attention hidden space.')
-        return GRU4Rec.parse_model_args(parser, model_name)
+        return GRU4Rec.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.attention_size = args.attention_size
-        GRU4Rec.__init__(self, args, corpus)
+        super().__init__(args, corpus)
 
     def _define_params(self):
         self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
@@ -25,10 +25,9 @@ class NARM(GRU4Rec):
         self.A2 = torch.nn.Linear(self.hidden_size, self.attention_size, bias=False)
         self.attention_out = torch.nn.Linear(self.attention_size, 1, bias=False)
         self.out = torch.nn.Linear(2 * self.hidden_size, self.emb_size, bias=False)
-        self.embeddings = ['i_embeddings']
 
     def forward(self, feed_dict):
-        self.check_list, self.embedding_l2 = [], []
+        self.check_list = []
         i_ids = feed_dict['item_id']          # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
         lengths = feed_dict['lengths']        # [batch_size]
@@ -36,7 +35,6 @@ class NARM(GRU4Rec):
         # Embedding Layer
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
-        self.embedding_l2.extend([i_vectors, his_vectors])
 
         # Encoding Layer
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
@@ -61,6 +59,4 @@ class NARM(GRU4Rec):
         # Prediction Layer
         pred_vector = self.out(torch.cat((hidden_g, c_l), dim=1))
         prediction = (pred_vector[:, None, :] * i_vectors).sum(dim=-1)
-
-        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1), 'check': self.check_list}
-        return out_dict
+        return prediction.view(feed_dict['batch_size'], -1)

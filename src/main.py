@@ -8,7 +8,7 @@ import argparse
 import numpy as np
 import torch
 
-from models import  *
+from models import *
 from helpers import *
 from utils import utils
 
@@ -33,24 +33,26 @@ def parse_global_args(parser):
 
 def main():
     logging.info('-' * 45 + ' BEGIN: ' + utils.get_time() + ' ' + '-' * 45)
-    logging.info(utils.format_arg_str(args))
+    exclude = ['check_epoch', 'log_file', 'model_path', 'path', 'pin_memory',
+               'regenerate', 'sep', 'train', 'verbose']
+    logging.info(utils.format_arg_str(args, exclude_lst=exclude))
 
     # Random seed
+    np.random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
     torch.cuda.manual_seed(args.random_seed)
-    np.random.seed(args.random_seed)
 
     # GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     logging.info("# cuda devices: {}".format(torch.cuda.device_count()))
 
-    # Load data
-    corpus_path = os.path.join(args.path, args.dataset, 'Corpus.pkl')
+    # Read data
+    corpus_path = os.path.join(args.path, args.dataset, model_name.reader + '.pkl')
     if not args.regenerate and os.path.exists(corpus_path):
         logging.info('Load corpus from {}'.format(corpus_path))
         corpus = pickle.load(open(corpus_path, 'rb'))
     else:
-        corpus = loader_name(args)
+        corpus = reader_name(args)
         logging.info('Save corpus to {}'.format(corpus_path))
         pickle.dump(corpus, open(corpus_path, 'wb'))
 
@@ -64,13 +66,16 @@ def main():
         model = model.cuda()
 
     # Run model
+    data_dict = dict()
+    for phase in ['train', 'dev', 'test']:
+        data_dict[phase] = model_name.Dataset(model, corpus, phase)
     runner = runner_name(args)
-    logging.info('Test Before Training: ' + runner.print_res(model, corpus))
+    logging.info('Test Before Training: ' + runner.print_res(model, data_dict['test']))
     if args.load > 0:
         model.load_model()
     if args.train > 0:
-        runner.train(model, corpus)
-    logging.info(os.linesep + 'Test After Training: ' + runner.print_res(model, corpus))
+        runner.train(model, data_dict)
+    logging.info(os.linesep + 'Test After Training: ' + runner.print_res(model, data_dict['test']))
 
     model.actions_after_train()
     logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
@@ -81,13 +86,13 @@ if __name__ == '__main__':
     init_parser.add_argument('--model_name', type=str, default='BPR', help='Choose a model to run.')
     init_args, init_extras = init_parser.parse_known_args()
     model_name = eval('{0}.{0}'.format(init_args.model_name))
-    loader_name = eval('{0}.{0}'.format(model_name.loader))
+    reader_name = eval('{0}.{0}'.format(model_name.reader))
     runner_name = eval('{0}.{0}'.format(model_name.runner))
 
     # Args
     parser = argparse.ArgumentParser(description='')
     parser = parse_global_args(parser)
-    parser = loader_name.parse_data_args(parser)
+    parser = reader_name.parse_data_args(parser)
     parser = runner_name.parse_runner_args(parser)
     parser = model_name.parse_model_args(parser)
     args, extras = parser.parse_known_args()
@@ -98,7 +103,7 @@ if __name__ == '__main__':
         log_args.append(arg + '=' + str(eval('args.' + arg)))
     log_file_name = '__'.join(log_args).replace(' ', '__')
     if args.log_file == '':
-        args.log_file = '../log/{}.txt'.format(log_file_name)
+        args.log_file = '../log/{}/{}.txt'.format(init_args.model_name, log_file_name)
     if args.model_path == '':
         args.model_path = '../model/{}/{}.pt'.format(init_args.model_name, log_file_name)
 

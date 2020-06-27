@@ -2,8 +2,6 @@
 
 We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `Amazon.ipynb` to download and build Amazon datasets for other categories.
 
-
-
 Our framework can also easily work with other datasets. We describe the required files below (recommend to open `Amazon.ipynb` to observe the format of dataset files):
 
 
@@ -26,7 +24,7 @@ Our framework can also easily work with other datasets. We describe the required
 
 
 
-**item_meta.csv** (opt)
+**item_meta.csv** (optional)
 
 - Format: `item_id \t <attribute> \t ... \t r_<relation> \t ...`
 - Optional, only needed for some of the models (CFKG, SLRC, Chorus).
@@ -37,5 +35,5 @@ Our framework can also easily work with other datasets. We describe the required
 
 
 
-You can also implement a new loader class based on [BaseLoader.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseLoader.py) and load data in your own style, as long as the basic information is included. Then assign your model with the new loader and begin to use new members of the loader when preparing batches in the model.
+You can also implement a new reader class based on [BaseReader.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py) and read data in your own style, as long as the basic information is included. Then assign your model with the new reader and begin to use new members of the reader when preparing batches in the model.
 

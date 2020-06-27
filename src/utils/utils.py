@@ -1,80 +1,40 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import datetime
+import logging
 import torch
+import datetime
 import numpy as np
 
 
-def get_time():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-def get_hr(gt_rank, topk):
-    """
-    Only for the situation when there is one ground-truth item.
-    :param gt_rank: the position of ground-truth item in ranking list
-    :return: HR@topk
-    """
-    return int(gt_rank <= topk)
-
-
-def get_ndcg(gt_rank, topk):
-    """
-    Only for the situation when there is one ground-truth item.
-    :param gt_rank: the position of ground-truth item in ranking list
-    :return: NDCG@topk
-    """
-    return int(gt_rank <= topk) / np.log2(gt_rank + 1)
-
-
-def topk_evaluate_method(predictions, topk, metrics):
+def evaluate_method(predictions, topk, metrics):
     """
     :param predictions: (-1, n_candidates) shape, the first column is the score for ground-truth item
-    :param topk: top-K list
-    :param metrics: metrics dict
-    :return: a result dict, the keys are metrics
+    :param topk: top-K values list
+    :param metrics: metrics string list
+    :return: a result dict, the keys are metrics@topk
     """
     evaluations = dict()
+    sort_idx = (-predictions).argsort(axis=1)
+    gt_rank = np.argwhere(sort_idx == 0)[:, 1] + 1
     for k in topk:
+        hit = (gt_rank <= k)
         for metric in metrics:
-            evaluations['{}@{}'.format(metric, k)] = list()
-    for prediction in predictions:
-        gt_rank = np.argsort(prediction)[::-1].tolist().index(0) + 1
-        for k in topk:
-            for metric in metrics:
-                m = '{}@{}'.format(metric, k)
-                if metric == 'HR':
-                    evaluations[m].append(get_hr(gt_rank, k))
-                elif metric == 'NDCG':
-                    evaluations[m].append(get_ndcg(gt_rank, k))
-                else:
-                    raise ValueError('Undefined evaluation metric: {}.'.format(metric))
-    for k in topk:
-        for metric in metrics:
-            m = '{}@{}'.format(metric, k)
-            evaluations[m] = np.mean(evaluations[m])
+            key = '{}@{}'.format(metric, k)
+            if metric == 'HR':
+                evaluations[key] = hit.mean()
+            elif metric == 'NDCG':
+                evaluations[key] = (hit / np.log2(gt_rank + 1)).mean()
+            else:
+                raise ValueError('Undefined evaluation metric: {}.'.format(metric))
     return evaluations
 
 
-def scaled_dot_product_attention(q, k, v, scale=None, attn_mask=None):
-    """
-    Weighted sum of v according to dot product between q and k
-    :param q: query tensor，[-1, L_q, V]
-    :param k: key tensor，[-1, L_k, V]
-    :param v: value tensor，[-1, L_k, V]
-    :param scale: scalar
-    :param attn_mask: [-1, L_q, L_k]
-    """
-    attention = torch.bmm(q, k.transpose(1, 2))  # [-1, L_q, L_k]
-    if scale is not None:
-        attention = attention * scale
-    attention = attention - attention.max()
-    if attn_mask is not None:
-        attention = attention.masked_fill(attn_mask, -np.inf)
-    attention = attention.softmax(dim=-1)
-    context = torch.bmm(attention, v)  # [-1, L_q, V]
-    return context
+def df_to_dict(df):
+    res = df.to_dict('list')
+    for key in res:
+        res[key] = np.array(res[key])
+    return res
 
 
 def numpy_to_torch(d, gpu=True):
@@ -84,20 +44,29 @@ def numpy_to_torch(d, gpu=True):
     return t
 
 
-def pad_lst(lst, dtype=np.int64):
-    inner_max_len = max(map(len, lst))
-    result = np.zeros([len(lst), inner_max_len], dtype)
-    for i, row in enumerate(lst):
-        for j, val in enumerate(row):
-            result[i][j] = val
-    return result
+def batch_to_gpu(batch):
+    if torch.cuda.device_count() > 0:
+        for c in batch:
+            if type(batch[c]) is torch.Tensor:
+                batch[c] = batch[c].cuda()
+    return batch
 
 
-def format_metric(metric):
-    assert type(metric) == dict
+def check(check_list):
+    # observe selected tensors during training.
+    logging.info('')
+    for i, t in enumerate(check_list):
+        d = np.array(t[1].detach().cpu())
+        logging.info(os.linesep.join(
+            [t[0] + '\t' + str(d.shape), np.array2string(d, threshold=20)]
+        ) + os.linesep)
+
+
+def format_metric(result_dict):
+    assert type(result_dict) == dict
     format_str = []
-    for name in np.sort(list(metric.keys())):
-        m = metric[name]
+    for name in np.sort(list(result_dict.keys())):
+        m = result_dict[name]
         if type(m) is float or type(m) is np.float or type(m) is np.float32 or type(m) is np.float64:
             format_str.append('{}:{:<.4f}'.format(name, m))
         elif type(m) is int or type(m) is np.int or type(m) is np.int32 or type(m) is np.int64:
@@ -105,10 +74,11 @@ def format_metric(metric):
     return ','.join(format_str)
 
 
-def format_arg_str(args, max_len=20):
+def format_arg_str(args, exclude_lst, max_len=20):
     linesep = os.linesep
     arg_dict = vars(args)
-    keys, values = arg_dict.keys(), arg_dict.values()
+    keys = [k for k in arg_dict.keys() if k not in exclude_lst]
+    values = [arg_dict[k] for k in keys]
     key_title, value_title = 'Arguments', 'Values'
     key_max_len = max(map(lambda x: len(str(x)), keys))
     value_max_len = min(max(map(lambda x: len(str(x)), values)), max_len)
@@ -135,5 +105,9 @@ def check_dir(file_name):
         os.makedirs(dir_path)
 
 
-def non_increasing(l):
-    return all(x >= y for x, y in zip(l, l[1:]))
+def non_increasing(lst):
+    return all(x >= y for x, y in zip(lst, lst[1:]))
+
+
+def get_time():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

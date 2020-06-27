@@ -10,108 +10,92 @@ from models.BaseModel import BaseModel
 
 class CFKG(BaseModel):
     @staticmethod
-    def parse_model_args(parser, model_name='CFKG'):
+    def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
         parser.add_argument('--margin', type=float, default=0,
                             help='Margin in hinge loss.')
-        return BaseModel.parse_model_args(parser, model_name)
+        return BaseModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
         self.margin = args.margin
+        self.user_num = corpus.n_users
         self.relation_num = corpus.n_relations
-        BaseModel.__init__(self, args, corpus)
+        super().__init__(args, corpus)
 
     def _define_params(self):
-        # user and item embedding
         self.e_embeddings = torch.nn.Embedding(self.user_num + self.item_num, self.emb_size)
-        # relation embedding: 0-buy, 1-complement, 2-substitute
+        # ↑ user and item embeddings, user first
         self.r_embeddings = torch.nn.Embedding(self.relation_num, self.emb_size)
-        self.embeddings = ['e_embeddings', 'r_embeddings']
-
+        # ↑ relation embedding: 0-buy, 1-complement, 2-substitute
         self.loss_function = torch.nn.MarginRankingLoss(margin=self.margin)
 
     def forward(self, feed_dict):
-        self.check_list, self.embedding_l2 = [], []
-        head_ids = feed_dict['head_id']          # [batch_size]
-        relation_ids = feed_dict['relation_id']  # [batch_size]
+        self.check_list = []
+        head_ids = feed_dict['head_id']          # [batch_size, -1]
         tail_ids = feed_dict['tail_id']          # [batch_size, -1]
-        batch_size = feed_dict['batch_size']
+        relation_ids = feed_dict['relation_id']  # [batch_size, -1]
 
         head_vectors = self.e_embeddings(head_ids)
         tail_vectors = self.e_embeddings(tail_ids)
         relation_vectors = self.r_embeddings(relation_ids)
-        self.embedding_l2.extend([head_vectors, tail_vectors, relation_vectors])
 
-        prediction = -(((head_vectors + relation_vectors)[:, None, :] - tail_vectors)**2).sum(-1)
+        prediction = -((head_vectors + relation_vectors - tail_vectors)**2).sum(-1)
+        return prediction.view(feed_dict['batch_size'], -1)
 
-        out_dict = {'prediction': prediction.view(batch_size, -1), 'check': self.check_list}
-        return out_dict
+    def loss(self, predictions):
+        batch_size = predictions.shape[0]
+        pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
+        loss = self.loss_function(pos_pred, neg_pred, utils.numpy_to_torch(np.ones(batch_size * 2)))
+        return loss
 
-    def loss(self, feed_dict, predictions):
-        real_batch_size, predictions = feed_dict['batch_size'], predictions.flatten()
-        pos_pred, neg_pred = predictions[:real_batch_size * 2], predictions[real_batch_size * 2:]
-        loss = self.loss_function(pos_pred, neg_pred, utils.numpy_to_torch(np.ones(real_batch_size * 2)))
-        return loss.double()
+    class Dataset(BaseModel.Dataset):
+        def _prepare(self):
+            if self.phase == 'train':
+                interaction_df = pd.DataFrame({
+                    'head': self.data['user_id'],
+                    'tail': self.data['item_id'],
+                    'relation': np.zeros_like(self.data['user_id'])
+                })
+                self.data = utils.df_to_dict(pd.concat((self.corpus.relation_df, interaction_df), axis=0))
+                self.neg_heads = np.zeros(len(self), dtype=int)
+                self.neg_tails = np.zeros(len(self), dtype=int)
+            super()._prepare()
 
-    def get_feed_dict(self, corpus, data, batch_start, batch_size, phase):
-        batch_end = min(len(data), batch_start + batch_size)
-        real_batch_size = batch_end - batch_start
-
-        if phase == 'train':
-            head_ids = data['head'][batch_start: batch_start + real_batch_size].values
-            tail_ids = data['tail'][batch_start: batch_start + real_batch_size].values
-            relation_ids = data['relation'][batch_start: batch_start + real_batch_size].values
-            neg_heads, neg_tails = self.sample_negative_triplet(
-                corpus, real_batch_size, head_ids, tail_ids, relation_ids)
-            head_ids = head_ids + (relation_ids > 0).astype(int) * self.user_num
-            neg_heads = neg_heads + (relation_ids > 0).astype(int) * self.user_num
-            head_ids = np.concatenate((head_ids, head_ids, head_ids, neg_heads))
-            tail_ids = np.concatenate((tail_ids, tail_ids, neg_tails, tail_ids))
-            tail_ids = np.expand_dims(tail_ids, -1)
-            relation_ids = np.tile(relation_ids, 4)
-        else:
-            head_ids = data['user_id'][batch_start: batch_start + real_batch_size].values
-            item_ids = data['item_id'][batch_start: batch_start + real_batch_size].values
-            neg_items = data['neg_items'][batch_start: batch_start + real_batch_size].tolist()
-            tail_ids = np.concatenate([np.expand_dims(item_ids, -1), neg_items], axis=1)
-            relation_ids = np.zeros_like(head_ids)
-        tail_ids = tail_ids + self.user_num
-
-        feed_dict = {
-            'head_id': utils.numpy_to_torch(head_ids),          # [batch_size]
-            'relation_id': utils.numpy_to_torch(relation_ids),  # [batch_size]
-            'tail_id': utils.numpy_to_torch(tail_ids),          # [batch_size, -1]
-            'batch_size': real_batch_size
-        }
-        return feed_dict
-
-    def prepare_batches(self, corpus, data, batch_size, phase):
-        if phase == 'train':
-            interaction_data = pd.DataFrame({
-                'head': data['user_id'].values,
-                'tail': data['item_id'].values,
-                'relation': np.zeros_like(data['user_id'].values)
-            })
-            data = pd.concat((corpus.relation_df, interaction_data), axis=0)
-            data = data.sample(frac=1).reset_index(drop=True)
-        return BaseModel.prepare_batches(self, corpus, data, batch_size, phase)
-
-    def sample_negative_triplet(self, corpus, real_batch_size, head_ids, tail_ids, relation_ids):
-        neg_tails = np.random.randint(1, self.item_num, size=real_batch_size)
-        neg_heads = np.zeros(real_batch_size, dtype=int)
-        for i in range(real_batch_size):
-            if relation_ids[i] == 0:
-                while neg_tails[i] in corpus.user_clicked_set[head_ids[i]]:
-                    neg_tails[i] = np.random.randint(1, self.item_num)
-                neg_heads[i] = np.random.randint(1, self.user_num)
-                while tail_ids[i] in corpus.user_clicked_set[neg_heads[i]]:
-                    neg_heads[i] = np.random.randint(1, self.user_num)
+        def _get_feed_dict(self, index):
+            if self.phase == 'train':
+                head, tail = self.data['head'][index], self.data['tail'][index]
+                relation = self.data['relation'][index]
+                head_id = np.array([head, head, head, self.neg_heads[index]])
+                tail_id = np.array([tail, tail, self.neg_tails[index], tail])
+                relation_id = np.array([relation] * 4)
+                if relation > 0:  # head is an item
+                    head_id = head_id + self.corpus.n_users
             else:
-                while (head_ids[i], relation_ids[i], neg_tails[i]) in corpus.triplet_set:
-                    neg_tails[i] = np.random.randint(1, self.item_num)
-                neg_heads[i] = np.random.randint(1, self.item_num)
-                while (neg_heads[i], relation_ids[i], tail_ids[i]) in corpus.triplet_set:
-                    neg_heads[i] = np.random.randint(1, self.item_num)
-        return neg_heads, neg_tails
+                target_item = self.data['item_id'][index]
+                neg_items = self.neg_items[index]
+                tail_id = np.concatenate([[target_item], neg_items])
+                head_id = self.data['user_id'][index] * np.ones_like(tail_id)
+                relation_id = np.zeros_like(tail_id)
+            tail_id += self.corpus.n_users  # tail must be an item
+
+            feed_dict = {'head_id': head_id, 'tail_id': tail_id, 'relation_id': relation_id}
+            return feed_dict
+
+        def negative_sampling(self):
+            for i in range(len(self)):
+                head, tail, relation = self.data['head'][i], self.data['tail'][i], self.data['relation'][i]
+                self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
+                if relation == 0:
+                    self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
+                    while self.neg_tails[i] in self.corpus.user_clicked_set[head]:
+                        self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
+                    while tail in self.corpus.user_clicked_set[self.neg_heads[i]]:
+                        self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
+                else:
+                    self.neg_heads[i] = np.random.randint(1, self.corpus.n_items)
+                    while (head, relation, self.neg_tails[i]) in self.corpus.triplet_set:
+                        self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
+                    while (self.neg_heads[i], relation, tail) in self.corpus.triplet_set:
+                        self.neg_heads[i] = np.random.randint(1, self.corpus.n_items)
