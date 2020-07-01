@@ -1,20 +1,18 @@
 # ReChorus
-This repository provides a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It decomposes the whole process into three modules:
+ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partly alleviate the problem that different papers adopt different experimental settings, so as to form a "Chorus" of recommendation algorithms. 
+
+This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familar with classical methods. The characteristics of our framework can be summarized as follows:
+
+- **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments
+- **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models 
+- **Agile**: concentrate on your model design in a single file and implement new models quickly
+- **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers
+
+Generally, ReChorus decomposes the whole process into three modules:
 
 - [Reader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py): read dataset into DataFrame and append necessary information to each instance
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
 - [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches
-
-
-
-With this framework, we can easily compare different state-of-the-art models under the same experimental setting. The characteristics of our framework can be summarized as follows:
-
-- **Light**: the framework is accomplished in less than a thousand lines of code, and a new model can be defined with dozens of lines
-- **Efficient**: around 90% GPU utilization during training for deep models, and special implementations for the evaluation of Top-K recommendation
-- **Neat**: clean codes with adequate comments, as well as beautiful training logs
-- **Agile**: concentrate on your model design in a single model file and implement new models quickly
-- **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers
-
 
 
 ## Getting Started
