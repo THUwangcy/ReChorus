@@ -27,24 +27,15 @@ Generally we should define a new class inheriting *BaseModel*, as well as the in
 class NewModel(BaseModel):
     reader = 'BaseReader'  # assign a reader class, BaseReader by default
     runner = 'BaseRunner'  # assign a runner class, BaseRunner by default
-  
-    @staticmethod
-    def parse_model_args(parser):
-        # add some customized arguments in the model
-        return BaseModel.parse_model_args(parser)
-
-    def __init__(self, args, corpus):
-        # initialize some member variables
-        super().__init__(args, corpus)
 
     def _define_params(self):
         # define parameters in the model
 
     def forward(self, feed_dict):
         # generate prediction (ranking score according to tensors in feed_dict)
-        user_id = feed_dict['user_id']  # [batch_size]
         item_id = feed_dict['item_id']  # [batch_size, -1]
-        prediction = ...
+        user_id = feed_dict['user_id']  # [batch_size]
+        prediction = (...)
         return prediction.view(feed_dict['batch_size'], -1)
     
     class Dataset(BaseModel.Dataset):

@@ -51,7 +51,7 @@ We have implemented the following methods (still updating):
 - SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
 - TiSASRec (WSDM'20): [Time Interval Aware Self-Attention for Sequential Recommendation](https://dl.acm.org/doi/pdf/10.1145/3336191.3371786)
 - CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540)
-- SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
+- SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): [Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
 
 
