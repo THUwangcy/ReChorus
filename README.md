@@ -3,9 +3,9 @@ ReChorus is a general PyTorch framework for Top-K recommendation with implicit f
 
 This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familar with classical methods. The characteristics of our framework can be summarized as follows:
 
+- **Agile**: concentrate on your model design in a single file and implement new models quickly
 - **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments
 - **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models 
-- **Agile**: concentrate on your model design in a single file and implement new models quickly
 - **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers
 
 Generally, ReChorus decomposes the whole process into three modules:
@@ -48,9 +48,9 @@ We have implemented the following methods (still updating):
 - NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
 - SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
 - TiSASRec (WSDM'20): [Time Interval Aware Self-Attention for Sequential Recommendation](https://dl.acm.org/doi/pdf/10.1145/3336191.3371786)
-- CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540)
-- SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
-- Chorus (SIGIR'20): [Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
+- CFKG (MDPI'18): [Learning heterogeneous knowledge base embeddings for explainable recommendation](https://www.mdpi.com/1999-4893/11/9/137/pdf)
+- SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
+- Chorus (SIGIR'20): [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
 
 
 
@@ -68,8 +68,6 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4239 | 0.3018 |    8.7s    |              | √ |              |
 | [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4519 | 0.3335 |   4.3s   | √ | √ | √ |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4738 | 0.3448 |   4.9s   | √ | √ | √ |
-
-
 
 For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be **not optimal now**, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/utils/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
