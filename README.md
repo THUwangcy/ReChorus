@@ -29,7 +29,7 @@ pip install -r requirements.txt
 3. Run model with build-in dataset
 
 ```bash
-python main.py --model_name BPR --emb_size 64 --lr 1e-3 --lr 1e-6 --dataset Grocery_and_Gourmet_Food
+python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
 ```
 
 4. (optional) Run jupyter notebook in `data` folder to download and build new amazon datasets, or prepare your own datasets according to [README](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`

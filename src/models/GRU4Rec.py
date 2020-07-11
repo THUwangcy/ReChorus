@@ -61,5 +61,5 @@ class GRU4Rec(BaseModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             feed_dict['history_items'] = np.array(self.data['item_his'][index])
-            feed_dict['lengths'] = np.array(self.data['his_length'][index])
+            feed_dict['lengths'] = self.data['his_length'][index]
             return feed_dict
