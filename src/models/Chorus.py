@@ -36,7 +36,7 @@ class Chorus(SLRC):
             .format(corpus.dataset, self.emb_size, self.margin)
         if self.stage == 1:
             self.model_path = self.pretrain_path
-        self.relation_range = utils.numpy_to_torch(np.arange(corpus.n_relations))
+        self.relation_range = torch.from_numpy(np.arange(corpus.n_relations)).to(self.device)
 
     def actions_before_train(self):
         if self.stage == 2:
@@ -101,7 +101,7 @@ class Chorus(SLRC):
         betas = (self.betas(c_ids) + 1).clamp(min=1e-10, max=10)
         sigmas = (self.sigmas(c_ids) + 1).clamp(min=1e-10, max=10)
         mus = self.mus(c_ids) + 1
-        mask = (r_interval >= 0).double()  # mask positions where there is no corresponding relational history
+        mask = (r_interval >= 0).float()  # mask positions where there is no corresponding relational history
         temporal_decay = self.kernel_functions(r_interval * mask, betas, sigmas, mus)
         temporal_decay = temporal_decay * mask  # [batch_size, -1, relation_num]
 
@@ -138,7 +138,8 @@ class Chorus(SLRC):
         if self.stage == 1:
             batch_size = predictions.shape[0]
             pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
-            loss = self.kg_loss(pos_pred, neg_pred, utils.numpy_to_torch(np.ones(batch_size * 2)))
+            target = torch.from_numpy(np.ones(batch_size * 2)).to(self.device)
+            loss = self.kg_loss(pos_pred, neg_pred, target)
         else:
             loss = super().loss(predictions)
         return loss

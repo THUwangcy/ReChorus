@@ -47,7 +47,8 @@ class CFKG(BaseModel):
     def loss(self, predictions):
         batch_size = predictions.shape[0]
         pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
-        loss = self.loss_function(pos_pred, neg_pred, utils.numpy_to_torch(np.ones(batch_size * 2)))
+        target = torch.from_numpy(np.ones(batch_size * 2)).to(self.device)
+        loss = self.loss_function(pos_pred, neg_pred, target)
         return loss
 
     class Dataset(BaseModel.Dataset):

@@ -53,7 +53,7 @@ class SLRC(BaseModel):
         alphas, pis = self.alphas(c_ids), self.pis(c_ids) + 0.5
         betas, mus = self.betas(c_ids) + 1., self.mus(c_ids) + 1.
         sigmas = (self.sigmas(c_ids) + 1.).clamp(min=1e-10, max=10)
-        mask = (r_intervals >= 0).double()
+        mask = (r_intervals >= 0).float()
         delta_t = r_intervals * mask
         norm_dist = torch.distributions.normal.Normal(mus, sigmas)
         exp_dist = torch.distributions.exponential.Exponential(betas)
@@ -106,5 +106,5 @@ class SLRC(BaseModel):
 
             feed_dict['user_id'] = user_id
             feed_dict['category_id'] = np.array(category_id)
-            feed_dict['relational_interval'] = np.array(relational_interval)
+            feed_dict['relational_interval'] = np.array(relational_interval, dtype=np.float32)
             return feed_dict

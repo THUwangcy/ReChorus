@@ -39,6 +39,7 @@ class BaseModel(torch.nn.Module):
 
     def __init__(self, args, corpus):
         super(BaseModel, self).__init__()
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model_path = args.model_path
         self.num_neg = args.num_neg
         self.dropout = args.dropout

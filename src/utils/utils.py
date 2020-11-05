@@ -37,18 +37,10 @@ def df_to_dict(df):
     return res
 
 
-def numpy_to_torch(d, gpu=True):
-    t = torch.from_numpy(d)
-    if gpu and torch.cuda.device_count() > 0:
-        t = t.cuda()
-    return t
-
-
-def batch_to_gpu(batch):
-    if torch.cuda.device_count() > 0:
-        for c in batch:
-            if type(batch[c]) is torch.Tensor:
-                batch[c] = batch[c].cuda()
+def batch_to_gpu(batch, device):
+    for c in batch:
+        if type(batch[c]) is torch.Tensor:
+            batch[c] = batch[c].to(device)
     return batch
 
 

@@ -37,11 +37,13 @@ class BaseReader(object):
         logging.info('Reading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
         self.data_df, self.item_meta_df = dict(), pd.DataFrame()
         self._read_preprocessed_df()
+        self.all_df = pd.concat([df[['user_id', 'item_id', 'time']] for df in self.data_df.values()])
 
         logging.info('Formating data type...')
         for df in list(self.data_df.values()) + [self.item_meta_df]:
             for col in df.columns:
-                df[col] = df[col].apply(lambda x: eval(str(x)))
+                if pd.api.types.is_string_dtype(df[col]):
+                    df[col] = df[col].apply(lambda x: eval(str(x)))
 
         logging.info('Constructing relation triplets...')
         self.triplet_set = set()
@@ -61,7 +63,6 @@ class BaseReader(object):
         self.relation_df['tail'] = tails
 
         logging.info('Counting dataset statistics...')
-        self.all_df = pd.concat([self.data_df[key][['user_id', 'item_id', 'time']] for key in ['train', 'dev', 'test']])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
         self.n_relations = self.relation_df['relation'].max() + 1
         logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(self.n_users, self.n_items, len(self.all_df)))

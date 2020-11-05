@@ -147,7 +147,7 @@ class BaseRunner(object):
         dl = DataLoader(data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
                         collate_fn=data.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, desc='Epoch {:<3}'.format(epoch), ncols=100, mininterval=1):
-            batch = utils.batch_to_gpu(batch)
+            batch = utils.batch_to_gpu(batch, model.device)
             model.optimizer.zero_grad()
             prediction = model(batch)
             loss = model.loss(prediction)
@@ -183,7 +183,7 @@ class BaseRunner(object):
         dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
                         collate_fn=data.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
-            prediction = model(utils.batch_to_gpu(batch))
+            prediction = model(utils.batch_to_gpu(batch, model.device))
             predictions.extend(prediction.cpu().data.numpy())
         return np.array(predictions)
 

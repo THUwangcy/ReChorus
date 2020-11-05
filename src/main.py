@@ -41,10 +41,12 @@ def main():
     np.random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
     torch.cuda.manual_seed(args.random_seed)
+    torch.backends.cudnn.deterministic = True
 
     # GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    logging.info("# cuda devices: {}".format(torch.cuda.device_count()))
+    logging.info('cuda available: {}'.format(torch.cuda.is_available()))
+    logging.info('# cuda devices: {}'.format(torch.cuda.device_count()))
 
     # Read data
     corpus_path = os.path.join(args.path, args.dataset, model_name.reader + '.pkl')
@@ -59,11 +61,9 @@ def main():
     # Define model
     model = model_name(args, corpus)
     logging.info(model)
-    model = model.double()
     model.apply(model.init_weights)
     model.actions_before_train()
-    if torch.cuda.device_count() > 0:
-        model = model.cuda()
+    model.to(model.device)
 
     # Run model
     data_dict = dict()

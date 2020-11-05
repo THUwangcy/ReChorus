@@ -88,10 +88,10 @@ class TiSASRec(SASRec):
             his_vectors = self.dropout_layer(his_vectors)
             his_vectors = self.layer_norm(residual + his_vectors)
             # ↑ layer norm in the end is shown to be more effective
-        his_vectors = his_vectors * valid_his[:, :, None].double()
+        his_vectors = his_vectors * valid_his[:, :, None].float()
 
-        # his_vector = (his_vectors * (position == 1).double()[:, :, None]).sum(1)
-        his_vector = his_vectors.sum(1) / lengths[:, None].double()
+        # his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
+        his_vector = his_vectors.sum(1) / lengths[:, None].float()
         # ↑ average pooling is shown to be more effective than the most recent embedding
 
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
