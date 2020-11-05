@@ -9,6 +9,8 @@ from models.BaseModel import BaseModel
 
 
 class CFKG(BaseModel):
+    reader = 'KGReader'
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -47,7 +49,7 @@ class CFKG(BaseModel):
     def loss(self, predictions):
         batch_size = predictions.shape[0]
         pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
-        target = torch.from_numpy(np.ones(batch_size * 2)).to(self.device)
+        target = torch.from_numpy(np.ones(batch_size * 2, dtype=np.float32)).to(self.device)
         loss = self.loss_function(pos_pred, neg_pred, target)
         return loss
 

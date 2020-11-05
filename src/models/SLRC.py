@@ -8,6 +8,8 @@ from models.BaseModel import BaseModel
 
 
 class SLRC(BaseModel):
+    reader = 'KGReader'
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,

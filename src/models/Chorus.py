@@ -10,6 +10,7 @@ from models.SLRC import SLRC
 
 
 class Chorus(SLRC):
+    reader = 'KGReader'
     extra_log_args = ['margin', 'lr_scale', 'stage']
 
     @staticmethod
@@ -138,7 +139,7 @@ class Chorus(SLRC):
         if self.stage == 1:
             batch_size = predictions.shape[0]
             pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
-            target = torch.from_numpy(np.ones(batch_size * 2)).to(self.device)
+            target = torch.from_numpy(np.ones(batch_size * 2, dtype=np.float32)).to(self.device)
             loss = self.kg_loss(pos_pred, neg_pred, target)
         else:
             loss = super().loss(predictions)
