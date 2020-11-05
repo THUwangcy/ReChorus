@@ -5,46 +5,25 @@ import logging
 import torch
 import datetime
 import numpy as np
+import pandas as pd
+from typing import List, Dict, NoReturn, Any
 
 
-def evaluate_method(predictions, topk, metrics):
-    """
-    :param predictions: (-1, n_candidates) shape, the first column is the score for ground-truth item
-    :param topk: top-K values list
-    :param metrics: metrics string list
-    :return: a result dict, the keys are metrics@topk
-    """
-    evaluations = dict()
-    sort_idx = (-predictions).argsort(axis=1)
-    gt_rank = np.argwhere(sort_idx == 0)[:, 1] + 1
-    for k in topk:
-        hit = (gt_rank <= k)
-        for metric in metrics:
-            key = '{}@{}'.format(metric, k)
-            if metric == 'HR':
-                evaluations[key] = hit.mean()
-            elif metric == 'NDCG':
-                evaluations[key] = (hit / np.log2(gt_rank + 1)).mean()
-            else:
-                raise ValueError('Undefined evaluation metric: {}.'.format(metric))
-    return evaluations
-
-
-def df_to_dict(df):
+def df_to_dict(df: pd.DataFrame) -> dict:
     res = df.to_dict('list')
     for key in res:
         res[key] = np.array(res[key])
     return res
 
 
-def batch_to_gpu(batch, device):
+def batch_to_gpu(batch: dict, device) -> dict:
     for c in batch:
         if type(batch[c]) is torch.Tensor:
             batch[c] = batch[c].to(device)
     return batch
 
 
-def check(check_list):
+def check(check_list: List[tuple]) -> NoReturn:
     # observe selected tensors during training.
     logging.info('')
     for i, t in enumerate(check_list):
@@ -54,7 +33,7 @@ def check(check_list):
         ) + os.linesep)
 
 
-def format_metric(result_dict):
+def format_metric(result_dict: Dict[str, Any]) -> str:
     assert type(result_dict) == dict
     format_str = []
     for name in np.sort(list(result_dict.keys())):
@@ -66,7 +45,7 @@ def format_metric(result_dict):
     return ','.join(format_str)
 
 
-def format_arg_str(args, exclude_lst, max_len=20):
+def format_arg_str(args, exclude_lst: list, max_len=20) -> str:
     linesep = os.linesep
     arg_dict = vars(args)
     keys = [k for k in arg_dict.keys() if k not in exclude_lst]
@@ -90,14 +69,14 @@ def format_arg_str(args, exclude_lst, max_len=20):
     return res_str
 
 
-def check_dir(file_name):
+def check_dir(file_name: str) -> NoReturn:
     dir_path = os.path.dirname(file_name)
     if not os.path.exists(dir_path):
         print('make dirs:', dir_path)
         os.makedirs(dir_path)
 
 
-def non_increasing(lst):
+def non_increasing(lst: list) -> bool:
     return all(x >= y for x, y in zip(lst, lst[1:]))
 
 

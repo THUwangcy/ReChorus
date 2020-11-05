@@ -8,8 +8,10 @@ import numpy as np
 from time import time
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from typing import Dict, List, NoReturn
 
 from utils import utils
+from models.BaseModel import BaseModel
 
 
 class BaseRunner(object):
@@ -40,6 +42,29 @@ class BaseRunner(object):
         parser.add_argument('--metric', type=str, default='["NDCG","HR"]',
                             help='metrics: NDCG, HR')
         return parser
+
+    @staticmethod
+    def evaluate_method(predictions: np.ndarray, topk: list, metrics: list) -> Dict[str, float]:
+        """
+        :param predictions: (-1, n_candidates) shape, the first column is the score for ground-truth item
+        :param topk: top-K values list
+        :param metrics: metrics string list
+        :return: a result dict, the keys are metrics@topk
+        """
+        evaluations = dict()
+        sort_idx = (-predictions).argsort(axis=1)
+        gt_rank = np.argwhere(sort_idx == 0)[:, 1] + 1
+        for k in topk:
+            hit = (gt_rank <= k)
+            for metric in metrics:
+                key = '{}@{}'.format(metric, k)
+                if metric == 'HR':
+                    evaluations[key] = hit.mean()
+                elif metric == 'NDCG':
+                    evaluations[key] = (hit / np.log2(gt_rank + 1)).mean()
+                else:
+                    raise ValueError('Undefined evaluation metric: {}.'.format(metric))
+        return evaluations
 
     def __init__(self, args):
         self.epoch = args.epoch
@@ -88,7 +113,7 @@ class BaseRunner(object):
             raise ValueError("Unknown Optimizer: " + self.optimizer_name)
         return optimizer
 
-    def train(self, model, data_dict):
+    def train(self, model: torch.nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
         main_metric_results, dev_results, test_results = list(), list(), list()
         self._check_time(start=True)
         try:
@@ -135,7 +160,7 @@ class BaseRunner(object):
                      utils.format_metric(test_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
 
-    def fit(self, model, data, epoch=-1):
+    def fit(self, model: torch.nn.Module, data: BaseModel.Dataset, epoch=-1) -> float:
         gc.collect()
         torch.cuda.empty_cache()
         if model.optimizer is None:
@@ -154,24 +179,24 @@ class BaseRunner(object):
             loss.backward()
             model.optimizer.step()
             loss_lst.append(loss.detach().cpu().data.numpy())
-        return np.mean(loss_lst)
+        return np.mean(loss_lst).item()
 
-    def eval_termination(self, criterion):
+    def eval_termination(self, criterion: List[float]) -> bool:
         if len(criterion) > 20 and utils.non_increasing(criterion[-self.early_stop:]):
             return True
         elif len(criterion) - criterion.index(max(criterion)) > 20:
             return True
         return False
 
-    def evaluate(self, model, data, topks, metrics):
+    def evaluate(self, model: torch.nn.Module, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
         """
         Evaluate the results for an input dataset.
         :return: result dict (key: metric@k)
         """
         predictions = self.predict(model, data)
-        return utils.evaluate_method(predictions, topks, metrics)
+        return self.evaluate_method(predictions, topks, metrics)
 
-    def predict(self, model, data):
+    def predict(self, model: torch.nn.Module, data: BaseModel.Dataset) -> np.ndarray:
         """
         The returned prediction is a 2D-array, each row corresponds to all the candidates,
         and the ground-truth item poses the first.
@@ -187,7 +212,7 @@ class BaseRunner(object):
             predictions.extend(prediction.cpu().data.numpy())
         return np.array(predictions)
 
-    def print_res(self, model, data):
+    def print_res(self, model: torch.nn.Module, data: BaseModel.Dataset) -> str:
         """
         Construct the final result string before/after training
         :return: test result string

@@ -7,8 +7,10 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from torch.utils.data import Dataset as BaseDataset
 from torch.nn.utils.rnn import pad_sequence
+from typing import NoReturn, List
 
 from utils import utils
+from helpers.BaseReader import BaseReader
 
 
 class BaseModel(torch.nn.Module):
@@ -37,7 +39,7 @@ class BaseModel(torch.nn.Module):
         elif 'Embedding' in str(type(m)):
             torch.nn.init.normal_(m.weight, mean=0.0, std=0.01)
 
-    def __init__(self, args, corpus):
+    def __init__(self, args, corpus: BaseReader):
         super(BaseModel, self).__init__()
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model_path = args.model_path
@@ -55,10 +57,10 @@ class BaseModel(torch.nn.Module):
     """
     Methods must to override
     """
-    def _define_params(self):
+    def _define_params(self) -> NoReturn:
         self.item_bias = torch.nn.Embedding(self.item_num, 1)
 
-    def forward(self, feed_dict):
+    def forward(self, feed_dict: dict) -> torch.Tensor:
         """
         :param feed_dict: batch prepared in Dataset
         :return: prediction with shape [batch_size, n_candidates]
@@ -70,7 +72,7 @@ class BaseModel(torch.nn.Module):
     """
     Methods optional to override
     """
-    def loss(self, predictions):
+    def loss(self, predictions: torch.Tensor) -> torch.Tensor:
         """
         BPR ranking loss with optimization on multiple negative samples
         @{Recurrent neural networks with top-k gains for session-based recommendations}
@@ -79,12 +81,13 @@ class BaseModel(torch.nn.Module):
         """
         pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
         neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
-        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
-        loss = F.softplus(-(pos_pred - neg_pred)).mean()
+        loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
+        # neg_pred = (neg_pred * neg_softmax).sum(dim=1)
+        # loss = F.softplus(-(pos_pred - neg_pred)).mean()
         # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
-    def customize_parameters(self):
+    def customize_parameters(self) -> list:
         # customize optimizer settings for different parameters
         weight_p, bias_p = [], []
         for name, p in filter(lambda x: x[1].requires_grad, self.named_parameters()):
@@ -98,34 +101,34 @@ class BaseModel(torch.nn.Module):
     """
     Auxiliary methods
     """
-    def save_model(self, model_path=None):
+    def save_model(self, model_path=None) -> NoReturn:
         if model_path is None:
             model_path = self.model_path
         utils.check_dir(model_path)
         torch.save(self.state_dict(), model_path)
         logging.info('Save model to ' + model_path[:50] + '...')
 
-    def load_model(self, model_path=None):
+    def load_model(self, model_path=None) -> NoReturn:
         if model_path is None:
             model_path = self.model_path
         self.load_state_dict(torch.load(model_path))
         logging.info('Load model from ' + model_path)
 
-    def count_variables(self):
+    def count_variables(self) -> int:
         total_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return total_parameters
 
-    def actions_before_train(self):
+    def actions_before_train(self):  # e.g. re-initial some special parameters
         pass
 
-    def actions_after_train(self):
+    def actions_after_train(self):  # e.g. save selected parameters
         pass
 
     """
     Define dataset class for the model
     """
     class Dataset(BaseDataset):
-        def __init__(self, model, corpus, phase):
+        def __init__(self, model: torch.nn.Module, corpus: BaseReader, phase: str):
             self.model = model
             self.corpus = corpus
             self.phase = phase
@@ -139,29 +142,30 @@ class BaseModel(torch.nn.Module):
             self._prepare()
 
         def __len__(self):
-            for key in self.data:
-                return len(self.data[key])
+            if type(self.data) == dict:
+                for key in self.data:
+                    return len(self.data[key])
+            return len(self.data)
 
-        def __getitem__(self, index):
+        def __getitem__(self, index: int) -> dict:
             return self.buffer_dict[index] if self.buffer else self._get_feed_dict(index)
 
-        # Prepare model-specific variables and buffer feed dicts
-        def _prepare(self):
-            if self.buffer:
-                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1,
-                              desc=str('Prepare ' + self.phase)):
-                    self.buffer_dict[i] = self._get_feed_dict(i)
-
-        # Key method to construct input data for a single instance
-        def _get_feed_dict(self, index):
+        # ! Key method to construct input data for a single instance
+        def _get_feed_dict(self, index: int) -> dict:
             target_item = self.data['item_id'][index]
             neg_items = self.neg_items[index]
             item_ids = np.concatenate([[target_item], neg_items])
             feed_dict = {'item_id': item_ids}
             return feed_dict
 
+        # Prepare model-specific variables and buffer feed dicts
+        def _prepare(self) -> NoReturn:
+            if self.buffer:
+                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1, desc=('Prepare '+self.phase)):
+                    self.buffer_dict[i] = self._get_feed_dict(i)
+
         # Sample negative items for all the instances (called before each epoch)
-        def negative_sampling(self):
+        def negative_sampling(self) -> NoReturn:
             self.neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
             for i, u in enumerate(self.data['user_id']):
                 user_clicked_set = self.corpus.user_clicked_set[u]
@@ -170,7 +174,7 @@ class BaseModel(torch.nn.Module):
                         self.neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
 
         # Collate a batch according to the list of feed dicts
-        def collate_batch(self, feed_dicts):
+        def collate_batch(self, feed_dicts: List[dict]) -> dict:
             feed_dict = dict()
             for key in feed_dicts[0]:
                 stack_val = np.array([d[key] for d in feed_dicts])

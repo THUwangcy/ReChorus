@@ -34,7 +34,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_info(result):
+def find_info(result: str) -> dict:
     info = dict()
     prefix = ''
     for line in result:
