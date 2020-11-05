@@ -14,6 +14,8 @@ class SLRC(BaseModel):
                             help='Size of embedding vectors.')
         parser.add_argument('--time_scalar', type=int, default=60*60*24*100,
                             help='Time scalar for time intervals.')
+        parser.add_argument('--category_col', type=str, default='category',
+                            help='The name of category column in item_meta.csv.')
         return BaseModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
@@ -21,7 +23,11 @@ class SLRC(BaseModel):
         self.time_scalar = args.time_scalar
         self.user_num = corpus.n_users
         self.relation_num = corpus.n_relations
-        self.category_num = corpus.item_meta_df['category'].max() + 1
+        if args.category_col in corpus.item_meta_df.columns:
+            self.category_col = args.category_col
+            self.category_num = corpus.item_meta_df[self.category_col].max() + 1
+        else:
+            self.category_col, self.category_num = None, 1  # a virtual global category
         super().__init__(args, corpus)
 
     def _define_params(self):
@@ -67,7 +73,10 @@ class SLRC(BaseModel):
 
     class Dataset(BaseModel.Dataset):
         def _prepare(self):
-            self.item2cate = dict(zip(self.corpus.item_meta_df['item_id'], self.corpus.item_meta_df['category']))
+            category_col = self.model.category_col
+            items = self.corpus.item_meta_df['item_id']
+            categories = self.corpus.item_meta_df[category_col] if category_col is not None else np.zeros_like(items)
+            self.item2cate = dict(zip(items, categories))
             super()._prepare()
 
         def _get_feed_dict(self, index):
@@ -82,6 +91,12 @@ class SLRC(BaseModel):
             relational_interval = list()
             for i, target_item in enumerate(feed_dict['item_id']):
                 interval = np.ones(self.corpus.n_relations, dtype=float) * -1
+                # reserve the first dimension for the repeat consumption interval
+                for j in range(len(history_item))[::-1]:
+                    if history_item[j] == target_item:
+                        interval[0] = (time - history_time[j]) / self.model.time_scalar
+                        break
+                # the rest for relational intervals
                 for r_idx in range(1, self.corpus.n_relations):
                     for j in range(len(history_item))[::-1]:
                         if (history_item[j], r_idx, target_item) in self.corpus.triplet_set:

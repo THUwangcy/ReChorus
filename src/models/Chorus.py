@@ -32,7 +32,7 @@ class Chorus(SLRC):
         super().__init__(args, corpus)
 
         assert self.stage in [1, 2]
-        self.pretrain_path = '../model/KG/KG__{}__emb_size={}__margin={}.pt' \
+        self.pretrain_path = '../model/Chorus/KG__{}__emb_size={}__margin={}.pt' \
             .format(corpus.dataset, self.emb_size, self.margin)
         if self.stage == 1:
             self.model_path = self.pretrain_path
