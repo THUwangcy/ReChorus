@@ -128,9 +128,9 @@ class BaseModel(torch.nn.Module):
     Define dataset class for the model
     """
     class Dataset(BaseDataset):
-        def __init__(self, model: torch.nn.Module, corpus: BaseReader, phase: str):
-            self.model = model
-            self.corpus = corpus
+        def __init__(self, model, corpus, phase: str):
+            self.model = model  # model object reference
+            self.corpus = corpus  # reader object reference
             self.phase = phase
             self.data = utils.df_to_dict(corpus.data_df[phase])
             # ↑ DataFrame is not compatible with multi-thread operations

@@ -1,11 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 import numpy as np
 import pandas as pd
 
 from utils import utils
 from models.BaseModel import BaseModel
+from helpers.KGReader import KGReader
 
 
 class CFKG(BaseModel):
@@ -19,7 +21,7 @@ class CFKG(BaseModel):
                             help='Margin in hinge loss.')
         return BaseModel.parse_model_args(parser)
 
-    def __init__(self, args, corpus):
+    def __init__(self, args, corpus: KGReader):
         self.emb_size = args.emb_size
         self.margin = args.margin
         self.user_num = corpus.n_users
@@ -27,16 +29,16 @@ class CFKG(BaseModel):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.e_embeddings = torch.nn.Embedding(self.user_num + self.item_num, self.emb_size)
+        self.e_embeddings = nn.Embedding(self.user_num + self.item_num, self.emb_size)
         # ↑ user and item embeddings, user first
-        self.r_embeddings = torch.nn.Embedding(self.relation_num, self.emb_size)
+        self.r_embeddings = nn.Embedding(self.relation_num, self.emb_size)
         # ↑ relation embedding: 0-buy, 1-complement, 2-substitute
-        self.loss_function = torch.nn.MarginRankingLoss(margin=self.margin)
+        self.loss_function = nn.MarginRankingLoss(margin=self.margin)
 
     def forward(self, feed_dict):
         self.check_list = []
-        head_ids = feed_dict['head_id']          # [batch_size, -1]
-        tail_ids = feed_dict['tail_id']          # [batch_size, -1]
+        head_ids = feed_dict['head_id']  # [batch_size, -1]
+        tail_ids = feed_dict['tail_id']  # [batch_size, -1]
         relation_ids = feed_dict['relation_id']  # [batch_size, -1]
 
         head_vectors = self.e_embeddings(head_ids)

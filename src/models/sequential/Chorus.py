@@ -2,11 +2,12 @@
 
 import os
 import torch
+import torch.nn as nn
+import torch.distributions
 import numpy as np
 
 from utils import utils
-from models.BaseModel import BaseModel
-from models.SLRC import SLRC
+from models.sequential.SLRC import SLRC
 
 
 class Chorus(SLRC):
@@ -16,9 +17,9 @@ class Chorus(SLRC):
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--stage', type=int, default=2,
-                            help='Stage of training: 1-KG pretrain, 2-recommendation.')
+                            help='Stage of training: 1-KG_pretrain, 2-recommendation.')
         parser.add_argument('--lr_scale', type=float, default=0.1,
-                            help='Scale the lr for parameters in pretrained KG model.')
+                            help='Scale the lr for parameters in pre-trained KG model.')
         parser.add_argument('--margin', type=float, default=1,
                             help='Margin in hinge loss.')
         parser.add_argument('--base_method', type=str, default='BPR',
@@ -44,20 +45,20 @@ class Chorus(SLRC):
             if os.path.exists(self.pretrain_path):
                 self.load_model(self.pretrain_path)
             else:
-                raise ValueError('Pretrained KG model does not exist, please run with "--stage 1"')
+                raise ValueError('Pre-trained KG model does not exist, please run with "--stage 1"')
 
     def _define_params(self):
-        self.u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.r_embeddings = torch.nn.Embedding(self.relation_num, self.emb_size)
-        self.betas = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.mus = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.sigmas = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.prediction = torch.nn.Linear(self.emb_size, 1, bias=False)
-        self.user_bias = torch.nn.Embedding(self.user_num, 1)
-        self.item_bias = torch.nn.Embedding(self.item_num, 1)
+        self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.r_embeddings = nn.Embedding(self.relation_num, self.emb_size)
+        self.betas = nn.Embedding(self.category_num, self.relation_num)
+        self.mus = nn.Embedding(self.category_num, self.relation_num)
+        self.sigmas = nn.Embedding(self.category_num, self.relation_num)
+        self.prediction = nn.Linear(self.emb_size, 1, bias=False)
+        self.user_bias = nn.Embedding(self.user_num, 1)
+        self.item_bias = nn.Embedding(self.item_num, 1)
 
-        self.kg_loss = torch.nn.MarginRankingLoss(margin=self.margin)
+        self.kg_loss = nn.MarginRankingLoss(margin=self.margin)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -90,9 +91,9 @@ class Chorus(SLRC):
         return torch.stack(decay_lst, dim=2)
 
     def rec_forward(self, feed_dict):
-        u_ids = feed_dict['user_id']                   # [batch_size]
-        i_ids = feed_dict['item_id']                   # [batch_size, -1]
-        c_ids = feed_dict['category_id']               # [batch_size, -1]
+        u_ids = feed_dict['user_id']  # [batch_size]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
+        c_ids = feed_dict['category_id']  # [batch_size, -1]
         r_interval = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
 
         u_vectors = self.u_embeddings(u_ids)
@@ -123,8 +124,8 @@ class Chorus(SLRC):
         return prediction.view(feed_dict['batch_size'], -1)
 
     def kg_forward(self, feed_dict):
-        head_ids = feed_dict['head_id']          # [batch_size, 4]
-        tail_ids = feed_dict['tail_id']          # [batch_size, 4]
+        head_ids = feed_dict['head_id']  # [batch_size, 4]
+        tail_ids = feed_dict['tail_id']  # [batch_size, 4]
         relation_ids = feed_dict['relation_id']  # [batch_size, 4]
 
         head_vectors = self.i_embeddings(head_ids)

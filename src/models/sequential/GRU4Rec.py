@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 import numpy as np
 
 from models.BaseModel import BaseModel
@@ -21,15 +22,15 @@ class GRU4Rec(BaseModel):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.rnn = torch.nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
-        self.out = torch.nn.Linear(self.hidden_size, self.emb_size, bias=False)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.rnn = nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
+        self.out = nn.Linear(self.hidden_size, self.emb_size, bias=False)
 
     def forward(self, feed_dict):
         self.check_list = []
-        i_ids = feed_dict['item_id']          # [batch_size, -1]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
-        lengths = feed_dict['lengths']        # [batch_size]
+        lengths = feed_dict['lengths']  # [batch_size]
 
         i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)

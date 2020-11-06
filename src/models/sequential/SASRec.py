@@ -1,11 +1,11 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 import numpy as np
 
-from models.GRU4Rec import GRU4Rec
+from models.sequential.GRU4Rec import GRU4Rec
 from utils import components
-from utils import utils
 
 
 class SASRec(GRU4Rec):
@@ -22,23 +22,23 @@ class SASRec(GRU4Rec):
         self.len_range = torch.from_numpy(np.arange(self.max_his)).to(self.device)
 
     def _define_params(self):
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.p_embeddings = torch.nn.Embedding(self.max_his + 1, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.p_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
 
-        self.Q = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.K = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.V = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.W1 = torch.nn.Linear(self.emb_size, self.emb_size)
-        self.W2 = torch.nn.Linear(self.emb_size, self.emb_size)
+        self.Q = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.K = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.V = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.W1 = nn.Linear(self.emb_size, self.emb_size)
+        self.W2 = nn.Linear(self.emb_size, self.emb_size)
 
         self.dropout_layer = torch.nn.Dropout(p=self.dropout)
         self.layer_norm = torch.nn.LayerNorm(self.emb_size)
 
     def forward(self, feed_dict):
         self.check_list = []
-        i_ids = feed_dict['item_id']          # [batch_size, -1]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
-        lengths = feed_dict['lengths']        # [batch_size]
+        lengths = feed_dict['lengths']  # [batch_size]
         batch_size, seq_len = history.shape
 
         valid_his = (history > 0).byte()
@@ -71,8 +71,8 @@ class SASRec(GRU4Rec):
             # ↑ layer norm in the end is shown to be more effective
         his_vectors = his_vectors * valid_his[:, :, None].float()
 
-        # his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
-        his_vector = his_vectors.sum(1) / lengths[:, None].float()
+        his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
+        # his_vector = his_vectors.sum(1) / lengths[:, None].float()
         # ↑ average pooling is shown to be more effective than the most recent embedding
 
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)

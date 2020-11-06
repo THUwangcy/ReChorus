@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 import numpy as np
 
-from models.SASRec import SASRec
+from models.sequential.SASRec import SASRec
 
 
 class TiSASRec(SASRec):
@@ -15,6 +16,7 @@ class TiSASRec(SASRec):
 
     def __init__(self, args, corpus):
         self.max_time = args.time_max
+        super().__init__(args, corpus)
 
         setattr(corpus, 'user_min_interval', dict())
         for u, user_df in corpus.all_df.groupby('user_id'):
@@ -23,31 +25,29 @@ class TiSASRec(SASRec):
             min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFF)
             corpus.user_min_interval[u] = min_interval
 
-        super().__init__(args, corpus)
-
     def _define_params(self):
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.p_k_embeddings = torch.nn.Embedding(self.max_his + 1, self.emb_size)
-        self.p_v_embeddings = torch.nn.Embedding(self.max_his + 1, self.emb_size)
-        self.t_k_embeddings = torch.nn.Embedding(self.max_time + 1, self.emb_size)
-        self.t_v_embeddings = torch.nn.Embedding(self.max_time + 1, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.p_k_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
+        self.p_v_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
+        self.t_k_embeddings = nn.Embedding(self.max_time + 1, self.emb_size)
+        self.t_v_embeddings = nn.Embedding(self.max_time + 1, self.emb_size)
 
-        self.Q = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.K = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.V = torch.nn.Linear(self.emb_size, self.emb_size, bias=False)
-        self.W1 = torch.nn.Linear(self.emb_size, self.emb_size)
-        self.W2 = torch.nn.Linear(self.emb_size, self.emb_size)
+        self.Q = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.K = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.V = nn.Linear(self.emb_size, self.emb_size, bias=False)
+        self.W1 = nn.Linear(self.emb_size, self.emb_size)
+        self.W2 = nn.Linear(self.emb_size, self.emb_size)
 
-        self.dropout_layer = torch.nn.Dropout(p=self.dropout)
-        self.layer_norm = torch.nn.LayerNorm(self.emb_size)
+        self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.layer_norm = nn.LayerNorm(self.emb_size)
 
     def forward(self, feed_dict):
         self.check_list = []
-        i_ids = feed_dict['item_id']                  # [batch_size, -1]
-        i_history = feed_dict['history_items']        # [batch_size, history_max]
-        t_history = feed_dict['history_times']        # [batch_size, history_max]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
+        i_history = feed_dict['history_items']  # [batch_size, history_max]
+        t_history = feed_dict['history_times']  # [batch_size, history_max]
         user_min_t = feed_dict['user_min_intervals']  # [batch_size]
-        lengths = feed_dict['lengths']                # [batch_size]
+        lengths = feed_dict['lengths']  # [batch_size]
         batch_size, seq_len = i_history.shape
 
         valid_his = (i_history > 0).byte()
@@ -90,8 +90,8 @@ class TiSASRec(SASRec):
             # ↑ layer norm in the end is shown to be more effective
         his_vectors = his_vectors * valid_his[:, :, None].float()
 
-        # his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
-        his_vector = his_vectors.sum(1) / lengths[:, None].float()
+        his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
+        # his_vector = his_vectors.sum(1) / lengths[:, None].float()
         # ↑ average pooling is shown to be more effective than the most recent embedding
 
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)

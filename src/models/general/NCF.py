@@ -1,8 +1,9 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 
-from models.BPR import BPR
+from models.general.BPR import BPR
 
 
 class NCF(BPR):
@@ -17,18 +18,18 @@ class NCF(BPR):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.mf_u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
-        self.mf_i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.mlp_u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
-        self.mlp_i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
+        self.mf_u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.mf_i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.mlp_u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.mlp_i_embeddings = nn.Embedding(self.item_num, self.emb_size)
 
-        self.mlp = torch.nn.ModuleList([])
+        self.mlp = nn.ModuleList([])
         pre_size = 2 * self.emb_size
         for i, layer_size in enumerate(self.layers):
-            self.mlp.append(torch.nn.Linear(pre_size, layer_size))
+            self.mlp.append(nn.Linear(pre_size, layer_size))
             pre_size = layer_size
-        self.dropout_layer = torch.nn.Dropout(p=self.dropout)
-        self.prediction = torch.nn.Linear(pre_size + self.emb_size, 1, bias=False)
+        self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.prediction = nn.Linear(pre_size + self.emb_size, 1, bias=False)
 
     def forward(self, feed_dict):
         self.check_list = []

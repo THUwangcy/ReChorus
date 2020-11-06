@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-import torch
+import torch.nn as nn
 
 from models.BaseModel import BaseModel
 
@@ -18,10 +18,10 @@ class BPR(BaseModel):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.user_bias = torch.nn.Embedding(self.user_num, 1)
-        self.item_bias = torch.nn.Embedding(self.item_num, 1)
+        self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.user_bias = nn.Embedding(self.user_num, 1)
+        self.item_bias = nn.Embedding(self.item_num, 1)
 
     def forward(self, feed_dict):
         self.check_list = []

@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
 import numpy as np
 
-from models.GRU4Rec import GRU4Rec
+from models.sequential.GRU4Rec import GRU4Rec
 
 
 class NARM(GRU4Rec):
@@ -18,19 +19,19 @@ class NARM(GRU4Rec):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.encoder_g = torch.nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
-        self.encoder_l = torch.nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
-        self.A1 = torch.nn.Linear(self.hidden_size, self.attention_size, bias=False)
-        self.A2 = torch.nn.Linear(self.hidden_size, self.attention_size, bias=False)
-        self.attention_out = torch.nn.Linear(self.attention_size, 1, bias=False)
-        self.out = torch.nn.Linear(2 * self.hidden_size, self.emb_size, bias=False)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.encoder_g = nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
+        self.encoder_l = nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
+        self.A1 = nn.Linear(self.hidden_size, self.attention_size, bias=False)
+        self.A2 = nn.Linear(self.hidden_size, self.attention_size, bias=False)
+        self.attention_out = nn.Linear(self.attention_size, 1, bias=False)
+        self.out = nn.Linear(2 * self.hidden_size, self.emb_size, bias=False)
 
     def forward(self, feed_dict):
         self.check_list = []
-        i_ids = feed_dict['item_id']          # [batch_size, -1]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
-        lengths = feed_dict['lengths']        # [batch_size]
+        lengths = feed_dict['lengths']  # [batch_size]
 
         # Embedding Layer
         i_vectors = self.i_embeddings(i_ids)
@@ -44,7 +45,7 @@ class NARM(GRU4Rec):
         output_l, hidden_l = self.encoder_l(history_packed, None)
         output_l, _ = torch.nn.utils.rnn.pad_packed_sequence(output_l, batch_first=True)
         unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
-        output_l = output_l.index_select(dim=0, index=unsort_idx)      # [batch_size, history_max, emb_size]
+        output_l = output_l.index_select(dim=0, index=unsort_idx)  # [batch_size, history_max, emb_size]
         hidden_g = hidden_g[-1].index_select(dim=0, index=unsort_idx)  # [batch_size, emb_size]
 
         # Attention Layer

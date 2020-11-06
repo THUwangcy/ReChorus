@@ -8,8 +8,9 @@ import argparse
 import numpy as np
 import torch
 
-from models import *
 from helpers import *
+from models.general import *
+from models.sequential import *
 from utils import utils
 
 

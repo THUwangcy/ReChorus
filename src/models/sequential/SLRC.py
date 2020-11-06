@@ -1,10 +1,12 @@
 # -*- coding: UTF-8 -*-
 
 import torch
+import torch.nn as nn
+import torch.distributions
 import numpy as np
 
-from utils import utils
 from models.BaseModel import BaseModel
+from helpers.KGReader import KGReader
 
 
 class SLRC(BaseModel):
@@ -20,7 +22,7 @@ class SLRC(BaseModel):
                             help='The name of category column in item_meta.csv.')
         return BaseModel.parse_model_args(parser)
 
-    def __init__(self, args, corpus):
+    def __init__(self, args, corpus: KGReader):
         self.emb_size = args.emb_size
         self.time_scalar = args.time_scalar
         self.user_num = corpus.n_users
@@ -33,22 +35,22 @@ class SLRC(BaseModel):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.u_embeddings = torch.nn.Embedding(self.user_num, self.emb_size)
-        self.i_embeddings = torch.nn.Embedding(self.item_num, self.emb_size)
-        self.user_bias = torch.nn.Embedding(self.user_num, 1)
-        self.item_bias = torch.nn.Embedding(self.item_num, 1)
+        self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.user_bias = nn.Embedding(self.user_num, 1)
+        self.item_bias = nn.Embedding(self.item_num, 1)
 
-        self.alphas = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.pis = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.betas = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.sigmas = torch.nn.Embedding(self.category_num, self.relation_num)
-        self.mus = torch.nn.Embedding(self.category_num, self.relation_num)
+        self.alphas = nn.Embedding(self.category_num, self.relation_num)
+        self.pis = nn.Embedding(self.category_num, self.relation_num)
+        self.betas = nn.Embedding(self.category_num, self.relation_num)
+        self.sigmas = nn.Embedding(self.category_num, self.relation_num)
+        self.mus = nn.Embedding(self.category_num, self.relation_num)
 
     def forward(self, feed_dict):
         self.check_list = []
-        u_ids = feed_dict['user_id']                    # [batch_size]
-        i_ids = feed_dict['item_id']                    # [batch_size, -1]
-        c_ids = feed_dict['category_id']                # [batch_size, -1]
+        u_ids = feed_dict['user_id']  # [batch_size]
+        i_ids = feed_dict['item_id']  # [batch_size, -1]
+        c_ids = feed_dict['category_id']  # [batch_size, -1]
         r_intervals = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
 
         # Excitation

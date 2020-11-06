@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 
-import torch
+import torch.nn as nn
 
-from models.BPR import BPR
+from models.general.BPR import BPR
 
 
 class Tensor(BPR):
@@ -21,8 +21,8 @@ class Tensor(BPR):
 
     def _define_params(self):
         super()._define_params()
-        self.u_t_embeddings = torch.nn.Embedding(self.time_bin, self.emb_size)
-        self.i_t_embeddings = torch.nn.Embedding(self.time_bin, self.emb_size)
+        self.u_t_embeddings = nn.Embedding(self.time_bin, self.emb_size)
+        self.i_t_embeddings = nn.Embedding(self.time_bin, self.emb_size)
 
     def forward(self, feed_dict):
         self.check_list = []
