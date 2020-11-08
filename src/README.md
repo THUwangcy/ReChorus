@@ -7,14 +7,15 @@
 - `helpers\`
   - `BaseReader.py`: read dataset csv into DataFrame and append necessary information (e.g. interaction history)
   - `BaseRunner.py`: control the training and evaluation process of a model
+  - `...`: customize helpers with specific functions
 - `models\`
   - `BaseModel.py`: basic model class and dataset class, with some common functions of a model
   - `...`: customize models inherited from *BaseModel*
 - `utils\`
-  - `component.py`: common components for model definition (e.g. attention)
-  - `exp.py`: repeat experiments in *run.sh* and save averaged results to csv 
+  - `layers.py`: common modules for model definition (e.g. attention)
   - `utils.py`: some utils functions
 - `main.py`: main entrance, connect all the modules
+- `exp.py`: repeat experiments in *run.sh* and save averaged results to csv 
 - `run.sh`: running commands for each model
 
 

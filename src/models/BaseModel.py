@@ -24,7 +24,7 @@ class BaseModel(torch.nn.Module):
                             help='Model save path.')
         parser.add_argument('--num_neg', type=int, default=1,
                             help='The number of negative items during training.')
-        parser.add_argument('--dropout', type=float, default=0.2,
+        parser.add_argument('--dropout', type=float, default=0,
                             help='Dropout probability for each deep layer')
         parser.add_argument('--buffer', type=int, default=1,
                             help='Whether to buffer feed dicts for dev/test')

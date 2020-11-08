@@ -7,15 +7,16 @@ import argparse
 import re
 import traceback
 import numpy as np
+from typing import List
 
 
-# Repeat experiments in run.sh and save results to csv
-# Example: python utils/exp.py
+# Repeat experiments and save results to csv
+# Example: python exp.py --in_f run.sh --out_f exp.csv --n 5
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run")
-    parser.add_argument('--log_dir', nargs='?', default='../log/exp/',
+    parser.add_argument('--log_dir', nargs='?', default='../log/',
                         help='Log save dir.')
     parser.add_argument('--cmd_dir', nargs='?', default='./',
                         help='Command dir.')
@@ -34,7 +35,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_info(result: str) -> dict:
+def find_info(result: List[str]) -> dict:
     info = dict()
     prefix = ''
     for line in result:
