@@ -1,5 +1,7 @@
 # ReChorus
-ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partly alleviate the problem that different papers adopt different experimental settings, so as to form a "Chorus" of recommendation algorithms. 
+![logo](./log/_static/logo.png)
+
+ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partially alleviate the problem that different papers adopt non-comparable experimental settings, so as to form a "Chorus" of recommendation algorithms. 
 
 This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familar with classical methods. The characteristics of our framework can be summarized as follows:
 
@@ -51,6 +53,7 @@ We have implemented the following methods (still updating):
 - CFKG (MDPI'18): [Learning heterogeneous knowledge base embeddings for explainable recommendation](https://www.mdpi.com/1999-4893/11/9/137/pdf)
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
+- KDA (TOIS'21): Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation (accepted but not yet published)
 
 
 
@@ -66,27 +69,36 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.3917 | 0.2942 | 7.2s | √ | | |
 | [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/TiSASRec.py) | 0.3916 | 0.2922 | 35.7s | √ | | √ |
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4239 | 0.3018 |    8.7s    |              | √ |              |
-| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRC.py) | 0.4519 | 0.3335 |   4.3s   | √ | √ | √ |
+| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRCPlus.py) | 0.4519 | 0.3335 |   4.3s   | √ | √ | √ |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4738 | 0.3448 |   4.9s   | √ | √ | √ |
+| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/KDA.py) | 0.5185 | 0.3880 | 9.9s | √ | √ | √ |
 
-For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be **not optimal now**, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/utils/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
+For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be **not optimal now**, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
 
 
 ## Citation
 
-This is also our public implementation for the paper:
+This is also our public implementation for the following papers (codes and datasets to reproduce the results can be found at corresponding branch):
 
-*Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
-
-Checkout to `SIGIR20` branch to reproduce the results.
+* *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
 
 ```
 git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
 ```
 
+* *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation. In TOIS'21.*
+
 **Please cite this paper if you use our codes. Thanks!**
 
-
+```
+@inproceedings{wang2020make,
+  title={Make it a chorus: knowledge-and time-aware item modeling for sequential recommendation},
+  author={Wang, Chenyang and Zhang, Min and Ma, Weizhi and Liu, Yiqun and Ma, Shaoping},
+  booktitle={Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval},
+  pages={109--118},
+  year={2020}
+}
+```
 
 Author: Chenyang Wang (THUwangcy@gmail.com)

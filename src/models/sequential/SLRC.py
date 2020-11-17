@@ -8,7 +8,10 @@ import numpy as np
 from models.BaseModel import BaseModel
 from helpers.KGReader import KGReader
 
-
+"""
+  Also include the excitation of relational history interactions (not only repeat consumptions),
+  and related parameters are category-specific instead of item-specific.
+"""
 class SLRC(BaseModel):
     reader = 'KGReader'
 
@@ -18,7 +21,7 @@ class SLRC(BaseModel):
                             help='Size of embedding vectors.')
         parser.add_argument('--time_scalar', type=int, default=60*60*24*100,
                             help='Time scalar for time intervals.')
-        parser.add_argument('--category_col', type=str, default='category',
+        parser.add_argument('--category_col', type=str, default='i_category',
                             help='The name of category column in item_meta.csv.')
         return BaseModel.parse_model_args(parser)
 
@@ -26,7 +29,7 @@ class SLRC(BaseModel):
         self.emb_size = args.emb_size
         self.time_scalar = args.time_scalar
         self.user_num = corpus.n_users
-        self.relation_num = corpus.n_relations
+        self.relation_num = len(corpus.item_relations) + 1
         if args.category_col in corpus.item_meta_df.columns:
             self.category_col = args.category_col
             self.category_num = corpus.item_meta_df[self.category_col].max() + 1
@@ -73,7 +76,7 @@ class SLRC(BaseModel):
         base_intensity = base_intensity + u_bias + i_bias
 
         prediction = base_intensity + excitation
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
     class Dataset(BaseModel.Dataset):
         def _prepare(self):
@@ -94,14 +97,14 @@ class SLRC(BaseModel):
             category_id = [self.item2cate[x] for x in feed_dict['item_id']]
             relational_interval = list()
             for i, target_item in enumerate(feed_dict['item_id']):
-                interval = np.ones(self.corpus.n_relations, dtype=float) * -1
+                interval = np.ones(self.model.relation_num, dtype=float) * -1
                 # reserve the first dimension for the repeat consumption interval
                 for j in range(len(history_item))[::-1]:
                     if history_item[j] == target_item:
                         interval[0] = (time - history_time[j]) / self.model.time_scalar
                         break
                 # the rest for relational intervals
-                for r_idx in range(1, self.corpus.n_relations):
+                for r_idx in range(1, self.model.relation_num):
                     for j in range(len(history_item))[::-1]:
                         if (history_item[j], r_idx, target_item) in self.corpus.triplet_set:
                             interval[r_idx] = (time - history_time[j]) / self.model.time_scalar

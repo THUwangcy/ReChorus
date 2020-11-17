@@ -50,7 +50,7 @@ class GRU4Rec(BaseModel):
 
         # Predicts
         prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1)
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
     class Dataset(BaseModel.Dataset):
         def _prepare(self):

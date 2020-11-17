@@ -16,25 +16,25 @@ class MultiHeadAttention(nn.Module):
         self.d_k = self.d_model // self.h
         self.kq_same = kq_same
 
-        self.v_linear = nn.Linear(d_model, d_model, bias=bias)
-        self.k_linear = nn.Linear(d_model, d_model, bias=bias)
         if not kq_same:
             self.q_linear = nn.Linear(d_model, d_model, bias=bias)
+        self.k_linear = nn.Linear(d_model, d_model, bias=bias)
+        self.v_linear = nn.Linear(d_model, d_model, bias=bias)
 
-    def forward(self, q, k, v, mask):
+    def forward(self, q, k, v, mask=None):
         bs = q.size(0)
 
         # perform linear operation and split into h heads
-        k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
         if not self.kq_same:
             q = self.q_linear(q).view(bs, -1, self.h, self.d_k)
         else:
             q = self.k_linear(q).view(bs, -1, self.h, self.d_k)
+        k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
         v = self.v_linear(v).view(bs, -1, self.h, self.d_k)
 
         # transpose to get dimensions bs * h * -1 * d_k
-        k = k.transpose(1, 2)
         q = q.transpose(1, 2)
+        k = k.transpose(1, 2)
         v = v.transpose(1, 2)
 
         # calculate attention using function we will define next
@@ -45,13 +45,15 @@ class MultiHeadAttention(nn.Module):
         return output
 
     @staticmethod
-    def scaled_dot_product_attention(q, k, v, d_k, mask):
+    def scaled_dot_product_attention(q, k, v, d_k, mask=None):
         """
         This is called by Multi-head attention object to find the values.
         """
         scores = torch.matmul(q, k.transpose(-2, -1)) / d_k ** 0.5  # bs, head, q_len, k_len
-        scores.masked_fill_(mask == 0, -np.inf)
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, -np.inf)
         scores = (scores - scores.max()).softmax(dim=-1)
+        scores = scores.masked_fill(torch.isnan(scores), 0)
         output = torch.matmul(scores, v)  # bs, head, q_len, d_k
         return output
 
@@ -76,7 +78,7 @@ class TransformerLayer(nn.Module):
         self.layer_norm2 = nn.LayerNorm(d_model)
         self.dropout2 = nn.Dropout(dropout)
 
-    def forward(self, seq, mask):
+    def forward(self, seq, mask=None):
         context = self.masked_attn_head(seq, seq, seq, mask)
         context = self.layer_norm1(self.dropout1(context) + seq)
         output = self.linear1(context).relu()

@@ -33,6 +33,13 @@ def check(check_list: List[tuple]) -> NoReturn:
         ) + os.linesep)
 
 
+def eval_list_columns(df: pd.DataFrame) -> pd.DataFrame:
+    for col in df.columns:
+        if pd.api.types.is_string_dtype(df[col]):
+            df[col] = df[col].apply(lambda x: eval(str(x)))  # some list-value columns
+    return df
+
+
 def format_metric(result_dict: Dict[str, Any]) -> str:
     assert type(result_dict) == dict
     format_str = []

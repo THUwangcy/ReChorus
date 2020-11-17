@@ -1,13 +1,14 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import time
 import pickle
 import argparse
 import logging
 import numpy as np
 import pandas as pd
 from typing import NoReturn
+
+from utils import utils
 
 
 class BaseReader(object):
@@ -34,18 +35,17 @@ class BaseReader(object):
 
     def _read_data(self) -> NoReturn:
         logging.info('Reading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
-        self.data_df, self.item_meta_df = dict(), pd.DataFrame()
-        self._read_preprocessed_df()
-
-        logging.info('Formating data type...')
-        for df in list(self.data_df.values()) + [self.item_meta_df]:
-            for col in df.columns:
-                if pd.api.types.is_string_dtype(df[col]):
-                    df[col] = df[col].apply(lambda x: eval(str(x)))
+        self.data_df = dict()
+        for key in ['train', 'dev', 'test']:
+            self.data_df[key] = pd.read_csv(os.path.join(self.prefix, self.dataset, key + '.csv'), sep=self.sep)
+            self.data_df[key] = utils.eval_list_columns(self.data_df[key])
 
         logging.info('Counting dataset statistics...')
         self.all_df = pd.concat([df[['user_id', 'item_id', 'time']] for df in self.data_df.values()])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
+        for key in ['dev', 'test']:
+            neg_items = np.array(self.data_df[key]['neg_items'].tolist())
+            assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones
         logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(self.n_users, self.n_items, len(self.all_df)))
 
     def _append_his_info(self) -> NoReturn:
@@ -75,14 +75,6 @@ class BaseReader(object):
         self.user_clicked_set = dict()
         for uid in user_his_dict:
             self.user_clicked_set[uid] = set([x[0] for x in user_his_dict[uid]])
-
-    def _read_preprocessed_df(self) -> NoReturn:
-        for key in ['train', 'dev', 'test']:
-            self.data_df[key] = pd.read_csv(os.path.join(self.prefix, self.dataset, key + '.csv'), sep=self.sep)
-
-        item_meta_path = os.path.join(self.prefix, self.dataset, 'item_meta.csv')
-        if os.path.exists(item_meta_path):
-            self.item_meta_df = pd.read_csv(item_meta_path, sep=self.sep)
 
 
 if __name__ == '__main__':

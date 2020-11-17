@@ -35,7 +35,7 @@ class BPR(BaseModel):
 
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)  # [batch_size, -1]
         prediction = prediction + u_bias + i_bias
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
     class Dataset(BaseModel.Dataset):
         def _get_feed_dict(self, index):

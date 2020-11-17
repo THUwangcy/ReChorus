@@ -66,7 +66,7 @@ class Chorus(SLRC):
             prediction = self.kg_forward(feed_dict)
         else:
             prediction = self.rec_forward(feed_dict)
-        return prediction
+        return {'prediction': prediction}
 
     def kernel_functions(self, r_interval, betas, sigmas, mus):
         """
@@ -136,14 +136,15 @@ class Chorus(SLRC):
         prediction = -((head_vectors + relation_vectors - tail_vectors) ** 2).sum(-1)
         return prediction
 
-    def loss(self, predictions):
+    def loss(self, out_dict):
         if self.stage == 1:
+            predictions = out_dict['prediction']
             batch_size = predictions.shape[0]
             pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
             target = torch.from_numpy(np.ones(batch_size * 2, dtype=np.float32)).to(self.device)
             loss = self.kg_loss(pos_pred, neg_pred, target)
         else:
-            loss = super().loss(predictions)
+            loss = super().loss(out_dict)
         return loss
 
     def customize_parameters(self):

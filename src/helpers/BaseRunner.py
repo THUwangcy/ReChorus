@@ -3,6 +3,7 @@
 import os
 import gc
 import torch
+import torch.nn as nn
 import logging
 import numpy as np
 from time import time
@@ -113,7 +114,7 @@ class BaseRunner(object):
             raise ValueError("Unknown Optimizer: " + self.optimizer_name)
         return optimizer
 
-    def train(self, model: torch.nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
+    def train(self, model: nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
         main_metric_results, dev_results, test_results = list(), list(), list()
         self._check_time(start=True)
         try:
@@ -160,7 +161,7 @@ class BaseRunner(object):
                      utils.format_metric(test_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
 
-    def fit(self, model: torch.nn.Module, data: BaseModel.Dataset, epoch=-1) -> float:
+    def fit(self, model: nn.Module, data: BaseModel.Dataset, epoch=-1) -> float:
         gc.collect()
         torch.cuda.empty_cache()
         if model.optimizer is None:
@@ -174,8 +175,8 @@ class BaseRunner(object):
         for batch in tqdm(dl, leave=False, desc='Epoch {:<3}'.format(epoch), ncols=100, mininterval=1):
             batch = utils.batch_to_gpu(batch, model.device)
             model.optimizer.zero_grad()
-            prediction = model(batch)
-            loss = model.loss(prediction)
+            out_dict = model(batch)
+            loss = model.loss(out_dict)
             loss.backward()
             model.optimizer.step()
             loss_lst.append(loss.detach().cpu().data.numpy())
@@ -188,7 +189,7 @@ class BaseRunner(object):
             return True
         return False
 
-    def evaluate(self, model: torch.nn.Module, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
+    def evaluate(self, model: nn.Module, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
         """
         Evaluate the results for an input dataset.
         :return: result dict (key: metric@k)
@@ -196,7 +197,7 @@ class BaseRunner(object):
         predictions = self.predict(model, data)
         return self.evaluate_method(predictions, topks, metrics)
 
-    def predict(self, model: torch.nn.Module, data: BaseModel.Dataset) -> np.ndarray:
+    def predict(self, model: nn.Module, data: BaseModel.Dataset) -> np.ndarray:
         """
         The returned prediction is a 2D-array, each row corresponds to all the candidates,
         and the ground-truth item poses the first.
@@ -208,11 +209,11 @@ class BaseRunner(object):
         dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
                         collate_fn=data.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
-            prediction = model(utils.batch_to_gpu(batch, model.device))
+            prediction = model(utils.batch_to_gpu(batch, model.device))['prediction']
             predictions.extend(prediction.cpu().data.numpy())
         return np.array(predictions)
 
-    def print_res(self, model: torch.nn.Module, data: BaseModel.Dataset) -> str:
+    def print_res(self, model: nn.Module, data: BaseModel.Dataset) -> str:
         """
         Construct the final result string before/after training
         :return: test result string

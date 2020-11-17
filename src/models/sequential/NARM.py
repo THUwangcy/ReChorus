@@ -52,12 +52,12 @@ class NARM(GRU4Rec):
         attention_g = self.A1(hidden_g)
         attention_l = self.A2(output_l)
         attention_value = self.attention_out((attention_g[:, None, :] + attention_l).sigmoid())
-        mask = (history == 0).unsqueeze(-1)
+        mask = (history > 0).unsqueeze(-1)
         attention_value = attention_value - attention_value.max()
-        attention_value = attention_value.masked_fill(mask, -np.inf).softmax(dim=1)
+        attention_value = attention_value.masked_fill(mask == 0, -np.inf).softmax(dim=1)
         c_l = (attention_value * output_l).sum(1)
 
         # Prediction Layer
         pred_vector = self.out(torch.cat((hidden_g, c_l), dim=1))
         prediction = (pred_vector[:, None, :] * i_vectors).sum(dim=-1)
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}

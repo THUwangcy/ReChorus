@@ -51,4 +51,4 @@ class NCF(BPR):
 
         output_vector = torch.cat([mf_vector, mlp_vector], dim=-1)
         prediction = self.prediction(output_vector)
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}

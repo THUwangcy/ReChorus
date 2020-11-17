@@ -40,7 +40,7 @@ class Tensor(BPR):
         prediction = ((cf_u_vectors + i_t_vectors)[:, None, :] * cf_i_vectors +
                       (cf_u_vectors * u_t_vectors)[:, None, :]).sum(dim=-1)
         prediction = prediction + u_bias + i_bias
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
     class Dataset(BPR.Dataset):
         def _get_feed_dict(self, index):

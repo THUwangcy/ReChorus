@@ -60,25 +60,26 @@ class BaseModel(torch.nn.Module):
     def _define_params(self) -> NoReturn:
         self.item_bias = torch.nn.Embedding(self.item_num, 1)
 
-    def forward(self, feed_dict: dict) -> torch.Tensor:
+    def forward(self, feed_dict: dict) -> dict:
         """
         :param feed_dict: batch prepared in Dataset
         :return: prediction with shape [batch_size, n_candidates]
         """
         i_ids = feed_dict['item_id']
         prediction = self.item_bias(i_ids)
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
     """
     Methods optional to override
     """
-    def loss(self, predictions: torch.Tensor) -> torch.Tensor:
+    def loss(self, out_dict: dict) -> torch.Tensor:
         """
         BPR ranking loss with optimization on multiple negative samples
         @{Recurrent neural networks with top-k gains for session-based recommendations}
-        :param predictions: [batch_size, -1], the first column for positive, the rest for negative
+        :param out_dict: contain prediction with [batch_size, -1], the first column for positive, the rest for negative
         :return:
         """
+        predictions = out_dict['prediction']
         pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
         neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
         loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()

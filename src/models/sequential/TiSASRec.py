@@ -75,7 +75,7 @@ class TiSASRec(SASRec):
 
         i_vectors = self.i_embeddings(i_ids)
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
-        return prediction.view(batch_size, -1)
+        return {'prediction': prediction.view(batch_size, -1)}
 
     class Dataset(SASRec.Dataset):
         def _get_feed_dict(self, index):

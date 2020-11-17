@@ -26,13 +26,14 @@ class CFKG(BaseModel):
         self.margin = args.margin
         self.user_num = corpus.n_users
         self.relation_num = corpus.n_relations
+        self.entity_num = corpus.n_entities
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.e_embeddings = nn.Embedding(self.user_num + self.item_num, self.emb_size)
-        # ↑ user and item embeddings, user first
+        self.e_embeddings = nn.Embedding(self.user_num + self.entity_num, self.emb_size)
+        # ↑ user and entity embeddings, user first
         self.r_embeddings = nn.Embedding(self.relation_num, self.emb_size)
-        # ↑ relation embedding: 0-buy, 1-complement, 2-substitute
+        # ↑ relation embedding: 0 is used for "buy" between users and items
         self.loss_function = nn.MarginRankingLoss(margin=self.margin)
 
     def forward(self, feed_dict):
@@ -46,9 +47,10 @@ class CFKG(BaseModel):
         relation_vectors = self.r_embeddings(relation_ids)
 
         prediction = -((head_vectors + relation_vectors - tail_vectors)**2).sum(-1)
-        return prediction.view(feed_dict['batch_size'], -1)
+        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
-    def loss(self, predictions):
+    def loss(self, out_dict):
+        predictions = out_dict['prediction']
         batch_size = predictions.shape[0]
         pos_pred, neg_pred = predictions[:, :2].flatten(), predictions[:, 2:].flatten()
         target = torch.from_numpy(np.ones(batch_size * 2, dtype=np.float32)).to(self.device)
@@ -61,7 +63,7 @@ class CFKG(BaseModel):
                 interaction_df = pd.DataFrame({
                     'head': self.data['user_id'],
                     'tail': self.data['item_id'],
-                    'relation': np.zeros_like(self.data['user_id'])
+                    'relation': np.zeros_like(self.data['user_id'])  # "buy" relation
                 })
                 self.data = utils.df_to_dict(pd.concat((self.corpus.relation_df, interaction_df), axis=0))
                 self.neg_heads = np.zeros(len(self), dtype=int)
@@ -75,7 +77,7 @@ class CFKG(BaseModel):
                 head_id = np.array([head, head, head, self.neg_heads[index]])
                 tail_id = np.array([tail, tail, self.neg_tails[index], tail])
                 relation_id = np.array([relation] * 4)
-                if relation > 0:  # head is an item
+                if relation > 0:  # head is not a user
                     head_id = head_id + self.corpus.n_users
             else:
                 target_item = self.data['item_id'][index]
@@ -83,7 +85,7 @@ class CFKG(BaseModel):
                 tail_id = np.concatenate([[target_item], neg_items])
                 head_id = self.data['user_id'][index] * np.ones_like(tail_id)
                 relation_id = np.zeros_like(tail_id)
-            tail_id += self.corpus.n_users  # tail must be an item
+            tail_id += self.corpus.n_users  # tail must not be a user
 
             feed_dict = {'head_id': head_id, 'tail_id': tail_id, 'relation_id': relation_id}
             return feed_dict

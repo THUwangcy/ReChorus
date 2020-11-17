@@ -10,7 +10,7 @@
   - `...`: customize helpers with specific functions
 - `models\`
   - `BaseModel.py`: basic model class and dataset class, with some common functions of a model
-  - `...`: customize models inherited from *BaseModel*
+  - `...`: customize models inherited from classes in *BaseModel*
 - `utils\`
   - `layers.py`: common modules for model definition (e.g. attention)
   - `utils.py`: some utils functions
@@ -37,7 +37,8 @@ class NewModel(BaseModel):
         item_id = feed_dict['item_id']  # [batch_size, -1]
         user_id = feed_dict['user_id']  # [batch_size]
         prediction = (...)
-        return prediction.view(feed_dict['batch_size'], -1)
+        out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1)}
+        return out_dict
     
     class Dataset(BaseModel.Dataset):
         # construct feed_dict for a single instance (called by __getitem__)
