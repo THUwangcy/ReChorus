@@ -1,6 +1,7 @@
-# ReChorus
-![MIT License][license-shield]
 ![logo](./log/_static/logo.png)
+
+# ReChorus
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partially alleviate the problem that different papers adopt non-comparable experimental settings, so as to form a "Chorus" of recommendation algorithms. 
 
