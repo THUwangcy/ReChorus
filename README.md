@@ -87,6 +87,6 @@ Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tr
 
 
 
-## Concact
+## Contact
 
 Chenyang Wang (THUwangcy@gmail.com)
