@@ -21,10 +21,13 @@ class MultiHeadAttention(nn.Module):
         self.k_linear = nn.Linear(d_model, d_model, bias=bias)
         self.v_linear = nn.Linear(d_model, d_model, bias=bias)
 
-    def head_split(self, x):  # get dimensions bs * h * -1 * d_k
-        return torch.stack(torch.split(x, self.h, dim=-1), dim=-3)
+    def head_split(self, x):  # get dimensions bs * h * seq_len * d_k
+        new_x_shape = x.size()[:-1] + (self.h, self.d_k)
+        return x.view(*new_x_shape).transpose(-2, -3)
 
     def forward(self, q, k, v, mask=None):
+        origin_shape = q.size()
+
         # perform linear operation and split into h heads
         if not self.kq_same:
             q = self.head_split(self.q_linear(q))
@@ -37,7 +40,7 @@ class MultiHeadAttention(nn.Module):
         output = self.scaled_dot_product_attention(q, k, v, self.d_k, mask)
 
         # concatenate heads and put through final linear layer
-        output = torch.cat(torch.unbind(output, dim=-3), dim=-1)
+        output = output.transpose(-2, -3).reshape(origin_shape)
         return output
 
     @staticmethod
