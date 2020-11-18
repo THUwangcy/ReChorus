@@ -22,7 +22,7 @@
 
 ### Define a New Model
 
-Generally we can define a new class inheriting *GeneralModel* (a subclass of *BaseModel*), as well as the inner class *Dataset*. The following functions need to be implement at least:
+Generally we define a new class inheriting *GeneralModel* (a subclass of *BaseModel*), as well as the inner class *Dataset*, and implement the following functions:
 
 ```python
 class NewModel(GeneralModel):
@@ -48,8 +48,4 @@ class NewModel(GeneralModel):
             (...)
             return feed_dict
 ```
-
-
-
-If the model definition is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `customize_parameters`) and *Dataset* (e.g. `_prepare`, `actions_before_epoch`), which needs a deeper understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also implement a new runner class to accommodate different experimental settings.
 

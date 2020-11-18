@@ -1,22 +1,14 @@
-![logo](./log/_static/logo.png)
+# KDA
+
+![model](./log/_static/model.png)
 ---
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+This is our public implementation for the paper:
 
-ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partially alleviate the problem that different papers adopt non-comparable experimental settings, so as to form a "Chorus" of recommendation algorithms. 
+*Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](). In TOIS'21.*
 
-This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familar with classical methods. The characteristics of our framework can be summarized as follows:
+**Please cite this paper if you use our codes. Thanks!**
 
-- **Agile**: concentrate on your model design in a single file and implement new models quickly
-- **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments
-- **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models 
-- **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers
-
-Generally, ReChorus decomposes the whole process into three modules:
-
-- [Reader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py): read dataset into DataFrame and append necessary information to each instance
-- [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches
 
 
 ## Getting Started
@@ -25,39 +17,52 @@ Generally, ReChorus decomposes the whole process into three modules:
 2. Clone the repository and install requirements
 
 ```bash
-git clone https://github.com/THUwangcy/ReChorus.git
-cd ReChorus
-pip install -r requirements.txt
+git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 ```
 
-3. Run model with build-in dataset
+3. Install requirements and step into the `src` folder
 
 ```bash
-python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
+cd ReChorus
+pip install -r requirements.txt
+cd src
 ```
 
-4. (optional) Run jupyter notebook in `data` folder to download and build new amazon datasets, or prepare your own datasets according to [README](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
-5. (optional) Implement your own models according to [README](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
+4. Run model on the build-in dataset
+
+```bash
+python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+```
 
 
 
-## Models
+## Arguments
 
-We have implemented the following methods (still updating):
+The main arguments of KDA are listed below.
 
-- BPR (UAI'09): [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page)
-- NCF (WWW'17): [Neural Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3038912.3052569)
-- Tensor (RecSys'10): [N-dimensional Tensor Factorization for Context-aware Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/1864708.1864727)
-- GRU4Rec (ICLR'16): [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939)
-- NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
-- SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
-- TiSASRec (WSDM'20): [Time Interval Aware Self-Attention for Sequential Recommendation](https://dl.acm.org/doi/pdf/10.1145/3336191.3371786)
-- CFKG (MDPI'18): [Learning heterogeneous knowledge base embeddings for explainable recommendation](https://www.mdpi.com/1999-4893/11/9/137/pdf)
-- SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
-- Chorus (SIGIR'20): [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
-- KDA (TOIS'21): Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation (accepted but not published yet)
+| Args           | Default | Help                                                         |
+| -------------- | ------- | ------------------------------------------------------------ |
+| emb_size       | 64      | Size of embedding vectors                                    |
+| gamma          | -1      | Coefficient of KG loss (auto-determined if set to -1)        |
+| include_attr   | 1       | Whether to include attribute-based item relations            |
+| include_val    | 1       | Whether to enhance relation representations with relation values |
+| neg_head_p     | 0.5     | Probability of sampling negative head entity during training |
+| t_scalar       | 60      | Scalar of time intervals (in seconds)                        |
+| n_dft          | 64      | Point of DFT                                                 |
+| freq_rand      | 0       | Whether to randomly initialize frequency embeddings          |
+| num_layers     | 1       | Number of self-attention layers                              |
+| num_heads      | 1       | Number of self-attention heads                               |
+| attention_size | 10      | Size of attention pooling hidden space                       |
+| pooling        | average | Method of pooling: average / max / attention                 |
+| history_max    | 20      | Maximum length of history to consider                        |
+| lr             | 1e-3    | Learning rate                                                |
+| l2             | 0       | Weight decay of the optimizer                                |
+| regenerate     | 0       | Whether to read data again and regenerate intermediate files |
+| num_workers    | 5       | Number of processors when preparing batches                  |
 
 
+
+## Performance
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (145.8k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item.  These settings are all common in Top-K sequential recommendation.
 
@@ -75,35 +80,15 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4739 | 0.3443 |   4.9s   | √ | √ | √ |
 | [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/KDA.py) | 0.5174 | 0.3876 | 9.9s | √ | √ | √ |
 
-For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be **not optimal now**, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
+We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
 
 
-## Citation
+Note that we have reorganized the codes for easier usage, and the final results may be a little different from that in the paper (while the order of baselines holds). Besides, we find we can achieve even higher results in `Amazon Electronics` after fine-grained parameter tuning (NDCG@5: 0.42 → 0.45), which outperforms baselines by a large margin. Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh). 
 
-This is also our public implementation for the following papers (codes and datasets to reproduce the results can be found at corresponding branch):
 
-* *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
 
-```
-git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
-```
-
-* *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation. In TOIS'21.*
-
-**Please cite this paper if you use our codes. Thanks!**
-
-```
-@inproceedings{wang2020make,
-  title={Make it a chorus: knowledge-and time-aware item modeling for sequential recommendation},
-  author={Wang, Chenyang and Zhang, Min and Ma, Weizhi and Liu, Yiqun and Ma, Shaoping},
-  booktitle={Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval},
-  pages={109--118},
-  year={2020}
-}
-```
-
-## Concact
+## Contact
 Chenyang Wang (THUwangcy@gmail.com)
 
 

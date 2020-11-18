@@ -1,12 +1,12 @@
 # Dataset
 
-We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `Amazon.ipynb` to download and build Amazon datasets for other categories.
+We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset.  Other datasets after preprocessing can be downloaded online:
 
-Our framework can also work with other datasets easily. Some datasets that cater to our format after preprocessing are listed here (updating):
+* Amazon Electronics: [Google Drive](https://drive.google.com/drive/folders/1F2DSMOwHQgQRmuKMjN24FcqyVh-RrlFe?usp=sharing)
 
-* RecSys2017: [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/d/2b7cb1b730c84f1ea12e/), [Google Drive](https://drive.google.com/drive/folders/1rhUQwTYVai4kt54GAjdFUU4CVryNPwC9?usp=sharing), [Baidu Netdisk](https://pan.baidu.com/s/1lNJGciX_BrtzhgLN6RMH_w) (yat9)
+* RecSys2017: [Google Drive](https://drive.google.com/drive/folders/1rhUQwTYVai4kt54GAjdFUU4CVryNPwC9?usp=sharing)
 
-We describe the required files below (recommend to open `Amazon.ipynb` to observe the format of dataset files):
+To run codes on customized datasets, we describe the format of required files below:
 
 
 
@@ -36,8 +36,3 @@ We describe the required files below (recommend to open `Amazon.ipynb` to observ
 - `r_<relation>` is the relations between items, and its value is a list of items (can be empty []). Assume `item_id` is `i`, if `j` appears in `r_<relation>`, then `(i, relation, j)` holds in the knowledge graph. Note that the corresponding header here must start with "r_" to be distinguished from attributes.
 
 ![meta data format](../log/_static/format_meta.png)
-
-
-
-You can also implement a new reader class based on [BaseReader.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py) and read data in your own style, as long as the basic information is included. Then assign your model with the new reader and begin to use new members of the reader when preparing batches in the model.
-
