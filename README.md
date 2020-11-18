@@ -1,4 +1,4 @@
-# KDA
+# Knowledge-aware Dynamic Attention (KDA)
 
 ![model](./log/_static/model.png)
 ---
