@@ -19,6 +19,8 @@ Generally, ReChorus decomposes the whole process into three modules:
 - [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches
 
 
+
+
 ## Getting Started
 
 1. Install [Anaconda](https://docs.conda.io/en/latest/miniconda.html) with Python >= 3.5
@@ -26,18 +28,25 @@ Generally, ReChorus decomposes the whole process into three modules:
 
 ```bash
 git clone https://github.com/THUwangcy/ReChorus.git
-cd ReChorus
-pip install -r requirements.txt
 ```
 
-3. Run model with build-in dataset
+3. Install requirements and step into the `src` folder
+
+```bash
+cd ReChorus
+pip install -r requirements.txt
+cd src
+```
+
+4. Run model with the build-in dataset
 
 ```bash
 python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
 ```
 
-4. (optional) Run jupyter notebook in `data` folder to download and build new amazon datasets, or prepare your own datasets according to [README](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
-5. (optional) Implement your own models according to [README](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
+5. (optional) Run jupyter notebook in `data` folder to download and build new amazon datasets, or prepare your own datasets according to [README](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
+
+6. (optional) Implement your own models according to [README](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
 
 
 
@@ -56,8 +65,6 @@ We have implemented the following methods (still updating):
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
 - KDA (TOIS'21): Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation (accepted but not published yet)
-
-
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (145.8k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item.  These settings are all common in Top-K sequential recommendation.
 
@@ -85,11 +92,15 @@ This is also our public implementation for the following papers (codes and datas
 
 * *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
 
-```
+```bash
 git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
 ```
 
-* *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation. In TOIS'21.*
+* *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](). In TOIS'21.*
+
+```bash
+git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
+```
 
 **Please cite this paper if you use our codes. Thanks!**
 
@@ -103,7 +114,7 @@ git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
 }
 ```
 
-## Concact
+## Contact
 Chenyang Wang (THUwangcy@gmail.com)
 
 
