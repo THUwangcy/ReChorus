@@ -1,4 +1,4 @@
-## Dataset
+# Dataset
 
 We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `preprocess.ipynb` to download and build datasets for other categories used in the paper.
 
