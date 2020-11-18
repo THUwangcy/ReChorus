@@ -1,6 +1,6 @@
 ## Source Code	
 
-`main.py` serves as the entrance of our framework, and there are three main packages. We first describe the structure of the code and then introduce how to define a new model.
+`main.py` serves as the entrance of our framework, and there are three main packages. 
 
 ### Structure
 
@@ -20,7 +20,7 @@
 
 ### Define a New Model
 
-Generally we should define a new class inheriting *BaseModel*, and implement at least these major functions:
+Generally we define a new class inheriting *BaseModel*, and implement at least these major functions:
 
 ```python
 class NewModel(BaseModel):
@@ -61,8 +61,4 @@ class NewModel(BaseModel):
         feed_dict = {'batch_size': batch_end - batch_start}
         return feed_dict
 ```
-
-
-
-If the training procedure is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `get_neg_items`,  `customize_parameters`...), which needs a better understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also reimplement a new runner class to adapt to different experimental settings.
 
