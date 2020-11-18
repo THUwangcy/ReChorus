@@ -4,6 +4,7 @@ import torch
 import logging
 import numpy as np
 from tqdm import tqdm
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset as BaseDataset
 from torch.nn.utils.rnn import pad_sequence
@@ -43,10 +44,7 @@ class BaseModel(torch.nn.Module):
         super(BaseModel, self).__init__()
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model_path = args.model_path
-        self.num_neg = args.num_neg
-        self.dropout = args.dropout
         self.buffer = args.buffer
-        self.item_num = corpus.n_items
         self.optimizer = None
         self.check_list = list()  # observe tensors in check_list every check_epoch
 
@@ -58,16 +56,14 @@ class BaseModel(torch.nn.Module):
     Methods must to override
     """
     def _define_params(self) -> NoReturn:
-        self.item_bias = torch.nn.Embedding(self.item_num, 1)
+        pass
 
     def forward(self, feed_dict: dict) -> dict:
         """
         :param feed_dict: batch prepared in Dataset
         :return: prediction with shape [batch_size, n_candidates]
         """
-        i_ids = feed_dict['item_id']
-        prediction = self.item_bias(i_ids)
-        return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
+        pass
 
     """
     Methods optional to override
@@ -82,9 +78,9 @@ class BaseModel(torch.nn.Module):
         predictions = out_dict['prediction']
         pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
         neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
-        loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
-        # neg_pred = (neg_pred * neg_softmax).sum(dim=1)
-        # loss = F.softplus(-(pos_pred - neg_pred)).mean()
+        # loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
+        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
+        loss = F.softplus(-(pos_pred - neg_pred)).mean()
         # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
@@ -135,8 +131,6 @@ class BaseModel(torch.nn.Module):
             self.phase = phase
             self.data = utils.df_to_dict(corpus.data_df[phase])
             # ↑ DataFrame is not compatible with multi-thread operations
-            self.neg_items = None if phase == 'train' else self.data['neg_items']
-            # ↑ Sample negative items before each epoch during training
             self.buffer_dict = dict()
             self.buffer = self.model.buffer and self.phase != 'train'
 
@@ -151,28 +145,20 @@ class BaseModel(torch.nn.Module):
         def __getitem__(self, index: int) -> dict:
             return self.buffer_dict[index] if self.buffer else self._get_feed_dict(index)
 
-        # ! Key method to construct input data for a single instance
-        def _get_feed_dict(self, index: int) -> dict:
-            target_item = self.data['item_id'][index]
-            neg_items = self.neg_items[index]
-            item_ids = np.concatenate([[target_item], neg_items])
-            feed_dict = {'item_id': item_ids}
-            return feed_dict
-
         # Prepare model-specific variables and buffer feed dicts
         def _prepare(self) -> NoReturn:
             if self.buffer:
-                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1, desc=('Prepare '+self.phase)):
+                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1,
+                              desc=('Prepare ' + self.phase)):
                     self.buffer_dict[i] = self._get_feed_dict(i)
 
-        # Sample negative items for all the instances (called before each epoch)
-        def negative_sampling(self) -> NoReturn:
-            self.neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
-            for i, u in enumerate(self.data['user_id']):
-                user_clicked_set = self.corpus.user_clicked_set[u]
-                for j in range(self.model.num_neg):
-                    while self.neg_items[i][j] in user_clicked_set:
-                        self.neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
+        # ! Key method to construct input data for a single instance
+        def _get_feed_dict(self, index: int) -> dict:
+            pass
+
+        # Called before each epoch
+        def actions_before_epoch(self) -> NoReturn:
+            pass
 
         # Collate a batch according to the list of feed dicts
         def collate_batch(self, feed_dicts: List[dict]) -> dict:
@@ -187,3 +173,51 @@ class BaseModel(torch.nn.Module):
             feed_dict['phase'] = self.phase
             return feed_dict
 
+
+class GeneralModel(BaseModel):
+    def __init__(self, args, corpus):
+        self.user_num = corpus.n_users
+        self.item_num = corpus.n_items
+        self.num_neg = args.num_neg
+        self.dropout = args.dropout
+        super().__init__(args, corpus)
+
+    class Dataset(BaseModel.Dataset):
+        def _prepare(self):
+            self.neg_items = None if self.phase == 'train' else self.data['neg_items']
+            # ↑ Sample negative items before each epoch during training
+            super()._prepare()
+
+        def _get_feed_dict(self, index):
+            target_item = self.data['item_id'][index]
+            neg_items = self.neg_items[index]
+            item_ids = np.concatenate([[target_item], neg_items])
+            feed_dict = {
+                'user_id': self.data['user_id'][index],
+                'item_id': item_ids
+            }
+            return feed_dict
+
+        # Sample negative items for all the instances
+        def actions_before_epoch(self) -> NoReturn:
+            self.neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
+            for i, u in enumerate(self.data['user_id']):
+                user_clicked_set = self.corpus.user_clicked_set[u]
+                for j in range(self.model.num_neg):
+                    while self.neg_items[i][j] in user_clicked_set:
+                        self.neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
+
+
+class SequentialModel(GeneralModel):
+    class Dataset(GeneralModel.Dataset):
+        def _prepare(self):
+            idx_select = np.array(self.data['his_length']) > 0  # history length must be non-zero
+            for key in self.data:
+                self.data[key] = np.array(self.data[key])[idx_select]
+            super()._prepare()
+
+        def _get_feed_dict(self, index):
+            feed_dict = super()._get_feed_dict(index)
+            feed_dict['history_items'] = np.array(self.data['item_his'][index])
+            feed_dict['lengths'] = self.data['his_length'][index]
+            return feed_dict

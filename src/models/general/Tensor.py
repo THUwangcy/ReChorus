@@ -2,17 +2,20 @@
 
 import torch.nn as nn
 
-from models.general.BPR import BPR
+from models.BaseModel import GeneralModel
 
 
-class Tensor(BPR):
+class Tensor(GeneralModel):
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
         parser.add_argument('--time_bin', type=int, default=100,
                             help='Number of time bins.')
-        return BPR.parse_model_args(parser)
+        return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        self.emb_size = args.emb_size
         self.time_bin = args.time_bin
         self.min_time = corpus.all_df['time'].min()
         self.max_time = corpus.all_df['time'].max()
@@ -20,9 +23,12 @@ class Tensor(BPR):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        super()._define_params()
+        self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
         self.u_t_embeddings = nn.Embedding(self.time_bin, self.emb_size)
         self.i_t_embeddings = nn.Embedding(self.time_bin, self.emb_size)
+        self.user_bias = nn.Embedding(self.user_num, 1)
+        self.item_bias = nn.Embedding(self.item_num, 1)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -42,7 +48,7 @@ class Tensor(BPR):
         prediction = prediction + u_bias + i_bias
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
-    class Dataset(BPR.Dataset):
+    class Dataset(GeneralModel.Dataset):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             time_ids = (self.data['time'][index] - self.model.min_time) // self.model.time_bin_width

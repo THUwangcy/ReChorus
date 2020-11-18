@@ -3,17 +3,20 @@
 import torch
 import torch.nn as nn
 
-from models.general.BPR import BPR
+from models.BaseModel import GeneralModel
 
 
-class NCF(BPR):
+class NCF(GeneralModel):
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
         parser.add_argument('--layers', type=str, default='[64]',
                             help="Size of each layer.")
-        return BPR.parse_model_args(parser)
+        return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        self.emb_size = args.emb_size
         self.layers = eval(args.layers)
         super().__init__(args, corpus)
 

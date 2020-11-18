@@ -7,10 +7,10 @@ import torch.distributions
 import numpy as np
 
 from utils import utils
-from models.sequential.SLRC import SLRC
+from models.sequential.SLRCPlus import SLRCPlus
 
 
-class Chorus(SLRC):
+class Chorus(SLRCPlus):
     reader = 'KGReader'
     extra_log_args = ['margin', 'lr_scale', 'stage']
 
@@ -24,7 +24,7 @@ class Chorus(SLRC):
                             help='Margin in hinge loss.')
         parser.add_argument('--base_method', type=str, default='BPR',
                             help='Basic method to generate recommendations: BPR, GMF')
-        return SLRC.parse_model_args(parser)
+        return SLRCPlus.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.margin = args.margin
@@ -166,7 +166,7 @@ class Chorus(SLRC):
         else:
             return super().customize_parameters()
 
-    class Dataset(SLRC.Dataset):
+    class Dataset(SLRCPlus.Dataset):
         def _prepare(self):
             self.kg_train = self.model.stage == 1 and self.phase == 'train'
             if self.kg_train:
@@ -189,7 +189,7 @@ class Chorus(SLRC):
                 feed_dict = super()._get_feed_dict(index)
             return feed_dict
 
-        def negative_sampling(self):
+        def actions_before_epoch(self):
             if self.kg_train:
                 for i in range(len(self)):
                     head, tail, relation = self.data['head'][i], self.data['tail'][i], self.data['relation'][i]
@@ -200,4 +200,4 @@ class Chorus(SLRC):
                     while (self.neg_heads[i], relation, tail) in self.corpus.triplet_set:
                         self.neg_heads[i] = np.random.randint(1, self.corpus.n_items)
             else:
-                super().negative_sampling()
+                super().actions_before_epoch()

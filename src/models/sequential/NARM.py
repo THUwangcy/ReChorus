@@ -4,17 +4,23 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from models.sequential.GRU4Rec import GRU4Rec
+from models.BaseModel import SequentialModel
 
 
-class NARM(GRU4Rec):
+class NARM(SequentialModel):
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
+        parser.add_argument('--hidden_size', type=int, default=100,
+                            help='Size of hidden vectors in GRU.')
         parser.add_argument('--attention_size', type=int, default=50,
                             help='Size of attention hidden space.')
-        return GRU4Rec.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        self.emb_size = args.emb_size
+        self.hidden_size = args.hidden_size
         self.attention_size = args.attention_size
         super().__init__(args, corpus)
 

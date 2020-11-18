@@ -4,20 +4,23 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from models.sequential.GRU4Rec import GRU4Rec
+from models.BaseModel import SequentialModel
 from utils import layers
 
 
-class SASRec(GRU4Rec):
+class SASRec(SequentialModel):
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
         parser.add_argument('--num_layers', type=int, default=1,
                             help='Number of self-attention layers.')
         parser.add_argument('--num_heads', type=int, default=4,
                             help='Number of attention heads.')
-        return GRU4Rec.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        self.emb_size = args.emb_size
         self.max_his = args.history_max
         self.num_layers = args.num_layers
         self.num_heads = args.num_heads

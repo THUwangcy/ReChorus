@@ -166,7 +166,7 @@ class BaseRunner(object):
         torch.cuda.empty_cache()
         if model.optimizer is None:
             model.optimizer = self._build_optimizer(model)
-        data.negative_sampling()  # must sample before multi thread start
+        data.actions_before_epoch()  # must sample before multi thread start
 
         model.train()
         loss_lst = list()

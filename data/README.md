@@ -2,7 +2,11 @@
 
 We use public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.html) (*Grocery_and_Gourmet_Food* category, 5-core version with metadata) as our build-in dataset. You can modify the `DATASET` variable in `Amazon.ipynb` to download and build Amazon datasets for other categories.
 
-Our framework can also easily work with other datasets. We describe the required files below (recommend to open `Amazon.ipynb` to observe the format of dataset files):
+Our framework can also work with other datasets easily. Some datasets that cater to our format after preprocessing are listed here (updating):
+
+* RecSys2017: [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/d/2b7cb1b730c84f1ea12e/), [Google Drive](https://drive.google.com/drive/folders/1rhUQwTYVai4kt54GAjdFUU4CVryNPwC9?usp=sharing), [Baidu Netdisk](https://pan.baidu.com/s/1lNJGciX_BrtzhgLN6RMH_w) (yat9)
+
+We describe the required files below (recommend to open `Amazon.ipynb` to observe the format of dataset files):
 
 
 
@@ -26,9 +30,9 @@ Our framework can also easily work with other datasets. We describe the required
 
 **item_meta.csv** (optional)
 
-- Format: `item_id \t <attribute> \t ... \t r_<relation> \t ...`
-- Optional, only needed for some of the models (CFKG, SLRC, Chorus).
-- `<attribute>` is the attributes of an item, such as category, brand and so on. SLRC and Chorus model need category information.
+- Format: `item_id \t i_<attribute> \t ... \t r_<relation> \t ...`
+- Optional, only needed for some of the models (CFKG, SLRC+, Chorus, KDA).
+- `i_<attribute>` is the attribute of an item, such as category, brand and so on. The header should start with `i_` and the values need to be discrete and finite.
 - `r_<relation>` is the relations between items, and its value is a list of items (can be empty []). Assume `item_id` is `i`, if `j` appears in `r_<relation>`, then `(i, relation, j)` holds in the knowledge graph. Note that the corresponding header here must start with "r_" to be distinguished from attributes.
 
 ![meta data format](../log/_static/format_meta.png)

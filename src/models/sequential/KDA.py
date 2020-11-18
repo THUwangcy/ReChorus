@@ -6,17 +6,18 @@ import numpy as np
 import pandas as pd
 
 from utils import layers
-from models.BaseModel import BaseModel
-from models.sequential.GRU4Rec import GRU4Rec
+from models.BaseModel import SequentialModel
 from helpers.DFTReader import DFTReader
 
 
-class KDA(GRU4Rec):
+class KDA(SequentialModel):
     reader = 'DFTReader'
     extra_log_args = ['num_layers', 'num_heads', 'gamma', 'freq_rand', 'include_val']
 
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
         parser.add_argument('--neg_head_p', type=float, default=0.5,
                             help='The probability of sampling negative head entity.')
         parser.add_argument('--num_layers', type=int, default=1,
@@ -31,15 +32,15 @@ class KDA(GRU4Rec):
                             help='Method of pooling relational history embeddings: average, max, attention')
         parser.add_argument('--include_val', type=int, default=1,
                             help='Whether include relation value in the relation representation')
-        return GRU4Rec.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
-        self.user_num = corpus.n_users
         self.relation_num = corpus.n_relations
         self.entity_num = corpus.n_entities
         self.freq_x = corpus.freq_x
         self.freq_dim = args.n_dft // 2 + 1
         self.freq_rand = args.freq_rand
+        self.emb_size = args.emb_size
         self.neg_head_p = args.neg_head_p
         self.layer_num = args.num_layers
         self.head_num = args.num_heads
@@ -104,9 +105,9 @@ class KDA(GRU4Rec):
         """
         Relational Dynamic History Aggregation
         """
-        valid_mask = (history > 0).view(batch_size, 1, seq_len, 1)  # B * 1 * H * 1
-        context = self.relational_dynamic_aggregation(his_vectors, delta_t_n, i_vectors, v_vectors, valid_mask)  # B * -1 * R * V
-        context = context.view(-1, self.relation_num, self.emb_size)  # -1 * R * V
+        valid_mask = (history > 0).view(batch_size, 1, seq_len, 1)
+        context = self.relational_dynamic_aggregation(
+            his_vectors, delta_t_n, i_vectors, v_vectors, valid_mask)  # B * -1 * R * V
 
         """
         Multi-layer Self-attention
@@ -121,7 +122,6 @@ class KDA(GRU4Rec):
             # dropout, residual and layer_norm
             context = self.dropout_layer(context)
             context = self.layer_norm(residual + context)
-        context = context.view(batch_size, -1, self.relation_num, self.emb_size)  # B * -1 * R * V
 
         """
         Pooling Layer
@@ -176,7 +176,7 @@ class KDA(GRU4Rec):
         loss = rec_loss + self.gamma * kg_loss
         return loss
 
-    class Dataset(GRU4Rec.Dataset):
+    class Dataset(SequentialModel.Dataset):
         def __init__(self, model, corpus, phase):
             super().__init__(model, corpus, phase)
             if self.phase == 'train':
@@ -227,8 +227,8 @@ class KDA(GRU4Rec):
             kg_data = pd.concat([item_item_df, item_attr_df], ignore_index=True)
             return kg_data
 
-        def negative_sampling(self):
-            super().negative_sampling()
+        def actions_before_epoch(self):
+            super().actions_before_epoch()
             self.kg_data = self.generate_kg_data()
             heads, tails = self.kg_data['head'].values, self.kg_data['tail'].values
             relations, vals = self.kg_data['relation'].values, self.kg_data['value'].values

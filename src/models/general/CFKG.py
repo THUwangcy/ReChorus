@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 
 from utils import utils
-from models.BaseModel import BaseModel
+from models.BaseModel import GeneralModel
 from helpers.KGReader import KGReader
 
 
-class CFKG(BaseModel):
+class CFKG(GeneralModel):
     reader = 'KGReader'
 
     @staticmethod
@@ -19,12 +19,11 @@ class CFKG(BaseModel):
                             help='Size of embedding vectors.')
         parser.add_argument('--margin', type=float, default=0,
                             help='Margin in hinge loss.')
-        return BaseModel.parse_model_args(parser)
+        return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus: KGReader):
         self.emb_size = args.emb_size
         self.margin = args.margin
-        self.user_num = corpus.n_users
         self.relation_num = corpus.n_relations
         self.entity_num = corpus.n_entities
         super().__init__(args, corpus)
@@ -57,7 +56,7 @@ class CFKG(BaseModel):
         loss = self.loss_function(pos_pred, neg_pred, target)
         return loss
 
-    class Dataset(BaseModel.Dataset):
+    class Dataset(GeneralModel.Dataset):
         def _prepare(self):
             if self.phase == 'train':
                 interaction_df = pd.DataFrame({
@@ -90,7 +89,7 @@ class CFKG(BaseModel):
             feed_dict = {'head_id': head_id, 'tail_id': tail_id, 'relation_id': relation_id}
             return feed_dict
 
-        def negative_sampling(self):
+        def actions_before_epoch(self):
             for i in range(len(self)):
                 head, tail, relation = self.data['head'][i], self.data['tail'][i], self.data['relation'][i]
                 self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)

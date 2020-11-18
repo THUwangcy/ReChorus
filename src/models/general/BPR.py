@@ -2,19 +2,18 @@
 
 import torch.nn as nn
 
-from models.BaseModel import BaseModel
+from models.BaseModel import GeneralModel
 
 
-class BPR(BaseModel):
+class BPR(GeneralModel):
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
-        return BaseModel.parse_model_args(parser)
+        return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
-        self.user_num = corpus.n_users
         super().__init__(args, corpus)
 
     def _define_params(self):
@@ -36,9 +35,3 @@ class BPR(BaseModel):
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)  # [batch_size, -1]
         prediction = prediction + u_bias + i_bias
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
-
-    class Dataset(BaseModel.Dataset):
-        def _get_feed_dict(self, index):
-            feed_dict = super()._get_feed_dict(index)
-            feed_dict['user_id'] = self.data['user_id'][index]
-            return feed_dict

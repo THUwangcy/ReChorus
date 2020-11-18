@@ -2,19 +2,18 @@
 
 import torch
 import torch.nn as nn
-import numpy as np
 
-from models.BaseModel import BaseModel
+from models.BaseModel import SequentialModel
 
 
-class GRU4Rec(BaseModel):
+class GRU4Rec(SequentialModel):
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
         parser.add_argument('--hidden_size', type=int, default=100,
                             help='Size of hidden vectors in GRU.')
-        return BaseModel.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
@@ -51,16 +50,3 @@ class GRU4Rec(BaseModel):
         # Predicts
         prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1)
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
-
-    class Dataset(BaseModel.Dataset):
-        def _prepare(self):
-            idx_select = np.array(self.data['his_length']) > 0  # history length must be non-zero
-            for key in self.data:
-                self.data[key] = np.array(self.data[key])[idx_select]
-            super()._prepare()
-
-        def _get_feed_dict(self, index):
-            feed_dict = super()._get_feed_dict(index)
-            feed_dict['history_items'] = np.array(self.data['item_his'][index])
-            feed_dict['lengths'] = self.data['his_length'][index]
-            return feed_dict

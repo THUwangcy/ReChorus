@@ -5,14 +5,15 @@ import torch.nn as nn
 import torch.distributions
 import numpy as np
 
-from models.BaseModel import BaseModel
+from models.BaseModel import GeneralModel
 from helpers.KGReader import KGReader
 
 """
-  Also include the excitation of relational history interactions (not only repeat consumptions),
+  An enhancement to original SLRC. 
+  Also include the excitation of relational history interactions (not only repeat consumptions), 
   and related parameters are category-specific instead of item-specific.
 """
-class SLRC(BaseModel):
+class SLRCPlus(GeneralModel):
     reader = 'KGReader'
 
     @staticmethod
@@ -23,12 +24,11 @@ class SLRC(BaseModel):
                             help='Time scalar for time intervals.')
         parser.add_argument('--category_col', type=str, default='i_category',
                             help='The name of category column in item_meta.csv.')
-        return BaseModel.parse_model_args(parser)
+        return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus: KGReader):
         self.emb_size = args.emb_size
         self.time_scalar = args.time_scalar
-        self.user_num = corpus.n_users
         self.relation_num = len(corpus.item_relations) + 1
         if args.category_col in corpus.item_meta_df.columns:
             self.category_col = args.category_col
@@ -57,14 +57,14 @@ class SLRC(BaseModel):
         r_intervals = feed_dict['relational_interval']  # [batch_size, -1, relation_num]
 
         # Excitation
-        alphas, pis = self.alphas(c_ids), self.pis(c_ids) + 0.5
-        betas, mus = self.betas(c_ids) + 1., self.mus(c_ids) + 1.
-        sigmas = (self.sigmas(c_ids) + 1.).clamp(min=1e-10, max=10)
+        alphas, pis, mus = self.alphas(c_ids), self.pis(c_ids) + 0.5, self.mus(c_ids) + 1
+        betas = (self.betas(c_ids) + 1).clamp(min=1e-10, max=10)
+        sigmas = (self.sigmas(c_ids) + 1).clamp(min=1e-10, max=10)
         mask = (r_intervals >= 0).float()
         delta_t = r_intervals * mask
         norm_dist = torch.distributions.normal.Normal(mus, sigmas)
         exp_dist = torch.distributions.exponential.Exponential(betas)
-        decay = pis * exp_dist.log_prob(delta_t).exp() + (1. - pis) * norm_dist.log_prob(delta_t).exp()
+        decay = pis * exp_dist.log_prob(delta_t).exp() + (1 - pis) * norm_dist.log_prob(delta_t).exp()
         excitation = (alphas * decay * mask).sum(-1)  # [batch_size, -1]
 
         # Base Intensity (CF)
@@ -78,7 +78,7 @@ class SLRC(BaseModel):
         prediction = base_intensity + excitation
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
-    class Dataset(BaseModel.Dataset):
+    class Dataset(GeneralModel.Dataset):
         def _prepare(self):
             category_col = self.model.category_col
             items = self.corpus.item_meta_df['item_id']

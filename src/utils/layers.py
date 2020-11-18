@@ -21,27 +21,23 @@ class MultiHeadAttention(nn.Module):
         self.k_linear = nn.Linear(d_model, d_model, bias=bias)
         self.v_linear = nn.Linear(d_model, d_model, bias=bias)
 
-    def forward(self, q, k, v, mask=None):
-        bs = q.size(0)
+    def head_split(self, x):  # get dimensions bs * h * -1 * d_k
+        return torch.stack(torch.split(x, self.h, dim=-1), dim=-3)
 
+    def forward(self, q, k, v, mask=None):
         # perform linear operation and split into h heads
         if not self.kq_same:
-            q = self.q_linear(q).view(bs, -1, self.h, self.d_k)
+            q = self.head_split(self.q_linear(q))
         else:
-            q = self.k_linear(q).view(bs, -1, self.h, self.d_k)
-        k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
-        v = self.v_linear(v).view(bs, -1, self.h, self.d_k)
-
-        # transpose to get dimensions bs * h * -1 * d_k
-        q = q.transpose(1, 2)
-        k = k.transpose(1, 2)
-        v = v.transpose(1, 2)
+            q = self.head_split(self.k_linear(q))
+        k = self.head_split(self.k_linear(k))
+        v = self.head_split(self.v_linear(v))
 
         # calculate attention using function we will define next
         output = self.scaled_dot_product_attention(q, k, v, self.d_k, mask)
 
         # concatenate heads and put through final linear layer
-        output = output.transpose(1, 2).reshape(bs, -1, self.d_model)
+        output = torch.cat(torch.unbind(output, dim=-3), dim=-1)
         return output
 
     @staticmethod

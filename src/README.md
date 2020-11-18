@@ -9,7 +9,7 @@
   - `BaseRunner.py`: control the training and evaluation process of a model
   - `...`: customize helpers with specific functions
 - `models\`
-  - `BaseModel.py`: basic model class and dataset class, with some common functions of a model
+  - `BaseModel.py`: basic model classes and dataset classes, with some common functions of a model
   - `...`: customize models inherited from classes in *BaseModel*
 - `utils\`
   - `layers.py`: common modules for model definition (e.g. attention)
@@ -22,10 +22,10 @@
 
 ### Define a New Model
 
-Generally we should define a new class inheriting *BaseModel*, as well as the inner class *Dataset*. The following functions need to be implement at least:
+Generally we can define a new class inheriting *GeneralModel* (a subclass of *BaseModel*), as well as the inner class *Dataset*. The following functions need to be implement at least:
 
 ```python
-class NewModel(BaseModel):
+class NewModel(GeneralModel):
     reader = 'BaseReader'  # assign a reader class, BaseReader by default
     runner = 'BaseRunner'  # assign a runner class, BaseRunner by default
 
@@ -40,16 +40,16 @@ class NewModel(BaseModel):
         out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1)}
         return out_dict
     
-    class Dataset(BaseModel.Dataset):
+    class Dataset(GeneralModel.Dataset):
         # construct feed_dict for a single instance (called by __getitem__)
         # will be collated to a integrated feed dict for each batch
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
-            feed_dict['user_id'] = self.data['user_id'][index]
+            (...)
             return feed_dict
 ```
 
 
 
-If the model definition is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `customize_parameters`) and *Dataset* (e.g. `_prepare`, `negative_sampling`), which needs a deeper understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also implement a new runner class to accommodate different experimental settings.
+If the model definition is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `customize_parameters`) and *Dataset* (e.g. `_prepare`, `actions_before_epoch`), which needs a deeper understanding about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also implement a new runner class to accommodate different experimental settings.
 
