@@ -84,7 +84,7 @@ We repeat each experiment 5 times with different random seeds and report the ave
 
 
 
-Note that we have reorganized the codes for easier usage, and the final results may be a little different from that in the paper (while the order of baselines holds). Besides, we find we can achieve even higher results in `Amazon Electronics` after fine-grained parameter tuning (NDCG@5: 0.42 → 0.45), which outperforms baselines by a large margin. Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh). 
+Note that we have reorganized the codes for easier usage, and the final results may be a little different from that in the paper (while the order of baselines holds). Besides, we find we can achieve much higher results in `Amazon Electronics` after fine-grained parameter tuning (NDCG@5: 0.42 → 0.47), which outperforms baselines by a large margin. Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh). 
 
 
 
