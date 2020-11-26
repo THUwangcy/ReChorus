@@ -22,6 +22,8 @@ class BaseRunner(object):
                             help='Number of epochs.')
         parser.add_argument('--check_epoch', type=int, default=1,
                             help='Check some tensors every check_epoch.')
+        parser.add_argument('--test_epoch', type=int, default=10,
+                            help='Print test results every test_epoch.')
         parser.add_argument('--early_stop', type=int, default=5,
                             help='The number of epochs when dev results drop continuously.')
         parser.add_argument('--lr', type=float, default=1e-3,
@@ -70,6 +72,7 @@ class BaseRunner(object):
     def __init__(self, args):
         self.epoch = args.epoch
         self.check_epoch = args.check_epoch
+        self.test_epoch = args.test_epoch
         self.early_stop = args.early_stop
         self.learning_rate = args.lr
         self.batch_size = args.batch_size
@@ -115,7 +118,7 @@ class BaseRunner(object):
         return optimizer
 
     def train(self, model: nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
-        main_metric_results, dev_results, test_results = list(), list(), list()
+        main_metric_results, dev_results = list(), list()
         self._check_time(start=True)
         try:
             for epoch in range(self.epoch):
@@ -128,17 +131,21 @@ class BaseRunner(object):
                 if len(model.check_list) > 0 and self.check_epoch > 0 and epoch % self.check_epoch == 0:
                     utils.check(model.check_list)
 
-                # Record dev and test results
+                # Record dev results
                 dev_result = self.evaluate(model, data_dict['dev'], self.topk[:1], self.metrics)
-                test_result = self.evaluate(model, data_dict['test'], self.topk[:1], self.metrics)
-                testing_time = self._check_time()
                 dev_results.append(dev_result)
-                test_results.append(test_result)
                 main_metric_results.append(dev_result[self.main_metric])
+                logging_str = 'Epoch {:<5} loss={:<.4f} [{:<.1f} s]\t dev=({})'.format(
+                    epoch + 1, loss, training_time, utils.format_metric(dev_result))
 
-                logging.info("Epoch {:<5} loss={:<.4f} [{:<.1f} s]\t dev=({}) test=({}) [{:<.1f} s] ".format(
-                             epoch + 1, loss, training_time, utils.format_metric(dev_result),
-                             utils.format_metric(test_result), testing_time))
+                # Test
+                if self.test_epoch > 0 and epoch % self.test_epoch  == 0:
+                    test_result = self.evaluate(model, data_dict['test'], self.topk[:1], self.metrics)
+                    logging_str += ' test=({})'.format(utils.format_metric(test_result))
+                testing_time = self._check_time()
+                logging_str += ' [{:<.1f} s]'.format(testing_time)
+
+                logging.info(logging_str)
 
                 # Save model and early stop
                 if max(main_metric_results) == main_metric_results[-1] or \
@@ -156,9 +163,8 @@ class BaseRunner(object):
 
         # Find the best dev result across iterations
         best_epoch = main_metric_results.index(max(main_metric_results))
-        logging.info(os.linesep + "Best Iter(dev)={:>5}\t dev=({}) test=({}) [{:<.1f} s] ".format(
-                     best_epoch + 1, utils.format_metric(dev_results[best_epoch]),
-                     utils.format_metric(test_results[best_epoch]), self.time[1] - self.time[0]))
+        logging.info(os.linesep + "Best Iter(dev)={:>5}\t dev=({}) [{:<.1f} s] ".format(
+            best_epoch + 1, utils.format_metric(dev_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
 
     def fit(self, model: nn.Module, data: BaseModel.Dataset, epoch=-1) -> float:

@@ -14,7 +14,7 @@ from utils import utils
 from helpers.BaseReader import BaseReader
 
 
-class BaseModel(torch.nn.Module):
+class BaseModel(nn.Module):
     reader = 'BaseReader'
     runner = 'BaseRunner'
     extra_log_args = []
@@ -34,11 +34,11 @@ class BaseModel(torch.nn.Module):
     @staticmethod
     def init_weights(m):
         if 'Linear' in str(type(m)):
-            torch.nn.init.normal_(m.weight, mean=0.0, std=0.01)
+            nn.init.normal_(m.weight, mean=0.0, std=0.01)
             if m.bias is not None:
-                torch.nn.init.normal_(m.bias, mean=0.0, std=0.01)
+                nn.init.normal_(m.bias, mean=0.0, std=0.01)
         elif 'Embedding' in str(type(m)):
-            torch.nn.init.normal_(m.weight, mean=0.0, std=0.01)
+            nn.init.normal_(m.weight, mean=0.0, std=0.01)
 
     def __init__(self, args, corpus: BaseReader):
         super(BaseModel, self).__init__()

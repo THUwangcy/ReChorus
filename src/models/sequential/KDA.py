@@ -71,7 +71,7 @@ class KDA(SequentialModel):
             self.A = nn.Linear(self.emb_size, self.attention_size)
             self.A_out = nn.Linear(self.attention_size, 1, bias=False)
         # Prediction
-        self.item_bias = nn.Embedding(self.item_num + 1, 1)
+        self.item_bias = nn.Embedding(self.item_num, 1)
 
     def actions_before_train(self):
         if not self.freq_rand:
@@ -197,7 +197,6 @@ class KDA(SequentialModel):
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
-            feed_dict['user_id'] = self.data['user_id'][index]
             feed_dict['item_val'] = [self.item_val_dict[item] for item in feed_dict['item_id']]
             delta_t = self.data['time'][index] - self.data['time_his'][index]
             feed_dict['history_delta_t'] = DFTReader.norm_time(delta_t, self.corpus.t_scalar)
