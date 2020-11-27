@@ -53,7 +53,7 @@ class BaseModel(nn.Module):
         logging.info('#params: %d' % self.total_parameters)
 
     """
-    Methods must to override
+    Key Methods
     """
     def _define_params(self) -> NoReturn:
         pass
@@ -61,29 +61,16 @@ class BaseModel(nn.Module):
     def forward(self, feed_dict: dict) -> dict:
         """
         :param feed_dict: batch prepared in Dataset
-        :return: prediction with shape [batch_size, n_candidates]
+        :return: out_dict, including prediction with shape [batch_size, n_candidates]
         """
         pass
 
-    """
-    Methods optional to override
-    """
     def loss(self, out_dict: dict) -> torch.Tensor:
-        """
-        BPR ranking loss with optimization on multiple negative samples
-        @{Recurrent neural networks with top-k gains for session-based recommendations}
-        :param out_dict: contain prediction with [batch_size, -1], the first column for positive, the rest for negative
-        :return:
-        """
-        predictions = out_dict['prediction']
-        pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
-        neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
-        # loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
-        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
-        loss = F.softplus(-(pos_pred - neg_pred)).mean()
-        # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
-        return loss
+        pass
 
+    """
+    Auxiliary Methods
+    """
     def customize_parameters(self) -> list:
         # customize optimizer settings for different parameters
         weight_p, bias_p = [], []
@@ -95,9 +82,6 @@ class BaseModel(nn.Module):
         optimize_dict = [{'params': weight_p}, {'params': bias_p, 'weight_decay': 0}]
         return optimize_dict
 
-    """
-    Auxiliary methods
-    """
     def save_model(self, model_path=None) -> NoReturn:
         if model_path is None:
             model_path = self.model_path
@@ -122,7 +106,7 @@ class BaseModel(nn.Module):
         pass
 
     """
-    Define dataset class for the model
+    Define Dataset Class
     """
     class Dataset(BaseDataset):
         def __init__(self, model, corpus, phase: str):
@@ -175,22 +159,44 @@ class BaseModel(nn.Module):
 
 
 class GeneralModel(BaseModel):
+    @staticmethod
+    def parse_model_args(parser):
+        parser.add_argument('--test_all', type=int, default=0,
+                            help='Whether testing on all the items.')
+        return BaseModel.parse_model_args(parser)
+
     def __init__(self, args, corpus):
         self.user_num = corpus.n_users
         self.item_num = corpus.n_items
         self.num_neg = args.num_neg
         self.dropout = args.dropout
+        self.test_all = args.test_all
         super().__init__(args, corpus)
 
-    class Dataset(BaseModel.Dataset):
-        def _prepare(self):
-            self.neg_items = None if self.phase == 'train' else self.data['neg_items']
-            # ↑ Sample negative items before each epoch during training
-            super()._prepare()
+    def loss(self, out_dict: dict) -> torch.Tensor:
+        """
+        BPR ranking loss with optimization on multiple negative samples (a little different now)
+        @{Recurrent neural networks with top-k gains for session-based recommendations}
+        :param out_dict: contain prediction with [batch_size, -1], the first column for positive, the rest for negative
+        :return:
+        """
+        predictions = out_dict['prediction']
+        pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
+        neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
+        # loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
+        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
+        loss = F.softplus(-(pos_pred - neg_pred)).mean()
+        # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
+        return loss
 
+    class Dataset(BaseModel.Dataset):
         def _get_feed_dict(self, index):
             target_item = self.data['item_id'][index]
-            neg_items = self.neg_items[index]
+            if 'neg_items' not in self.data.keys() or (self.model.test_all and self.phase == 'test'):
+                all_items = np.arange(1, self.corpus.n_items)
+                neg_items = all_items[all_items != target_item]
+            else:
+                neg_items = self.data['neg_items'][index]
             item_ids = np.concatenate([[target_item], neg_items])
             feed_dict = {
                 'user_id': self.data['user_id'][index],
@@ -200,12 +206,13 @@ class GeneralModel(BaseModel):
 
         # Sample negative items for all the instances
         def actions_before_epoch(self) -> NoReturn:
-            self.neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
+            neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
             for i, u in enumerate(self.data['user_id']):
                 user_clicked_set = self.corpus.user_clicked_set[u]
                 for j in range(self.model.num_neg):
-                    while self.neg_items[i][j] in user_clicked_set:
-                        self.neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
+                    while neg_items[i][j] in user_clicked_set:
+                        neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
+            self.data['neg_items'] = neg_items
 
 
 class SequentialModel(GeneralModel):
