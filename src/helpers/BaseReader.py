@@ -20,15 +20,12 @@ class BaseReader(object):
                             help='Choose a dataset.')
         parser.add_argument('--sep', type=str, default='\t',
                             help='sep of csv file.')
-        parser.add_argument('--history_max', type=int, default=20,
-                            help='Maximum length of history.')
         return parser
 
     def __init__(self, args):
         self.sep = args.sep
         self.prefix = args.path
         self.dataset = args.dataset
-        self.history_max = args.history_max
 
         self._read_data()
         self._append_his_info()
@@ -44,37 +41,31 @@ class BaseReader(object):
         self.all_df = pd.concat([df[['user_id', 'item_id', 'time']] for df in self.data_df.values()])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
         for key in ['dev', 'test']:
-            neg_items = np.array(self.data_df[key]['neg_items'].tolist())
-            assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones
+            if 'neg_items' in self.data_df[key]:
+                neg_items = np.array(self.data_df[key]['neg_items'].tolist())
+                assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones
         logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(self.n_users, self.n_items, len(self.all_df)))
 
     def _append_his_info(self) -> NoReturn:
         """
-        Add history info to data_df: item_his, time_his, his_length
+        Add history info to data_df: pos
         ! Need data_df to be sorted by time in ascending order
-        :return:
         """
         logging.info('Appending history info...')
-        user_his_dict = dict()  # store the already seen sequence of each user
+        self.user_his = dict()  # store the already seen sequence of each user
         for key in ['train', 'dev', 'test']:
             df = self.data_df[key]
-            i_history, t_history = [], []
+            position = list()
             for uid, iid, t in zip(df['user_id'], df['item_id'], df['time']):
-                if uid not in user_his_dict:
-                    user_his_dict[uid] = []
-                i_history.append([x[0] for x in user_his_dict[uid]])
-                t_history.append([x[1] for x in user_his_dict[uid]])
-                user_his_dict[uid].append((iid, t))
-            df['item_his'] = i_history
-            df['time_his'] = t_history
-            if self.history_max > 0:
-                df['item_his'] = df['item_his'].apply(lambda x: x[-self.history_max:])
-                df['time_his'] = df['time_his'].apply(lambda x: x[-self.history_max:])
-            df['his_length'] = df['item_his'].apply(lambda x: len(x))
+                if uid not in self.user_his:
+                    self.user_his[uid] = list()
+                position.append(len(self.user_his[uid]))
+                self.user_his[uid].append((iid, t))
+            df['position'] = position
 
         self.user_clicked_set = dict()
-        for uid in user_his_dict:
-            self.user_clicked_set[uid] = set([x[0] for x in user_his_dict[uid]])
+        for uid in self.user_his:
+            self.user_clicked_set[uid] = set([x[0] for x in self.user_his[uid]])
 
 
 if __name__ == '__main__':

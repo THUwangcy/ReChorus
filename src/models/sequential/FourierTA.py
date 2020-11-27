@@ -68,7 +68,7 @@ class FourierTA(SequentialModel):
     class Dataset(SequentialModel.Dataset):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
-            delta_t = self.data['time'][index] - self.data['time_his'][index]
+            delta_t = self.data['time'][index] - feed_dict['history_times']
             feed_dict['history_delta_t'] = DFTReader.norm_time(delta_t, self.model.t_scalar)
             return feed_dict
 

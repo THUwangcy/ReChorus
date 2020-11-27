@@ -22,7 +22,7 @@ class BaseRunner(object):
                             help='Number of epochs.')
         parser.add_argument('--check_epoch', type=int, default=1,
                             help='Check some tensors every check_epoch.')
-        parser.add_argument('--test_epoch', type=int, default=10,
+        parser.add_argument('--test_epoch', type=int, default=-1,
                             help='Print test results every test_epoch.')
         parser.add_argument('--early_stop', type=int, default=5,
                             help='The number of epochs when dev results drop continuously.')
@@ -42,7 +42,7 @@ class BaseRunner(object):
                             help='pin_memory in DataLoader')
         parser.add_argument('--topk', type=str, default='[5,10]',
                             help='The number of items recommended to each user.')
-        parser.add_argument('--metric', type=str, default='["NDCG","HR"]',
+        parser.add_argument('--metric', type=str, default="['NDCG','HR']",
                             help='metrics: NDCG, HR')
         return parser
 

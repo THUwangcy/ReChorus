@@ -38,7 +38,7 @@ class Chorus(SLRCPlus):
             .format(corpus.dataset, self.emb_size, self.margin)
         if self.stage == 1:
             self.model_path = self.pretrain_path
-        self.relation_range = torch.from_numpy(np.arange(corpus.n_relations)).to(self.device)
+        self.relation_range = torch.from_numpy(np.arange(self.relation_num)).to(self.device)
 
     def actions_before_train(self):
         if self.stage == 2:
@@ -173,7 +173,8 @@ class Chorus(SLRCPlus):
                 self.data = utils.df_to_dict(self.corpus.relation_df)
                 self.neg_heads = np.zeros(len(self), dtype=int)
                 self.neg_tails = np.zeros(len(self), dtype=int)
-            super()._prepare()
+            else:
+                super()._prepare()
 
         def _get_feed_dict(self, index):
             if self.kg_train:

@@ -209,15 +209,30 @@ class GeneralModel(BaseModel):
 
 
 class SequentialModel(GeneralModel):
+    @staticmethod
+    def parse_model_args(parser):
+        parser.add_argument('--history_max', type=int, default=20,
+                            help='Maximum length of history.')
+        return GeneralModel.parse_model_args(parser)
+
+    def __init__(self, args, corpus):
+        self.history_max = args.history_max
+        super().__init__(args, corpus)
+
     class Dataset(GeneralModel.Dataset):
         def _prepare(self):
-            idx_select = np.array(self.data['his_length']) > 0  # history length must be non-zero
+            idx_select = np.array(self.data['position']) > 0  # history length must be non-zero
             for key in self.data:
                 self.data[key] = np.array(self.data[key])[idx_select]
             super()._prepare()
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
-            feed_dict['history_items'] = np.array(self.data['item_his'][index])
-            feed_dict['lengths'] = self.data['his_length'][index]
+            pos = self.data['position'][index]
+            user_seq = self.corpus.user_his[feed_dict['user_id']][:pos]
+            if self.model.history_max > 0:
+                user_seq = user_seq[-self.model.history_max:]
+            feed_dict['history_items'] = np.array([x[0] for x in user_seq])
+            feed_dict['history_times'] = np.array([x[1] for x in user_seq])
+            feed_dict['lengths'] = len(feed_dict['history_items'])
             return feed_dict

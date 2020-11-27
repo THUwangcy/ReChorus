@@ -82,7 +82,6 @@ class TiSASRec(SASRec):
             feed_dict = super()._get_feed_dict(index)
             user_id = self.data['user_id'][index]
             min_interval = self.corpus.user_min_interval[user_id]
-            feed_dict['history_times'] = np.array(self.data['time_his'][index])
             feed_dict['user_min_intervals'] = min_interval
             return feed_dict
 

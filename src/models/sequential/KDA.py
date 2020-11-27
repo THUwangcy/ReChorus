@@ -198,7 +198,7 @@ class KDA(SequentialModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             feed_dict['item_val'] = [self.item_val_dict[item] for item in feed_dict['item_id']]
-            delta_t = self.data['time'][index] - self.data['time_his'][index]
+            delta_t = self.data['time'][index] - feed_dict['history_times']
             feed_dict['history_delta_t'] = DFTReader.norm_time(delta_t, self.corpus.t_scalar)
             if self.phase == 'train':
                 feed_dict['head_id'] = np.concatenate([[self.kg_data['head'][index]], self.neg_heads[index]])

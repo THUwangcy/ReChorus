@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.distributions
 import numpy as np
 
-from models.BaseModel import GeneralModel
+from models.BaseModel import SequentialModel
 from helpers.KGReader import KGReader
 
 """
@@ -13,7 +13,7 @@ from helpers.KGReader import KGReader
   Also include the excitation of relational history interactions (not only repeat consumptions), 
   and related parameters are category-specific instead of item-specific.
 """
-class SLRCPlus(GeneralModel):
+class SLRCPlus(SequentialModel):
     reader = 'KGReader'
 
     @staticmethod
@@ -24,7 +24,7 @@ class SLRCPlus(GeneralModel):
                             help='Time scalar for time intervals.')
         parser.add_argument('--category_col', type=str, default='i_category',
                             help='The name of category column in item_meta.csv.')
-        return GeneralModel.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus: KGReader):
         self.emb_size = args.emb_size
@@ -78,7 +78,7 @@ class SLRCPlus(GeneralModel):
         prediction = base_intensity + excitation
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
 
-    class Dataset(GeneralModel.Dataset):
+    class Dataset(SequentialModel.Dataset):
         def _prepare(self):
             category_col = self.model.category_col
             items = self.corpus.item_meta_df['item_id']
@@ -89,7 +89,7 @@ class SLRCPlus(GeneralModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             user_id, time = self.data['user_id'][index], self.data['time'][index]
-            history_item, history_time = self.data['item_his'][index], self.data['time_his'][index]
+            history_item, history_time = feed_dict['history_items'], feed_dict['history_times']
 
             # Collect information related to the target item:
             # - category id
@@ -99,10 +99,10 @@ class SLRCPlus(GeneralModel):
             for i, target_item in enumerate(feed_dict['item_id']):
                 interval = np.ones(self.model.relation_num, dtype=float) * -1
                 # reserve the first dimension for the repeat consumption interval
-                for j in range(len(history_item))[::-1]:
-                    if history_item[j] == target_item:
-                        interval[0] = (time - history_time[j]) / self.model.time_scalar
-                        break
+                # for j in range(len(history_item))[::-1]:
+                #     if history_item[j] == target_item:
+                #         interval[0] = (time - history_time[j]) / self.model.time_scalar
+                #         break
                 # the rest for relational intervals
                 for r_idx in range(1, self.model.relation_num):
                     for j in range(len(history_item))[::-1]:
