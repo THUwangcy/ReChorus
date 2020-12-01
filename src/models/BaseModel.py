@@ -191,7 +191,7 @@ class GeneralModel(BaseModel):
 
     class Dataset(BaseModel.Dataset):
         def _get_feed_dict(self, index):
-            target_item = self.data['item_id'][index]
+            user_id, target_item = self.data['user_id'][index], self.data['item_id'][index]
             if 'neg_items' not in self.data.keys() or (self.model.test_all and self.phase == 'test'):
                 all_items = np.arange(1, self.corpus.n_items)
                 neg_items = all_items[all_items != target_item]
@@ -199,7 +199,7 @@ class GeneralModel(BaseModel):
                 neg_items = self.data['neg_items'][index]
             item_ids = np.concatenate([[target_item], neg_items])
             feed_dict = {
-                'user_id': self.data['user_id'][index],
+                'user_id': user_id,
                 'item_id': item_ids
             }
             return feed_dict
