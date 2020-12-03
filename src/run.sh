@@ -36,13 +36,23 @@
 #
 #python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset Beauty
 #
-#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset Beauty
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --reorder_ratio 0 --encoder SASRec --stage 2 --checkpoint blabla
+#
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --reorder_ratio 0.7 --encoder SASRec --stage 0
 
-python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
-               --reorder_ratio 0.7 --encoder SASRec --stage 1 --early_stop 0 --batch_size 512 --temperature 0.5 --epoch 50 --gpu 1
-python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
-               --test_epoch 1 --encoder SASRec --stage 2 --gpu 1 --early_stop 10 \
-               --checkpoint ../model/ContrastRec/Pre__Beauty__2019__encoder=SASRec__temp=0.5__bsz=512.pt
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --reorder_ratio 0.7 --encoder SASRec --stage 1 --early_stop 0 --batch_size 512 --temperature 0.5 --epoch 50 --gpu 1
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --test_epoch 1 --encoder SASRec --stage 2 --gpu 1 --early_stop 10 \
+#               --checkpoint ../model/ContrastRec/Pre__Beauty__2019__encoder=SASRec__temp=0.5__bsz=512.pt
+
+#python main.py --model_name ContrastRec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --reorder_ratio 0.7 --encoder GRU4Rec --stage 1 --early_stop 0 --batch_size 512 --temperature 0.5 --epoch 50
+#python main.py --model_name ContrastRec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset Beauty \
+#               --test_epoch 1 --encoder GRU4Rec --stage 2 --early_stop 10 \
+#               --checkpoint ../model/ContrastRec/Pre__Beauty__2019__encoder=GRU4Rec__temp=0.5__bsz=512.pt
 
 
 ## ml-100k
@@ -54,3 +64,32 @@ python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads
 #
 #python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset ml-100k
 
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset ml-100k \
+#               --reorder_ratio 0.5 --encoder SASRec --stage 1 --early_stop 0 --batch_size 512 --temperature 1 --epoch 50 --gpu 1
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset ml-100k \
+#               --test_epoch 1 --encoder SASRec --stage 2 --gpu 1 --early_stop 10 \
+#               --checkpoint ../model/ContrastRec/Pre__ml-100k__2019__encoder=SASRec__temp=1.0__bsz=512.pt
+
+# python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 2 --checkpoint blabla  --gpu 1 --early_stop 10
+
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.1
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.3
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.5
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.7
+#python main.py --model_name ContrastRec --emb_size 64 --num_layers 2 --num_heads 2 --lr 2e-4 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder SASRec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.9
+
+python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder GRU4Rec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.1
+python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder GRU4Rec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.3
+python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder GRU4Rec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.5
+python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder GRU4Rec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.7
+python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --encoder GRU4Rec --stage 0 --checkpoint blabla  --gpu 1 --early_stop 10 --reorder_ratio 0.9
+
+#python main.py --model_name ContrastRec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --reorder_ratio 0.5 --encoder GRU4Rec --stage 2 --checkpoint blabla --early_stop 10
+#
+#python main.py --model_name ContrastRec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k --test_epoch 1 --reorder_ratio 0.5 --encoder GRU4Rec --stage 0 --early_stop 10
+#
+#python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k \
+#               --reorder_ratio 0.5 --encoder GRU4Rec --stage 1 --early_stop 0 --batch_size 512 --temperature 0.2 --epoch 50 --gpu 1
+#python main.py --model_name ContrastRec --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 50 --dataset ml-100k \
+#               --test_epoch 1 --encoder GRU4Rec --stage 2 --gpu 1 --early_stop 10 \
+#               --checkpoint ../model/ContrastRec/Pre__ml-100k__2019__encoder=GRU4Rec__temp=0.2__bsz=512.pt

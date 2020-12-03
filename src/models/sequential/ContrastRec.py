@@ -21,6 +21,8 @@ class ContrastRec(SequentialModel):
                             help='Stage of training: 0-augmentation, 1-representation, 2-recommendation.')
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
+        parser.add_argument('--hidden_size', type=int, default=100,
+                            help='Size of hidden vectors in GRU..')
         parser.add_argument('--num_layers', type=int, default=2,
                             help='Number of self-attention layers.')
         parser.add_argument('--num_heads', type=int, default=2,
@@ -40,6 +42,7 @@ class ContrastRec(SequentialModel):
     def __init__(self, args, corpus):
         self.stage = args.stage
         self.emb_size = args.emb_size
+        self.hidden_size = args.hidden_size
         self.max_his = args.history_max
         self.num_layers = args.num_layers
         self.num_heads = args.num_heads
@@ -67,10 +70,10 @@ class ContrastRec(SequentialModel):
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
         if self.encoder_name == 'GRU4Rec':
-            self.encoder = GRU4RecEncoder(self.emb_size, self.emb_size)
+            self.encoder = GRU4RecEncoder(self.emb_size, self.hidden_size)
         elif self.encoder_name == 'SASRec':
             self.encoder = SASRecEncoder(
-                self.emb_size, self.num_layers, self.num_heads,self.max_his, self.dropout, self.device)
+                self.emb_size, self.num_layers, self.num_heads, self.max_his, self.dropout, self.device)
         else:
             raise ValueError('Invalid sequence encoder.')
         self.criterion = SupConLoss(self.device, temperature=self.temperature)
@@ -95,7 +98,6 @@ class ContrastRec(SequentialModel):
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
-            # TODO: 根据 future_items 构建稀疏矩阵，并计算 Jaccard 距离
 
         return out_dict
 
@@ -120,7 +122,6 @@ class ContrastRec(SequentialModel):
             idx_select = np.array(self.data['position']) > 0
             for key in self.data:
                 self.data[key] = np.array(self.data[key])[idx_select]
-
             # record history sequence
             uid, pos = self.data['user_id'], self.data['position']
             history = list()
@@ -140,16 +141,12 @@ class ContrastRec(SequentialModel):
                 if self.model.stage == 1:
                     history_items_aug = self.reorder_op(history_items, self.model.reorder_ratio)
                     feed_dict['history_items_aug'] = history_items_aug
-                    # pos = self.data['position'][index]
-                    # user_seq = self.corpus.user_his[feed_dict['user_id']]
-                    # future_items = np.array([x[0] for x in user_seq[:-2][pos: pos + self.model.future_window]])
-                    # feed_dict['future_items'] = future_items
             feed_dict['history_items'] = history_items
             feed_dict['lengths'] = len(feed_dict['history_items'])
             return feed_dict
 
 
-""" Soft-Supervised Contrastive Loss"""
+""" Supervised Contrastive Loss"""
 class SupConLoss(nn.Module):
     def __init__(self, device, temperature=0.5, contrast_mode='all', base_temperature=1.):
         super(SupConLoss, self).__init__()

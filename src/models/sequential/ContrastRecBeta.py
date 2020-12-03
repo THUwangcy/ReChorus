@@ -1,13 +1,10 @@
 # -*- coding: UTF-8 -*-
 
-import os
-import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from typing import List
-from torch.nn.utils.rnn import pad_sequence
+from scipy import sparse
 
 from models.BaseModel import SequentialModel
 from models.BaseModel import GeneralModel
@@ -15,14 +12,14 @@ from utils import layers
 
 
 class ContrastRecBeta(SequentialModel):
-    extra_log_args = ['stage', 'emb_size', 'num_layers', 'num_heads', 'reorder_ratio', 'temperature', 'encoder']
+    extra_log_args = ['emb_size', 'num_layers', 'num_heads', 'reorder_ratio', 'temperature', 'encoder']
 
     @staticmethod
     def parse_model_args(parser):
-        parser.add_argument('--stage', type=int, default=1,
-                            help='Stage of training: 0-augmentation, 1-representation, 2-recommendation.')
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
+        parser.add_argument('--hidden_size', type=int, default=100,
+                            help='Size of hidden vectors in GRU..')
         parser.add_argument('--num_layers', type=int, default=2,
                             help='Number of self-attention layers.')
         parser.add_argument('--num_heads', type=int, default=2,
@@ -31,17 +28,15 @@ class ContrastRecBeta(SequentialModel):
                             help='Ratio of historical sequence to be reordered.')
         parser.add_argument('--temperature', type=float, default=0.2,
                             help='Temperature in contrastive loss.')
-        parser.add_argument('--future_window', type=int, default=5,
+        parser.add_argument('--future_window', type=int, default=1,
                             help='Use the subsequent future_window items to construct soft labels.')
         parser.add_argument('--encoder', type=str, default='SASRec',
                             help='Choose a sequence encoder: GRU4Rec, SASRec.')
-        parser.add_argument('--checkpoint', type=str, default='',
-                            help='Choose a pre-train model checkpoint.')
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
-        self.stage = args.stage
         self.emb_size = args.emb_size
+        self.hidden_size = args.hidden_size
         self.max_his = args.history_max
         self.num_layers = args.num_layers
         self.num_heads = args.num_heads
@@ -51,28 +46,13 @@ class ContrastRecBeta(SequentialModel):
         self.encoder_name = args.encoder
         super().__init__(args, corpus)
 
-        if self.stage == 1:
-            if args.checkpoint == '':
-                self.pre_path = '../model/ContrastRecBeta/Pre__{}__{}__encoder={}__temp={}__bsz={}.pt'.format(
-                    corpus.dataset, args.random_seed, self.encoder_name, self.temperature, args.batch_size)
-            self.model_path = self.pre_path
-        else:
-            self.pre_path = args.checkpoint
-
-    def actions_before_train(self):
-        if self.stage == 2:
-            if os.path.exists(self.pre_path):
-                self.load_model(self.pre_path)
-            else:
-                logging.warning('Train from scratch because pre-train model does not exist!')
-
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
         if self.encoder_name == 'GRU4Rec':
-            self.encoder = GRU4RecEncoder(self.emb_size, self.emb_size)
+            self.encoder = GRU4RecEncoder(self.emb_size, self.hidden_size)
         elif self.encoder_name == 'SASRec':
             self.encoder = SASRecEncoder(
-                self.emb_size, self.num_layers, self.num_heads,self.max_his, self.dropout, self.device)
+                self.emb_size, self.num_layers, self.num_heads, self.max_his, self.dropout, self.device)
         else:
             raise ValueError('Invalid sequence encoder.')
         self.criterion = SupConLoss(self.device, temperature=self.temperature)
@@ -89,7 +69,7 @@ class ContrastRecBeta(SequentialModel):
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         out_dict = {'prediction': prediction}
 
-        if self.stage == 1 and feed_dict['phase'] == 'train':
+        if feed_dict['phase'] == 'train':
             history_aug = feed_dict['history_items_aug']
             his_aug_vectors = self.i_embeddings(history_aug)
             his_aug_vector = self.encoder(his_aug_vectors, lengths)
@@ -98,14 +78,18 @@ class ContrastRecBeta(SequentialModel):
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
             # TODO: 根据 future_items 构建稀疏矩阵，并计算 Jaccard 距离
+            jaccard = feed_dict['jaccard']
+            mask = jaccard.masked_fill(jaccard == 0, -np.inf)
+            exp_mask = mask.exp()
+            mask = exp_mask / exp_mask.sum(-1, keepdim=True)
+            out_dict['mask'] = mask.float()
 
         return out_dict
 
     def loss(self, out_dict):
-        if self.stage == 1:
-            loss = self.criterion(out_dict['features'], labels=out_dict['labels'])
-        else:
-            loss = super().loss(out_dict)
+        # loss = self.criterion(out_dict['features'])
+        # loss = self.criterion(out_dict['features'], labels=out_dict['labels'])
+        loss = super().loss(out_dict) + 3 * self.criterion(out_dict['features'], mask=out_dict['mask'])
         return loss
 
     class Dataset(GeneralModel.Dataset):
@@ -122,57 +106,55 @@ class ContrastRecBeta(SequentialModel):
             idx_select = np.array(self.data['position']) > 0
             for key in self.data:
                 self.data[key] = np.array(self.data[key])[idx_select]
-
-            # record history sequence
+            # record history and future sequence
             uid, pos = self.data['user_id'], self.data['position']
-            history = list()
+            history, future = list(), list()
             for u, p in zip(uid, pos):
-                history_items = np.array([x[0] for x in self.corpus.user_his[u][:p]])
+                user_seq = self.corpus.user_his[u]
+                history_items = np.array([x[0] for x in user_seq[:p]])
+                future_items = np.array([x[0] for x in user_seq[p:][:-2]])  # avoid seeing valid and test data
                 if self.model.history_max > 0:
                     history_items = history_items[-self.model.history_max:]
+                if self.model.future_window > 0:
+                    future_items = future_items[:self.model.future_window]
                 history.append(history_items.tolist())
+                future.append(future_items.tolist())
             self.data['history_items'] = history
+            self.data['future_items'] = future
             super()._prepare()
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             history_items = np.array(self.data['history_items'][index])
-            if self.model.stage in [0, 1] and self.phase == 'train':
+            if self.phase == 'train':
                 history_items = self.reorder_op(history_items, self.model.reorder_ratio)
-                if self.model.stage == 1:
-                    history_items_aug = self.reorder_op(history_items, self.model.reorder_ratio)
-                    feed_dict['history_items_aug'] = history_items_aug
-                    # pos = self.data['position'][index]
-                    # user_seq = self.corpus.user_his[feed_dict['user_id']]
-                    # future_items = np.array([x[0] for x in user_seq[:-2][pos: pos + self.model.future_window]])
-                    # feed_dict['future_items'] = future_items
+                history_items_aug = self.reorder_op(history_items, self.model.reorder_ratio)
+                feed_dict['history_items_aug'] = history_items_aug
+                feed_dict['future_items'] = np.array(self.data['future_items'][index])
             feed_dict['history_items'] = history_items
             feed_dict['lengths'] = len(feed_dict['history_items'])
             return feed_dict
 
-        def collate_batch(self, feed_dicts: List[dict]) -> dict:
-            # if self.phase == 'train':
-            #     intersection = list()
-            #     for i in range(len(feed_dicts)):
-            #         for j in range(len(feed_dicts)):
-            #             if i != j:
-            #                 s1, s2 = feed_dicts[i]['future_items'], feed_dicts[j]['future_items']
-            #                 inter_size = len(set(s1) & set(s2))
-            #                 intersection.append(int(inter_size > 0))
-            #     print(np.mean(intersection))
-            feed_dict = dict()
-            for key in feed_dicts[0]:
-                stack_val = np.array([d[key] for d in feed_dicts])
-                if stack_val.dtype == np.object:  # inconsistent length (e.g. history)
-                    feed_dict[key] = pad_sequence([torch.from_numpy(x) for x in stack_val], batch_first=True)
-                else:
-                    feed_dict[key] = torch.from_numpy(stack_val)
-            feed_dict['batch_size'] = len(feed_dicts)
-            feed_dict['phase'] = self.phase
+        def collate_batch(self, feed_dicts):
+            feed_dict = super().collate_batch(feed_dicts)
+            if self.phase == 'train':
+                future = feed_dict['future_items'].numpy()
+                bsz, future_num = future.shape
+                idx = np.arange(bsz)
+                idx = np.tile(np.expand_dims(idx, -1), (1, future_num))
+                valid_mask = future.reshape(-1) > 0
+                row = idx.reshape(-1)[valid_mask]
+                col = future.reshape(-1)[valid_mask]
+                data = np.ones_like(row)
+                c = sparse.csr_matrix((data, (row, col)), shape=(bsz, self.model.item_num))
+                inter = c.dot(c.T).todense()
+                card = (future > 0).sum(-1)
+                union = card[None, :] + card[:, None] - inter
+                feed_dict['jaccard'] = torch.from_numpy(inter / union)  # bsz * bsz
             return feed_dict
 
 
-""" Soft-Supervised Contrastive Loss"""
+""" Supervised Contrastive Loss"""
 class SupConLoss(nn.Module):
     def __init__(self, device, temperature=0.5, contrast_mode='all', base_temperature=1.):
         super(SupConLoss, self).__init__()
