@@ -18,13 +18,13 @@ from models.BaseModel import BaseModel
 class BaseRunner(object):
     @staticmethod
     def parse_runner_args(parser):
-        parser.add_argument('--epoch', type=int, default=100,
+        parser.add_argument('--epoch', type=int, default=200,
                             help='Number of epochs.')
         parser.add_argument('--check_epoch', type=int, default=1,
                             help='Check some tensors every check_epoch.')
         parser.add_argument('--test_epoch', type=int, default=-1,
                             help='Print test results every test_epoch.')
-        parser.add_argument('--early_stop', type=int, default=5,
+        parser.add_argument('--early_stop', type=int, default=10,
                             help='The number of epochs when dev results drop continuously.')
         parser.add_argument('--lr', type=float, default=1e-3,
                             help='Learning rate.')
