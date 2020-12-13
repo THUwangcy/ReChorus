@@ -5,7 +5,7 @@
 
 ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partially alleviate the problem that different papers adopt non-comparable experimental settings, so as to form a "Chorus" of recommendation algorithms. 
 
-This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familar with classical methods. The characteristics of our framework can be summarized as follows:
+This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familiar with classical methods. The characteristics of our framework can be summarized as follows:
 
 - **Agile**: concentrate on your model design in a single file and implement new models quickly
 - **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments

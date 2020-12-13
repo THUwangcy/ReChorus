@@ -7,3 +7,4 @@ __pycache__/
 figure/
 doc/
 model/
+search.py

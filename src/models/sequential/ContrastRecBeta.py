@@ -12,7 +12,7 @@ from utils import layers
 
 
 class ContrastRecBeta(SequentialModel):
-    extra_log_args = ['emb_size', 'num_layers', 'num_heads', 'reorder_ratio', 'temperature', 'encoder']
+    extra_log_args = ['gamma', 'temperature', 'encoder']
 
     @staticmethod
     def parse_model_args(parser):
@@ -24,10 +24,14 @@ class ContrastRecBeta(SequentialModel):
                             help='Number of self-attention layers.')
         parser.add_argument('--num_heads', type=int, default=2,
                             help='Number of attention heads.')
-        parser.add_argument('--reorder_ratio', type=float, default=0.7,
-                            help='Ratio of historical sequence to be reordered.')
-        parser.add_argument('--temperature', type=float, default=0.2,
+        parser.add_argument('--temperature', type=float, default=0.5,
                             help='Temperature in contrastive loss.')
+        parser.add_argument('--gamma', type=float, default=1,
+                            help='Coefficient of the contrastive loss.')
+        parser.add_argument('--beta_a', type=int, default=3,
+                            help='Parameter of the beta distribution for sampling.')
+        parser.add_argument('--beta_b', type=int, default=3,
+                            help='Parameter of the beta distribution for sampling.')
         parser.add_argument('--future_window', type=int, default=1,
                             help='Use the subsequent future_window items to construct soft labels.')
         parser.add_argument('--encoder', type=str, default='SASRec',
@@ -40,8 +44,10 @@ class ContrastRecBeta(SequentialModel):
         self.max_his = args.history_max
         self.num_layers = args.num_layers
         self.num_heads = args.num_heads
-        self.reorder_ratio = args.reorder_ratio
         self.temperature = args.temperature
+        self.gamma = args.gamma
+        self.beta_a = args.beta_a
+        self.beta_b = args.beta_b
         self.future_window = args.future_window
         self.encoder_name = args.encoder
         super().__init__(args, corpus)
@@ -77,7 +83,6 @@ class ContrastRecBeta(SequentialModel):
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
-            # TODO: 根据 future_items 构建稀疏矩阵，并计算 Jaccard 距离
             jaccard = feed_dict['jaccard']
             mask = jaccard.masked_fill(jaccard == 0, -np.inf)
             exp_mask = mask.exp()
@@ -89,12 +94,12 @@ class ContrastRecBeta(SequentialModel):
     def loss(self, out_dict):
         # loss = self.criterion(out_dict['features'])
         # loss = self.criterion(out_dict['features'], labels=out_dict['labels'])
-        loss = super().loss(out_dict) + 3 * self.criterion(out_dict['features'], mask=out_dict['mask'])
+        loss = super().loss(out_dict) + self.gamma * self.criterion(out_dict['features'], mask=out_dict['mask'])
         return loss
 
     class Dataset(GeneralModel.Dataset):
-        @staticmethod
-        def reorder_op(seq, ratio):
+        def reorder_op(self, seq):
+            ratio = np.random.beta(a=self.model.beta_a, b=self.model.beta_b)
             select_len = int(len(seq) * ratio)
             start = np.random.randint(0, len(seq) - select_len + 1)
             idx_range = np.arange(len(seq))
@@ -112,7 +117,7 @@ class ContrastRecBeta(SequentialModel):
             for u, p in zip(uid, pos):
                 user_seq = self.corpus.user_his[u]
                 history_items = np.array([x[0] for x in user_seq[:p]])
-                future_items = np.array([x[0] for x in user_seq[p:][:-2]])  # avoid seeing valid and test data
+                future_items = np.array([x[0] for x in user_seq[p:]])  # avoid seeing valid and test data
                 if self.model.history_max > 0:
                     history_items = history_items[-self.model.history_max:]
                 if self.model.future_window > 0:
@@ -127,8 +132,8 @@ class ContrastRecBeta(SequentialModel):
             feed_dict = super()._get_feed_dict(index)
             history_items = np.array(self.data['history_items'][index])
             if self.phase == 'train':
-                history_items = self.reorder_op(history_items, self.model.reorder_ratio)
-                history_items_aug = self.reorder_op(history_items, self.model.reorder_ratio)
+                history_items = self.reorder_op(history_items)
+                history_items_aug = self.reorder_op(history_items)
                 feed_dict['history_items_aug'] = history_items_aug
                 feed_dict['future_items'] = np.array(self.data['future_items'][index])
             feed_dict['history_items'] = history_items
@@ -226,7 +231,7 @@ class SupConLoss(nn.Module):
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True) + 1e-10)
 
         # compute mean of log-likelihood over positive
-        mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
+        mean_log_prob_pos = (mask * log_prob).sum(1) / (mask.sum(1) + 1e-10)
 
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos

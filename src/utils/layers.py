@@ -58,7 +58,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class TransformerLayer(nn.Module):
-    def __init__(self, d_model, d_ff, n_heads, dropout, kq_same=False):
+    def __init__(self, d_model, d_ff, n_heads, dropout=0, kq_same=False):
         super().__init__()
         """
         This is a Basic Block of Transformer. It contains one Multi-head attention object. 
