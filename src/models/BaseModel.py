@@ -194,6 +194,8 @@ class GeneralModel(BaseModel):
             user_id, target_item = self.data['user_id'][index], self.data['item_id'][index]
             if 'neg_items' not in self.data.keys() or (self.model.test_all and self.phase == 'test'):
                 all_items = np.arange(1, self.corpus.n_items)
+                clicked_items = list(self.corpus.user_clicked_set[user_id])
+                all_items[np.array(clicked_items) - 1] = 0
                 neg_items = all_items[all_items != target_item]
             else:
                 neg_items = self.data['neg_items'][index]
