@@ -189,10 +189,17 @@ class GeneralModel(BaseModel):
         # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
+    # def loss(self, out_dict: dict) -> torch.Tensor:
+    #     predictions = out_dict['prediction']
+    #     pre_softmax = (predictions - predictions.max()).softmax(dim=1)  # B * (1+S)
+    #     target_pre = pre_softmax[:, :1]  # B * 1
+    #     loss = -target_pre.log()  # B * 1
+    #     return loss.mean()
+
     class Dataset(BaseModel.Dataset):
         def _get_feed_dict(self, index):
             user_id, target_item = self.data['user_id'][index], self.data['item_id'][index]
-            if 'neg_items' not in self.data.keys() or (self.model.test_all and self.phase == 'test'):
+            if 'neg_items' not in self.data.keys() or self.model.test_all:
                 all_items = np.arange(1, self.corpus.n_items)
                 clicked_items = list(self.corpus.user_clicked_set[user_id])
                 all_items[np.array(clicked_items) - 1] = 0

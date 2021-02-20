@@ -9,6 +9,7 @@ import numpy as np
 
 from models.BaseModel import SequentialModel
 from utils import layers
+from utils import utils
 
 
 class ContrastRec(SequentialModel):
@@ -70,6 +71,7 @@ class ContrastRec(SequentialModel):
         else:
             raise ValueError('Invalid sequence encoder.')
         self.criterion = SupConLoss(self.device, temperature=self.temperature)
+        # self.head = nn.Linear(self.emb_size, self.emb_size)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -88,6 +90,7 @@ class ContrastRec(SequentialModel):
             his_aug_vectors = self.i_embeddings(history_aug)
             his_aug_vector = self.encoder(his_aug_vectors, lengths)
             features = torch.stack([his_vector, his_aug_vector], dim=1)  # bsz, 2, emb
+            # features = self.head(features)
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
@@ -105,6 +108,11 @@ class ContrastRec(SequentialModel):
         return loss
 
     class Dataset(SequentialModel.Dataset):
+        # def _prepare(self):
+        #     if self.phase == 'train':
+        #         self.data = utils.df_to_dict(self.corpus.data_df['train'].sample(frac=0.8))
+        #     super()._prepare()
+
         def reorder_op(self, seq):
             ratio = np.random.beta(a=self.model.beta_a, b=self.model.beta_b)
             select_len = int(len(seq) * ratio)

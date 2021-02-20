@@ -63,6 +63,7 @@ class BaseReader(object):
                 self.user_his[uid].append((iid, t))
             df['position'] = position
 
+        # TODO: should the clicked set only preserve interactions in training set?
         self.user_clicked_set = dict()
         for uid in self.user_his:
             self.user_clicked_set[uid] = set([x[0] for x in self.user_his[uid]])
