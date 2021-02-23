@@ -21,7 +21,7 @@ def parse_global_args(parser):
                         help='Logging Level, 0, 10, ..., 50')
     parser.add_argument('--log_file', type=str, default='',
                         help='Logging file path')
-    parser.add_argument('--random_seed', type=int, default=2019,
+    parser.add_argument('--random_seed', type=int, default=0,
                         help='Random seed of numpy and pytorch.')
     parser.add_argument('--load', type=int, default=0,
                         help='Whether load model and continue to train')
