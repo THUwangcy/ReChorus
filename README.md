@@ -7,10 +7,10 @@ ReChorus is a general PyTorch framework for Top-K recommendation with implicit f
 
 This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familiar with classical methods. The characteristics of our framework can be summarized as follows:
 
-- **Agile**: concentrate on your model design in a single file and implement new models quickly
-- **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments
-- **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models 
-- **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers
+- **Swift**: concentrate on your model design in a single file and implement new models quickly.
+- **Easy**: the framework is accomplished in less than a thousand lines of code, which is easy to use with clean codes and adequate comments.
+- **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models.
+- **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers.
 
 Generally, ReChorus decomposes the whole process into three modules:
 

@@ -48,7 +48,7 @@ class BaseReader(object):
 
     def _append_his_info(self) -> NoReturn:
         """
-        Add history info to data_df: pos
+        Add history info to data_df: position
         ! Need data_df to be sorted by time in ascending order
         """
         logging.info('Appending history info...')

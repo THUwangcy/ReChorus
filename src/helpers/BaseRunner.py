@@ -23,7 +23,7 @@ class BaseRunner(object):
         parser.add_argument('--check_epoch', type=int, default=1,
                             help='Check some tensors every check_epoch.')
         parser.add_argument('--test_epoch', type=int, default=-1,
-                            help='Print test results every test_epoch.')
+                            help='Print test results every test_epoch (-1 means no print).')
         parser.add_argument('--early_stop', type=int, default=10,
                             help='The number of epochs when dev results drop continuously.')
         parser.add_argument('--lr', type=float, default=1e-3,
@@ -35,14 +35,14 @@ class BaseRunner(object):
         parser.add_argument('--eval_batch_size', type=int, default=256,
                             help='Batch size during testing.')
         parser.add_argument('--optimizer', type=str, default='Adam',
-                            help='optimizer: GD, Adam, Adagrad, Adadelta')
+                            help='optimizer: SGD, Adam, Adagrad, Adadelta')
         parser.add_argument('--num_workers', type=int, default=5,
                             help='Number of processors when prepare batches in DataLoader')
         parser.add_argument('--pin_memory', type=int, default=1,
                             help='pin_memory in DataLoader')
-        parser.add_argument('--topk', type=str, default='[5,10]',
+        parser.add_argument('--topk', type=str, default='5,10',
                             help='The number of items recommended to each user.')
-        parser.add_argument('--metric', type=str, default="['NDCG','HR']",
+        parser.add_argument('--metric', type=str, default='NDCG,HR',
                             help='metrics: NDCG, HR')
         return parser
 
@@ -50,9 +50,9 @@ class BaseRunner(object):
     def evaluate_method(predictions: np.ndarray, topk: list, metrics: list) -> Dict[str, float]:
         """
         :param predictions: (-1, n_candidates) shape, the first column is the score for ground-truth item
-        :param topk: top-K values list
-        :param metrics: metrics string list
-        :return: a result dict, the keys are metrics@topk
+        :param topk: top-K value list
+        :param metrics: metric string list
+        :return: a result dict, the keys are metric@topk
         """
         evaluations = dict()
         sort_idx = (-predictions).argsort(axis=1)
@@ -81,8 +81,8 @@ class BaseRunner(object):
         self.optimizer_name = args.optimizer
         self.num_workers = args.num_workers
         self.pin_memory = args.pin_memory
-        self.topk = eval(args.topk)
-        self.metrics = [m.strip().upper() for m in eval(args.metric)]
+        self.topk = [int(x) for x in args.topk.split(',')]
+        self.metrics = [m.strip().upper() for m in args.metric.split(',')]
         self.main_metric = '{}@{}'.format(self.metrics[0], self.topk[0])  # early stop based on main_metric
 
         self.time = None  # will store [start_time, last_step_time]
@@ -96,25 +96,9 @@ class BaseRunner(object):
         return self.time[1] - tmp_time
 
     def _build_optimizer(self, model):
-        optimizer_name = self.optimizer_name.lower()
-        if optimizer_name == 'gd':
-            logging.info("Optimizer: GD")
-            optimizer = torch.optim.SGD(
-                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
-        elif optimizer_name == 'adagrad':
-            logging.info("Optimizer: Adagrad")
-            optimizer = torch.optim.Adagrad(
-                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
-        elif optimizer_name == 'adadelta':
-            logging.info("Optimizer: Adadelta")
-            optimizer = torch.optim.Adadelta(
-                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
-        elif optimizer_name == 'adam':
-            logging.info("Optimizer: Adam")
-            optimizer = torch.optim.Adam(
-                model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
-        else:
-            raise ValueError("Unknown Optimizer: " + self.optimizer_name)
+        logging.info('Optimizer: ' + self.optimizer_name)
+        optimizer = eval('torch.optim.{}'.format(self.optimizer_name))(
+            model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
         return optimizer
 
     def train(self, model: nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
@@ -135,7 +119,7 @@ class BaseRunner(object):
                 dev_result = self.evaluate(model, data_dict['dev'], self.topk[:1], self.metrics)
                 dev_results.append(dev_result)
                 main_metric_results.append(dev_result[self.main_metric])
-                logging_str = 'Epoch {:<5} loss={:<.4f} [{:<.1f} s]\t dev=({})'.format(
+                logging_str = 'Epoch {:<5} loss={:<.4f} [{:<3.1f} s]    dev=({})'.format(
                     epoch + 1, loss, training_time, utils.format_metric(dev_result))
 
                 # Test
@@ -145,12 +129,13 @@ class BaseRunner(object):
                 testing_time = self._check_time()
                 logging_str += ' [{:<.1f} s]'.format(testing_time)
 
-                logging.info(logging_str)
-
                 # Save model and early stop
                 if max(main_metric_results) == main_metric_results[-1] or \
                         (hasattr(model, 'stage') and model.stage == 1):
                     model.save_model()
+                    logging_str += ' *'
+                logging.info(logging_str)
+
                 if self.early_stop and self.eval_termination(main_metric_results):
                     logging.info("Early stop at %d based on dev result." % (epoch + 1))
                     break
@@ -208,7 +193,7 @@ class BaseRunner(object):
         The returned prediction is a 2D-array, each row corresponds to all the candidates,
         and the ground-truth item poses the first.
         Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
-                 predictions order: [[1,3,4], [2,5,6]]
+                 predictions like: [[1,3,4], [2,5,6]]
         """
         model.eval()
         predictions = list()

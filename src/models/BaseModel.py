@@ -87,7 +87,7 @@ class BaseModel(nn.Module):
             model_path = self.model_path
         utils.check_dir(model_path)
         torch.save(self.state_dict(), model_path)
-        logging.info('Save model to ' + model_path[:50] + '...')
+        # logging.info('Save model to ' + model_path[:50] + '...')
 
     def load_model(self, model_path=None) -> NoReturn:
         if model_path is None:
@@ -99,10 +99,10 @@ class BaseModel(nn.Module):
         total_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return total_parameters
 
-    def actions_before_train(self):  # e.g. re-initial some special parameters
+    def actions_before_train(self):  # e.g., re-initial some special parameters
         pass
 
-    def actions_after_train(self):  # e.g. save selected parameters
+    def actions_after_train(self):  # e.g., save selected parameters
         pass
 
     """
