@@ -1,4 +1,21 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" Caser
+Reference:
+    "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"
+    Jiaxi Tang et al., WSDM'2018.
+Reference code:
+    https://github.com/graytowne/caser_pytorch
+Note:
+    We use a maximum of L (instead of history_max) horizontal filters to prevent excessive CNN layers.
+    Besides, to keep consistent with other sequential models, we do not use the sliding window to generate
+    training instances in the paper, and set the parameter T as 1.
+CMD example:
+    python main.py --model_name Caser --emb_size 64 --L 5 --num_horizon 64 --num_vertical 32 --lr 1e-3 --l2 1e-4 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 from torch import nn
@@ -8,6 +25,8 @@ from models.BaseModel import SequentialModel
 
 
 class Caser(SequentialModel):
+    extra_log_args = ['emb_size', 'num_horizon', 'num_vertical', 'L']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -26,6 +45,7 @@ class Caser(SequentialModel):
         self.num_horizon = args.num_horizon
         self.num_vertical = args.num_vertical
         self.l = args.L
+        assert self.l <= self.max_his  # use L instead of max_his to avoid excessive conv_h
         super().__init__(args, corpus)
 
     def _define_params(self):
@@ -45,14 +65,14 @@ class Caser(SequentialModel):
 
     def forward(self, feed_dict):
         self.check_list = []
-        u_ids = feed_dict['user_id']  # bsz
+        u_ids = feed_dict['user_id']
         i_ids = feed_dict['item_id']  # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
         batch_size, seq_len = history.shape
 
         pad_len = self.max_his - seq_len
         history = F.pad(history, [0, pad_len])
-        his_vectors = self.i_embeddings(history).unsqueeze(1)
+        his_vectors = self.i_embeddings(history).unsqueeze(1)  # [batch_size, 1, history_max, emb_size]
 
         # Convolution Layers
         out, out_h, out_v = None, None, None

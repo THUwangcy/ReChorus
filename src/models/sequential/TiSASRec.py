@@ -1,4 +1,15 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" TiSASRec
+Reference:
+    "Time Interval Aware Self-Attention for Sequential Recommendation"
+    Jiacheng Li et al., WSDM'2020.
+CMD example:
+    python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -8,6 +19,8 @@ from models.sequential.SASRec import SASRec
 
 
 class TiSASRec(SASRec):
+    extra_log_args = ['emb_size', 'num_layers', 'num_heads', 'time_max']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--time_max', type=int, default=512,
@@ -69,7 +82,7 @@ class TiSASRec(SASRec):
             his_vectors = block(his_vectors, pos_k, pos_v, inter_k, inter_v, attn_mask)
         his_vectors = his_vectors * valid_his[:, :, None].float()
 
-        his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
+        his_vector = his_vectors[torch.arange(batch_size), lengths - 1, :]
         # his_vector = his_vectors.sum(1) / lengths[:, None].float()
         # ↑ average pooling is shown to be more effective than the most recent embedding
 

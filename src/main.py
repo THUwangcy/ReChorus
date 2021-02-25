@@ -47,8 +47,7 @@ def main():
 
     # GPU
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    logging.info('cuda available: {}'.format(torch.cuda.is_available()))
-    logging.info('# cuda devices: {}'.format(torch.cuda.device_count()))
+    logging.info('GPU available: {}'.format(torch.cuda.is_available()))
 
     # Read data
     corpus_path = os.path.join(args.path, args.dataset, model_name.reader + '.pkl')

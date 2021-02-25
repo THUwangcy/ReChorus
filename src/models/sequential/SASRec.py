@@ -1,4 +1,17 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" SASRec
+Reference:
+    "Self-attentive Sequential Recommendation"
+    Kang et al., IEEE'2018.
+Note:
+    When incorporating position embedding, we make the position index start from the most recent interaction.
+CMD example:
+    python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -9,6 +22,8 @@ from utils import layers
 
 
 class SASRec(SequentialModel):
+    extra_log_args = ['emb_size', 'num_layers', 'num_heads']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -62,7 +77,7 @@ class SASRec(SequentialModel):
             his_vectors = block(his_vectors, attn_mask)
         his_vectors = his_vectors * valid_his[:, :, None].float()
 
-        his_vector = (his_vectors * (position == 1).float()[:, :, None]).sum(1)
+        his_vector = his_vectors[torch.arange(batch_size), lengths - 1, :]
         # his_vector = his_vectors.sum(1) / lengths[:, None].float()
         # ↑ average pooling is shown to be more effective than the most recent embedding
 

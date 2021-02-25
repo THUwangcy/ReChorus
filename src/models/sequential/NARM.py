@@ -1,13 +1,25 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" NARM
+Reference:
+    "Neural Attentive Session-based Recommendation"
+    Jing Li et al., CIKM'2017.
+CMD example:
+    python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 4 --lr 1e-3 --l2 1e-4 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 from models.BaseModel import SequentialModel
 
 
 class NARM(SequentialModel):
+    extra_log_args = ['emb_size', 'hidden_size', 'attention_size']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,

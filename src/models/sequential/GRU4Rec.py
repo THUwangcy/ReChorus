@@ -1,4 +1,15 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" GRU4Rec
+Reference:
+    "Session-based Recommendations with Recurrent Neural Networks"
+    Hidasi et al., ICLR'2016.
+CMD example:
+    python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 \
+    --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -7,6 +18,8 @@ from models.BaseModel import SequentialModel
 
 
 class GRU4Rec(SequentialModel):
+    extra_log_args = ['emb_size', 'hidden_size']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,

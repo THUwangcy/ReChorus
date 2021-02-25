@@ -1,4 +1,17 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" Chorus
+Reference:
+    "Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation"
+    Chenyang Wang et al., SIGIR'2020.
+CMD example:
+    python main.py --model_name Chorus --emb_size 64 --margin 1 --lr 5e-4 --l2 1e-5 --epoch 50 --early_stop 0 \
+    --batch_size 512 --dataset 'Grocery_and_Gourmet_Food' --stage 1
+    python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 \
+    --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2
+"""
 
 import os
 import torch
@@ -7,10 +20,10 @@ import torch.distributions
 import numpy as np
 
 from utils import utils
-from models.sequential.SLRCPlus import SLRCPlus
+from models.BaseModel import SequentialModel
 
 
-class Chorus(SLRCPlus):
+class Chorus(SequentialModel):
     reader = 'KGReader'
     extra_log_args = ['margin', 'lr_scale', 'stage']
 
@@ -18,19 +31,34 @@ class Chorus(SLRCPlus):
     def parse_model_args(parser):
         parser.add_argument('--stage', type=int, default=2,
                             help='Stage of training: 1-KG_pretrain, 2-recommendation.')
+        parser.add_argument('--base_method', type=str, default='BPR',
+                            help='Basic method to generate recommendations: BPR, GMF')
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
+        parser.add_argument('--time_scalar', type=int, default=60 * 60 * 24 * 100,
+                            help='Time scalar for time intervals.')
+        parser.add_argument('--category_col', type=str, default='i_category',
+                            help='The name of category column in item_meta.csv.')
         parser.add_argument('--lr_scale', type=float, default=0.1,
                             help='Scale the lr for parameters in pre-trained KG model.')
         parser.add_argument('--margin', type=float, default=1,
                             help='Margin in hinge loss.')
-        parser.add_argument('--base_method', type=str, default='BPR',
-                            help='Basic method to generate recommendations: BPR, GMF')
-        return SLRCPlus.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.margin = args.margin
         self.stage = args.stage
         self.kg_lr = args.lr_scale * args.lr
         self.base_method = args.base_method
+        self.emb_size = args.emb_size
+        self.time_scalar = args.time_scalar
+        self.relations = corpus.item_relations
+        self.relation_num = len(corpus.item_relations) + 1
+        if args.category_col in corpus.item_meta_df.columns:
+            self.category_col = args.category_col
+            self.category_num = corpus.item_meta_df[self.category_col].max() + 1
+        else:
+            self.category_col, self.category_num = None, 1  # a virtual global category
         super().__init__(args, corpus)
 
         assert self.stage in [1, 2]
@@ -77,10 +105,10 @@ class Chorus(SLRCPlus):
         for r_idx in range(0, self.relation_num):
             delta_t = r_interval[:, :, r_idx]
             beta, sigma, mu = betas[:, :, r_idx], sigmas[:, :, r_idx], mus[:, :, r_idx]
-            if r_idx == 1:  # is_complement_of
+            if r_idx > 0 and 'complement' in self.relations[r_idx - 1]:
                 norm_dist = torch.distributions.normal.Normal(0, beta)
                 decay = norm_dist.log_prob(delta_t).exp()
-            elif r_idx == 2:  # is_substitute_of
+            elif r_idx > 0 and 'substitute' in self.relations[r_idx - 1]:
                 neg_norm_dist = torch.distributions.normal.Normal(0, beta)
                 norm_dist = torch.distributions.normal.Normal(mu, sigma)
                 decay = -neg_norm_dist.log_prob(delta_t).exp() + norm_dist.log_prob(delta_t).exp()
@@ -166,7 +194,7 @@ class Chorus(SLRCPlus):
         else:
             return super().customize_parameters()
 
-    class Dataset(SLRCPlus.Dataset):
+    class Dataset(SequentialModel.Dataset):
         def _prepare(self):
             self.kg_train = self.model.stage == 1 and self.phase == 'train'
             if self.kg_train:
@@ -174,6 +202,10 @@ class Chorus(SLRCPlus):
                 self.neg_heads = np.zeros(len(self), dtype=int)
                 self.neg_tails = np.zeros(len(self), dtype=int)
             else:
+                col_name = self.model.category_col
+                items = self.corpus.item_meta_df['item_id']
+                categories = self.corpus.item_meta_df[col_name] if col_name is not None else np.zeros_like(items)
+                self.item2cate = dict(zip(items, categories))
                 super()._prepare()
 
         def _get_feed_dict(self, index):
@@ -183,15 +215,33 @@ class Chorus(SLRCPlus):
                 head_id = np.array([head, head, head, self.neg_heads[index]])
                 tail_id = np.array([tail, tail, self.neg_tails[index], tail])
                 relation_id = np.array([relation] * 4)
-                # the head and tail are reversed because the relations we want are is_complement_of, is_substitute_of,
-                # which are reversed in terms of the original also_buy, also_view
                 feed_dict = {'head_id': tail_id, 'tail_id': head_id, 'relation_id': relation_id}
+                # ↑ the head and tail are reversed due to the relations we want are is_complement_of, is_substitute_of,
+                # which are opposite to the original relations also_buy, also_view
             else:
+                # Collect information related to the target item:
+                # - category id
+                # - time intervals w.r.t. recent relational interactions (-1 if not existing)
                 feed_dict = super()._get_feed_dict(index)
+                user_id, time = self.data['user_id'][index], self.data['time'][index]
+                history_item, history_time = feed_dict['history_items'], feed_dict['history_times']
+                category_id = [self.item2cate[x] for x in feed_dict['item_id']]
+                relational_interval = list()
+                for i, target_item in enumerate(feed_dict['item_id']):
+                    interval = np.ones(self.model.relation_num, dtype=float) * -1
+                    # relational intervals
+                    for r_idx in range(1, self.model.relation_num):
+                        for j in range(len(history_item))[::-1]:
+                            if (history_item[j], r_idx, target_item) in self.corpus.triplet_set:
+                                interval[r_idx] = (time - history_time[j]) / self.model.time_scalar
+                                break
+                    relational_interval.append(interval)
+                feed_dict['category_id'] = np.array(category_id)
+                feed_dict['relational_interval'] = np.array(relational_interval, dtype=np.float32)
             return feed_dict
 
         def actions_before_epoch(self):
-            if self.kg_train:
+            if self.kg_train:  # sample negative heads and tails for the KG embedding task
                 for i in range(len(self)):
                     head, tail, relation = self.data['head'][i], self.data['tail'][i], self.data['relation'][i]
                     self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)

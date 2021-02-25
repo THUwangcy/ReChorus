@@ -54,33 +54,37 @@ python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Groc
 
 We have implemented the following methods (still updating):
 
+**General Recommender**
+
 - BPR (UAI'09): [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page)
-- NCF (WWW'17): [Neural Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/3038912.3052569)
-- Tensor (RecSys'10): [N-dimensional Tensor Factorization for Context-aware Collaborative Filtering](https://dl.acm.org/doi/pdf/10.1145/1864708.1864727)
+- NCF (WWW'17): [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf?source=post_page---------------------------)
+- CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540.pdf)
+
+**Sequential Recommender**
+
 - GRU4Rec (ICLR'16): [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939)
-- NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://dl.acm.org/doi/pdf/10.1145/3132847.3132926)
+- NARM (CIKM'17): [Neural Attentive Session-based Recommendation](https://arxiv.org/pdf/1711.04725.pdf)
+- Caser (WSDM'18): [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426)
 - SASRec (IEEE'18): [Self-attentive Sequential Recommendation](https://arxiv.org/pdf/1808.09781.pdf)
 - TiSASRec (WSDM'20): [Time Interval Aware Self-Attention for Sequential Recommendation](https://dl.acm.org/doi/pdf/10.1145/3336191.3371786)
-- CFKG (MDPI'18): [Learning heterogeneous knowledge base embeddings for explainable recommendation](https://www.mdpi.com/1999-4893/11/9/137/pdf)
 - SLRC (WWW'19): [Modeling Item-specific Temporal Dynamics of Repeat Consumption for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/3308558.3313594)
 - Chorus (SIGIR'20): [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf)
-- KDA (TOIS'21): Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation (accepted but not published yet)
+- KDA (TOIS'21): [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://dl.acm.org/doi/abs/10.1145/3432244)
 
-The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (145.8k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item.  These settings are all common in Top-K sequential recommendation.
+The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (145.8k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item (also support ranking over all the items with `--test_all 1`, but not that efficient).
 
 | Model                                                        |  HR@5  | NDCG@5 | Time/iter |  Sequential  |  Knowledge   |  Time-aware  |
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
-| [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BPR.py) | 0.3574 | 0.2480 |   2.5s    |              |              |              |
-| [NCF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NCF.py) | 0.3248 | 0.2235 |   3.4s   |              |              |              |
-| [Tensor](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Tensor.py) | 0.3547 | 0.2670 |   2.8s   |              |              | √ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/GRU4Rec.py) | 0.3664 | 0.2597 |    4.9s    | √ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/NARM.py) | 0.3621 | 0.2586 |    8.2s    | √ |              |              |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SASRec.py) | 0.3888 | 0.2923 | 7.2s | √ | | |
-| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/TiSASRec.py) | 0.3916 | 0.2922 | 35.7s | √ | | √ |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/CFKG.py) | 0.4228 | 0.3010 |    8.7s    |              | √ |              |
-| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/SLRCPlus.py) | 0.4514 | 0.3329 |   4.3s   | √ | √ | √ |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/Chorus.py) | 0.4739 | 0.3443 |   4.9s   | √ | √ | √ |
-| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/KDA.py) | 0.5174 | 0.3876 | 9.9s | √ | √ | √ |
+| [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py) | 0.3574 | 0.2480 |   2.5s    |              |              |              |
+| [NCF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py) | 0.3248 | 0.2235 |   3.4s   |              |              |              |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py) | 0.3664 | 0.2597 |    4.9s    | √ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py) | 0.3621 | 0.2586 |    8.2s    | √ |              |              |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py) | 0.3888 | 0.2923 | 7.2s | √ | | |
+| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py) | 0.3916 | 0.2922 | 35.7s | √ | | √ |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py) | 0.4228 | 0.3010 |    8.7s    |              | √ |              |
+| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py) | 0.4514 | 0.3329 |   4.3s   | √ | √ | √ |
+| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py) | 0.4739 | 0.3443 |   4.9s   | √ | √ | √ |
+| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py) | 0.5174 | 0.3876 | 9.9s | √ | √ | √ |
 
 For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be **not optimal now**, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 

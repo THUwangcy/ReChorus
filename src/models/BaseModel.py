@@ -23,10 +23,6 @@ class BaseModel(nn.Module):
     def parse_model_args(parser):
         parser.add_argument('--model_path', type=str, default='',
                             help='Model save path.')
-        parser.add_argument('--num_neg', type=int, default=1,
-                            help='The number of negative items during training.')
-        parser.add_argument('--dropout', type=float, default=0,
-                            help='Dropout probability for each deep layer')
         parser.add_argument('--buffer', type=int, default=1,
                             help='Whether to buffer feed dicts for dev/test')
         return parser
@@ -112,11 +108,12 @@ class BaseModel(nn.Module):
         def __init__(self, model, corpus, phase: str):
             self.model = model  # model object reference
             self.corpus = corpus  # reader object reference
-            self.phase = phase
-            self.data = utils.df_to_dict(corpus.data_df[phase])
-            # ↑ DataFrame is not compatible with multi-thread operations
+            self.phase = phase  # train / dev / test
+
             self.buffer_dict = dict()
             self.buffer = self.model.buffer and self.phase != 'train'
+            self.data = utils.df_to_dict(corpus.data_df[phase])
+            # ↑ DataFrame is not compatible with multi-thread operations
 
             self._prepare()
 
@@ -132,15 +129,14 @@ class BaseModel(nn.Module):
         # Prepare model-specific variables and buffer feed dicts
         def _prepare(self) -> NoReturn:
             if self.buffer:
-                for i in tqdm(range(len(self)), leave=False, ncols=100, mininterval=1,
-                              desc=('Prepare ' + self.phase)):
+                for i in tqdm(range(len(self)), leave=False, desc=('Prepare ' + self.phase)):
                     self.buffer_dict[i] = self._get_feed_dict(i)
 
         # ! Key method to construct input data for a single instance
         def _get_feed_dict(self, index: int) -> dict:
             pass
 
-        # Called before each epoch
+        # Called before each training epoch
         def actions_before_epoch(self) -> NoReturn:
             pass
 
@@ -149,7 +145,7 @@ class BaseModel(nn.Module):
             feed_dict = dict()
             for key in feed_dicts[0]:
                 stack_val = np.array([d[key] for d in feed_dicts])
-                if stack_val.dtype == np.object:  # inconsistent length (e.g. history)
+                if stack_val.dtype == np.object:  # inconsistent length (e.g., history)
                     feed_dict[key] = pad_sequence([torch.from_numpy(x) for x in stack_val], batch_first=True)
                 else:
                     feed_dict[key] = torch.from_numpy(stack_val)
@@ -161,6 +157,10 @@ class BaseModel(nn.Module):
 class GeneralModel(BaseModel):
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--num_neg', type=int, default=1,
+                            help='The number of negative items during training.')
+        parser.add_argument('--dropout', type=float, default=0,
+                            help='Dropout probability for each deep layer')
         parser.add_argument('--test_all', type=int, default=0,
                             help='Whether testing on all the items.')
         return BaseModel.parse_model_args(parser)
@@ -176,7 +176,7 @@ class GeneralModel(BaseModel):
     def loss(self, out_dict: dict) -> torch.Tensor:
         """
         BPR ranking loss with optimization on multiple negative samples (a little different now)
-        @{Recurrent neural networks with top-k gains for session-based recommendations}
+        "Recurrent neural networks with top-k gains for session-based recommendations"
         :param out_dict: contain prediction with [batch_size, -1], the first column for positive, the rest for negative
         :return:
         """
@@ -189,21 +189,14 @@ class GeneralModel(BaseModel):
         # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
-    # def loss(self, out_dict: dict) -> torch.Tensor:
-    #     predictions = out_dict['prediction']
-    #     pre_softmax = (predictions - predictions.max()).softmax(dim=1)  # B * (1+S)
-    #     target_pre = pre_softmax[:, :1]  # B * 1
-    #     loss = -target_pre.log()  # B * 1
-    #     return loss.mean()
-
     class Dataset(BaseModel.Dataset):
         def _get_feed_dict(self, index):
             user_id, target_item = self.data['user_id'][index], self.data['item_id'][index]
-            if 'neg_items' not in self.data.keys() or self.model.test_all:
+            if self.phase != 'train' and self.model.test_all:
                 all_items = np.arange(1, self.corpus.n_items)
                 clicked_items = list(self.corpus.user_clicked_set[user_id])
                 all_items[np.array(clicked_items) - 1] = 0
-                neg_items = all_items[all_items != target_item]
+                neg_items = all_items[all_items != target_item]  # may not necessary if clicked_items include test set
             else:
                 neg_items = self.data['neg_items'][index]
             item_ids = np.concatenate([[target_item], neg_items])

@@ -1,4 +1,19 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" CFKG
+Reference:
+    "Learning over Knowledge-Base Embeddings for Recommendation"
+    Yongfeng Zhang et al., SIGIR'2018.
+Note:
+    In the built-in dataset, we have four kinds of relations: buy, category, complement, substitute, where 'buy' is
+    a special relation indexed by 0. And there are three kinds of nodes in KG: user, item, category, among which
+    users are placed ahead of other entities when indexing.
+CMD example:
+    python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 1 --lr 1e-4 --l2 1e-6 \
+    --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -12,6 +27,7 @@ from helpers.KGReader import KGReader
 
 class CFKG(GeneralModel):
     reader = 'KGReader'
+    extra_log_args = ['emb_size', 'margin', 'include_attr']
 
     @staticmethod
     def parse_model_args(parser):
@@ -80,11 +96,11 @@ class CFKG(GeneralModel):
                     head_id = head_id + self.corpus.n_users
             else:
                 target_item = self.data['item_id'][index]
-                neg_items = self.neg_items[index]
+                neg_items = self.data['neg_items'][index]
                 tail_id = np.concatenate([[target_item], neg_items])
                 head_id = self.data['user_id'][index] * np.ones_like(tail_id)
                 relation_id = np.zeros_like(tail_id)
-            tail_id += self.corpus.n_users  # tail must not be a user
+            tail_id += self.corpus.n_users  # tail must be a non-user entity
 
             feed_dict = {'head_id': head_id, 'tail_id': tail_id, 'relation_id': relation_id}
             return feed_dict
@@ -93,15 +109,15 @@ class CFKG(GeneralModel):
             for i in range(len(self)):
                 head, tail, relation = self.data['head'][i], self.data['tail'][i], self.data['relation'][i]
                 self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
-                if relation == 0:
+                if relation == 0:  # "buy" relation
                     self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
                     while self.neg_tails[i] in self.corpus.user_clicked_set[head]:
                         self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
                     while tail in self.corpus.user_clicked_set[self.neg_heads[i]]:
                         self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
                 else:
-                    self.neg_heads[i] = np.random.randint(1, self.corpus.n_items)
+                    self.neg_heads[i] = np.random.randint(1, self.corpus.n_entities)
                     while (head, relation, self.neg_tails[i]) in self.corpus.triplet_set:
-                        self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
+                        self.neg_tails[i] = np.random.randint(1, self.corpus.n_entities)
                     while (self.neg_heads[i], relation, tail) in self.corpus.triplet_set:
-                        self.neg_heads[i] = np.random.randint(1, self.corpus.n_items)
+                        self.neg_heads[i] = np.random.randint(1, self.corpus.n_entities)

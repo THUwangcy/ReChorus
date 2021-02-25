@@ -1,11 +1,23 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" BPRMF
+Reference:
+    "Bayesian personalized ranking from implicit feedback"
+    Rendle et al., UAI'2009.
+CMD example:
+    python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch.nn as nn
 
 from models.BaseModel import GeneralModel
 
 
-class BPR(GeneralModel):
+class BPRMF(GeneralModel):
+    extra_log_args = ['emb_size']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -19,8 +31,6 @@ class BPR(GeneralModel):
     def _define_params(self):
         self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
-        self.user_bias = nn.Embedding(self.user_num, 1)
-        self.item_bias = nn.Embedding(self.item_num, 1)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -29,9 +39,6 @@ class BPR(GeneralModel):
 
         cf_u_vectors = self.u_embeddings(u_ids)
         cf_i_vectors = self.i_embeddings(i_ids)
-        u_bias = self.user_bias(u_ids)
-        i_bias = self.item_bias(i_ids).squeeze(-1)
 
         prediction = (cf_u_vectors[:, None, :] * cf_i_vectors).sum(dim=-1)  # [batch_size, -1]
-        prediction = prediction + u_bias + i_bias
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}

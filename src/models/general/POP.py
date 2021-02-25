@@ -8,6 +8,7 @@ from models.BaseModel import GeneralModel
 
 class POP(GeneralModel):
     """
+    Recommendation according to item's popularity.
     Should run with --train 0
     """
     def __init__(self, args, corpus):

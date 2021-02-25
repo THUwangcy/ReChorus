@@ -1,4 +1,17 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" NCF
+Reference:
+    "Neural Collaborative Filtering"
+    Xiangnan He et al., WWW'2017.
+Reference code:
+    The authors' tensorflow implementation https://github.com/hexiangnan/neural_collaborative_filtering
+CMD example:
+    python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 \
+    --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -7,6 +20,8 @@ from models.BaseModel import GeneralModel
 
 
 class NCF(GeneralModel):
+    extra_log_args = ['emb_size', 'layers']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
