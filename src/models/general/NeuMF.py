@@ -2,14 +2,14 @@
 # @Author  : Chenyang Wang
 # @Email   : THUwangcy@gmail.com
 
-""" NCF
+""" NeuMF
 Reference:
     "Neural Collaborative Filtering"
     Xiangnan He et al., WWW'2017.
 Reference code:
     The authors' tensorflow implementation https://github.com/hexiangnan/neural_collaborative_filtering
 CMD example:
-    python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 \
+    python main.py --model_name NeuMF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 \
     --dataset 'Grocery_and_Gourmet_Food'
 """
 

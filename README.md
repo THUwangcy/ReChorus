@@ -56,8 +56,8 @@ We have implemented the following methods (still updating):
 
 **General Recommender**
 
-- BPR (UAI'09): [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page)
-- NCF (WWW'17): [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf?source=post_page---------------------------)
+- BPRMF (UAI'09): [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page)
+- NeuMF (WWW'17): [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf?source=post_page---------------------------)
 - CFKG (SIGIR'18): [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540.pdf)
 
 **Sequential Recommender**
@@ -75,8 +75,8 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 
 | Model                                                        |  HR@5  | NDCG@5 | Time/iter |  Sequential  |  Knowledge   |  Time-aware  |
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
-| [BPR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py) | 0.3574 | 0.2480 |   2.5s    |              |              |              |
-| [NCF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py) | 0.3248 | 0.2235 |   3.4s   |              |              |              |
+| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py) | 0.3574 | 0.2480 |   2.5s    |              |              |              |
+| [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py) | 0.3248 | 0.2235 |   3.4s   |              |              |              |
 | [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py) | 0.3664 | 0.2597 |    4.9s    | √ |              |              |
 | [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py) | 0.3621 | 0.2586 |    8.2s    | √ |              |              |
 | [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py) | 0.3888 | 0.2923 | 7.2s | √ | | |
