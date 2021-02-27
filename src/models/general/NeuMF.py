@@ -19,7 +19,7 @@ import torch.nn as nn
 from models.BaseModel import GeneralModel
 
 
-class NCF(GeneralModel):
+class NeuMF(GeneralModel):
     extra_log_args = ['emb_size', 'layers']
 
     @staticmethod
