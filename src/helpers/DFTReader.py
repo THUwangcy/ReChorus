@@ -11,6 +11,7 @@ from tqdm import tqdm
 from helpers.KGReader import KGReader
 
 
+""" Data Reading for KDA """
 class DFTReader(KGReader):
     @staticmethod
     def parse_data_args(parser):

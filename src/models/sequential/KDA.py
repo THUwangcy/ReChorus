@@ -1,4 +1,15 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" KDA
+Reference:
+    "Toward Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation"
+    Chenyang Wang et al., TOIS'2021.
+CMD example:
+    python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
 
 import torch
 import torch.nn as nn
@@ -217,7 +228,7 @@ class KDA(SequentialModel):
             item_attr_df = kg_data.drop(item_item_df.index)
             item_attr_df['value'] = item_attr_df['tail'].values
 
-            sample_tails = list()
+            sample_tails = list()  # sample items sharing the same attribute
             for head, val in zip(item_attr_df['head'].values, item_attr_df['tail'].values):
                 share_attr_items = self.corpus.share_attr_dict[val]
                 tail_idx = np.random.randint(len(share_attr_items))
