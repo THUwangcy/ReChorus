@@ -101,14 +101,17 @@ class BaseRunner(object):
             model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
         return optimizer
 
-    def train(self, model: nn.Module, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
+    def train(self, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
+        model = data_dict['train'].model
         main_metric_results, dev_results = list(), list()
         self._check_time(start=True)
         try:
             for epoch in range(self.epoch):
                 # Fit
                 self._check_time()
-                loss = self.fit(model, data_dict['train'], epoch=epoch + 1)
+                gc.collect()
+                torch.cuda.empty_cache()
+                loss = self.fit(data_dict['train'], epoch=epoch + 1)
                 training_time = self._check_time()
 
                 # Observe selected tensors
@@ -116,7 +119,7 @@ class BaseRunner(object):
                     utils.check(model.check_list)
 
                 # Record dev results
-                dev_result = self.evaluate(model, data_dict['dev'], self.topk[:1], self.metrics)
+                dev_result = self.evaluate(data_dict['dev'], self.topk[:1], self.metrics)
                 dev_results.append(dev_result)
                 main_metric_results.append(dev_result[self.main_metric])
                 logging_str = 'Epoch {:<5} loss={:<.4f} [{:<3.1f} s]    dev=({})'.format(
@@ -124,7 +127,7 @@ class BaseRunner(object):
 
                 # Test
                 if self.test_epoch > 0 and epoch % self.test_epoch  == 0:
-                    test_result = self.evaluate(model, data_dict['test'], self.topk[:1], self.metrics)
+                    test_result = self.evaluate(data_dict['test'], self.topk[:1], self.metrics)
                     logging_str += ' test=({})'.format(utils.format_metric(test_result))
                 testing_time = self._check_time()
                 logging_str += ' [{:<.1f} s]'.format(testing_time)
@@ -152,9 +155,8 @@ class BaseRunner(object):
             best_epoch + 1, utils.format_metric(dev_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
 
-    def fit(self, model: nn.Module, data: BaseModel.Dataset, epoch=-1) -> float:
-        gc.collect()
-        torch.cuda.empty_cache()
+    def fit(self, data: BaseModel.Dataset, epoch=-1) -> float:
+        model = data.model
         if model.optimizer is None:
             model.optimizer = self._build_optimizer(model)
         data.actions_before_epoch()  # must sample before multi thread start
@@ -180,35 +182,44 @@ class BaseRunner(object):
             return True
         return False
 
-    def evaluate(self, model: nn.Module, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
+    def evaluate(self, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
         """
         Evaluate the results for an input dataset.
         :return: result dict (key: metric@k)
         """
-        predictions = self.predict(model, data)
+        predictions = self.predict(data)
+        if data.model.test_all:
+            rows, cols = list(), list()
+            for i, u in enumerate(data.data['user_id']):
+                clicked_items = list(data.corpus.user_clicked_set[u])
+                # clicked_items = [data.data['item_id'][i]]
+                idx = list(np.ones_like(clicked_items) * i)
+                rows.extend(idx)
+                cols.extend(clicked_items)
+            predictions[rows, cols] = -np.inf
         return self.evaluate_method(predictions, topks, metrics)
 
-    def predict(self, model: nn.Module, data: BaseModel.Dataset) -> np.ndarray:
+    def predict(self, data: BaseModel.Dataset) -> np.ndarray:
         """
         The returned prediction is a 2D-array, each row corresponds to all the candidates,
         and the ground-truth item poses the first.
         Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
                  predictions like: [[1,3,4], [2,5,6]]
         """
-        model.eval()
+        data.model.eval()
         predictions = list()
         dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
                         collate_fn=data.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
-            prediction = model(utils.batch_to_gpu(batch, model.device))['prediction']
+            prediction = data.model(utils.batch_to_gpu(batch, data.model.device))['prediction']
             predictions.extend(prediction.cpu().data.numpy())
         return np.array(predictions)
 
-    def print_res(self, model: nn.Module, data: BaseModel.Dataset) -> str:
+    def print_res(self, data: BaseModel.Dataset) -> str:
         """
         Construct the final result string before/after training
         :return: test result string
         """
-        result_dict = self.evaluate(model, data, self.topk, self.metrics)
+        result_dict = self.evaluate(data, self.topk, self.metrics)
         res_str = '(' + utils.format_metric(result_dict) + ')'
         return res_str

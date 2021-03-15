@@ -71,12 +71,12 @@ def main():
     for phase in ['train', 'dev', 'test']:
         data_dict[phase] = model_name.Dataset(model, corpus, phase)
     runner = runner_name(args)
-    logging.info('Test Before Training: ' + runner.print_res(model, data_dict['test']))
+    logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
     if args.load > 0:
         model.load_model()
     if args.train > 0:
-        runner.train(model, data_dict)
-    logging.info(os.linesep + 'Test After Training: ' + runner.print_res(model, data_dict['test']))
+        runner.train(data_dict)
+    logging.info(os.linesep + 'Test After Training: ' + runner.print_res(data_dict['test']))
 
     model.actions_after_train()
     logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
