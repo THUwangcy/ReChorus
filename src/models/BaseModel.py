@@ -207,9 +207,9 @@ class GeneralModel(BaseModel):
         def actions_before_epoch(self) -> NoReturn:
             neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
             for i, u in enumerate(self.data['user_id']):
-                user_clicked_set = self.corpus.user_clicked_set[u]
+                clicked_set = self.corpus.train_clicked_set[u]  # neg items are possible to appear in dev/test set
                 for j in range(self.model.num_neg):
-                    while neg_items[i][j] in user_clicked_set:
+                    while neg_items[i][j] in clicked_set:
                         neg_items[i][j] = np.random.randint(1, self.corpus.n_items)
             self.data['neg_items'] = neg_items
 

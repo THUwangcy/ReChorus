@@ -11,7 +11,7 @@ from models.BaseModel import GeneralModel
 from utils import layers
 
 
-class ContrastRecBeta(SequentialModel):
+class ContraRecBeta(SequentialModel):
     extra_log_args = ['gamma', 'temperature', 'encoder']
 
     @staticmethod

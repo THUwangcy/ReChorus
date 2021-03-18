@@ -111,9 +111,9 @@ class CFKG(GeneralModel):
                 self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
                 if relation == 0:  # "buy" relation
                     self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
-                    while self.neg_tails[i] in self.corpus.user_clicked_set[head]:
+                    while self.neg_tails[i] in self.corpus.train_clicked_set[head]:
                         self.neg_tails[i] = np.random.randint(1, self.corpus.n_items)
-                    while tail in self.corpus.user_clicked_set[self.neg_heads[i]]:
+                    while tail in self.corpus.train_clicked_set[self.neg_heads[i]]:
                         self.neg_heads[i] = np.random.randint(1, self.corpus.n_users)
                 else:
                     self.neg_heads[i] = np.random.randint(1, self.corpus.n_entities)
