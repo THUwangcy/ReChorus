@@ -24,6 +24,8 @@ class ContraRecPro(SequentialModel):
                             help='Parameter of the beta distribution for sampling.')
         parser.add_argument('--temp', type=float, default=0.2,
                             help='Temperature in contrastive loss.')
+        parser.add_argument('--rec_temp', type=float, default=0.2,
+                            help='Temperature in recommendation contrastive loss.')
         parser.add_argument('--encoder', type=str, default='BERT4Rec',
                             help='Choose a sequence encoder: GRU4Rec, Caser, BERT4Rec.')
         return SequentialModel.parse_model_args(parser)
@@ -35,6 +37,7 @@ class ContraRecPro(SequentialModel):
         self.beta_a = args.beta_a
         self.beta_b = args.beta_b
         self.temperature = args.temp
+        self.rec_temperature = args.rec_temp
         self.encoder_name = args.encoder
         super().__init__(args, corpus)
 
@@ -59,6 +62,8 @@ class ContraRecPro(SequentialModel):
         his_vectors = self.i_embeddings(history)
         his_vector = self.encoder(his_vectors, lengths)
         i_vectors = self.i_embeddings(i_ids)
+        # his_vector = F.normalize(his_vector, dim=-1)  # ！
+        # i_vectors = F.normalize(i_vectors, dim=-1)
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         out_dict = {'prediction': prediction}
 
@@ -69,16 +74,21 @@ class ContraRecPro(SequentialModel):
             features = torch.stack([his_vector, his_aug_vector], dim=1)  # bsz, 2, emb
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
-            rec_features = torch.stack([his_vector, i_vectors[:, 0, :]], dim=1)  # bsz, 2, emb
-            rec_features = F.normalize(rec_features, dim=-1)
-            out_dict['rec_features'] = rec_features
             out_dict['labels'] = i_ids[:, 0]  # bsz
+            # rec_features = torch.stack([his_vector, i_vectors[:, 0, :]], dim=1)  # bsz, 2, emb
+            # rec_features = F.normalize(rec_features, dim=-1)
+            # out_dict['rec_features'] = rec_features
 
         return out_dict
 
     def loss(self, out_dict):
-        rec_loss = self.criterion(out_dict['rec_features'], labels=out_dict['labels'])
+        predictions = out_dict['prediction'] / self.rec_temperature
+        pre_exp = (predictions - predictions.max()).exp()
+        pre_softmax = pre_exp / pre_exp.sum(dim=1, keepdim=True)
+        # pre_softmax = (predictions - predictions.max()).softmax(dim=1)
+        rec_loss = - self.rec_temperature * pre_softmax[:, 0].log().mean()
         contra_loss = self.criterion(out_dict['features'], labels=out_dict['labels'])
+        # return super().loss(out_dict) + self.gamma * contra_loss
         return rec_loss + self.gamma * contra_loss
 
     class Dataset(SequentialModel.Dataset):
@@ -93,9 +103,9 @@ class ContraRecPro(SequentialModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             if self.phase == 'train':
-                # history_items = self.reorder_op(feed_dict['history_items'])
+                history_items = self.reorder_op(feed_dict['history_items'])
                 history_items_aug = self.reorder_op(feed_dict['history_items'])
-                # feed_dict['history_items'] = history_items
+                feed_dict['history_items'] = history_items
                 feed_dict['history_items_aug'] = history_items_aug
             return feed_dict
 
@@ -160,14 +170,27 @@ class ContraLoss(nn.Module):
             torch.ones_like(mask), 1,
             torch.arange(mask.shape[0]).view(-1, 1).to(self.device), 0
         )
-        mask = mask * logits_mask
+        no_self_mask = mask * logits_mask
 
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True) + 1e-10)
 
+        # inner weighted
+        # neg_weight = logits.masked_fill(mask.byte(), -np.inf).softmax(dim=1)
+        # neg_logits_sum = (logits * neg_weight).sum(dim=1, keepdim=True)
+        # log_prob = (logits - neg_logits_sum).sigmoid().log()
+        # # log_prob = -(1 + (neg_logits_sum - logits).exp())
+
+        # outer weighted
+        # neg_weight = logits.masked_fill(mask.byte(), -np.inf).softmax(dim=1)
+        # # logits_dist = logits[:, :, None] - logits[:, None, :]
+        # # log_prob = (logits_dist.sigmoid() * neg_weight[:, None, :]).sum(-1).log()
+        # logits_dist = (logits * no_self_mask).sum(dim=1, keepdim=True) - logits
+        # log_prob = (logits_dist.sigmoid() * neg_weight).sum(dim=-1, keepdim=True).log()
+
         # compute mean of log-likelihood over positive
-        mean_log_prob_pos = (mask * log_prob).sum(1) / (mask.sum(1) + 1e-10)
+        mean_log_prob_pos = (no_self_mask * log_prob).sum(1) / (no_self_mask.sum(1) + 1e-10)
 
         # loss
         loss = - self.temperature * mean_log_prob_pos
