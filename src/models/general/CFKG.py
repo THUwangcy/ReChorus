@@ -96,7 +96,10 @@ class CFKG(GeneralModel):
                     head_id = head_id + self.corpus.n_users
             else:
                 target_item = self.data['item_id'][index]
-                neg_items = self.data['neg_items'][index]
+                if self.model.test_all:
+                    neg_items = np.arange(1, self.corpus.n_items)
+                else:
+                    neg_items = self.data['neg_items'][index]
                 tail_id = np.concatenate([[target_item], neg_items])
                 head_id = self.data['user_id'][index] * np.ones_like(tail_id)
                 relation_id = np.zeros_like(tail_id)
