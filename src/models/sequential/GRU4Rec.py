@@ -36,7 +36,7 @@ class GRU4Rec(SequentialModel):
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
         self.rnn = nn.GRU(input_size=self.emb_size, hidden_size=self.hidden_size, batch_first=True)
-        self.out = nn.Linear(self.hidden_size, self.emb_size, bias=False)
+        self.pred_embeddings = nn.Embedding(self.item_num, self.hidden_size)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -44,7 +44,6 @@ class GRU4Rec(SequentialModel):
         history = feed_dict['history_items']  # [batch_size, history_max]
         lengths = feed_dict['lengths']  # [batch_size]
 
-        i_vectors = self.i_embeddings(i_ids)
         his_vectors = self.i_embeddings(history)
 
         # Sort and Pack
@@ -56,10 +55,10 @@ class GRU4Rec(SequentialModel):
         output, hidden = self.rnn(history_packed, None)
 
         # Unsort
-        sort_rnn_vector = self.out(hidden[-1])
         unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
-        rnn_vector = sort_rnn_vector.index_select(dim=0, index=unsort_idx)
+        rnn_vector = hidden[-1].index_select(dim=0, index=unsort_idx)
 
         # Predicts
-        prediction = (rnn_vector[:, None, :] * i_vectors).sum(-1)
+        pred_vectors = self.pred_embeddings(i_ids)
+        prediction = (rnn_vector[:, None, :] * pred_vectors).sum(-1)
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}

@@ -183,9 +183,9 @@ class GeneralModel(BaseModel):
         predictions = out_dict['prediction']
         pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
         neg_softmax = (neg_pred - neg_pred.max()).softmax(dim=1)
-        # loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
-        neg_pred = (neg_pred * neg_softmax).sum(dim=1)
-        loss = F.softplus(-(pos_pred - neg_pred)).mean()
+        loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
+        # neg_pred = (neg_pred * neg_softmax).sum(dim=1)
+        # loss = F.softplus(-(pos_pred - neg_pred)).mean()
         # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
