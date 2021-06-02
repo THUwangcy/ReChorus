@@ -44,7 +44,8 @@ class BaseReader(object):
             if 'neg_items' in self.data_df[key]:
                 neg_items = np.array(self.data_df[key]['neg_items'].tolist())
                 assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones
-        logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(self.n_users, self.n_items, len(self.all_df)))
+        logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(
+            self.n_users - 1, self.n_items - 1, len(self.all_df)))
 
     def _append_his_info(self) -> NoReturn:
         """

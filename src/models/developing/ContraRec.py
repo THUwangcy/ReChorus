@@ -10,7 +10,7 @@ from utils import layers
 
 
 class ContraRec(SequentialModel):
-    extra_log_args = ['gamma', 'batch_size', 'temp', 'encoder']
+    extra_log_args = ['gamma', 'num_neg', 'batch_size', 'ctc_temp', 'ccc_temp', 'encoder']
 
     @staticmethod
     def parse_model_args(parser):
@@ -22,8 +22,10 @@ class ContraRec(SequentialModel):
                             help='Parameter of the beta distribution for sampling.')
         parser.add_argument('--beta_b', type=int, default=3,
                             help='Parameter of the beta distribution for sampling.')
-        parser.add_argument('--temp', type=float, default=0.2,
-                            help='Temperature in contrastive loss.')
+        parser.add_argument('--ctc_temp', type=float, default=0.5,
+                            help='Temperature in context-target contrastive loss.')
+        parser.add_argument('--ccc_temp', type=float, default=0.2,
+                            help='Temperature in context-context contrastive loss.')
         parser.add_argument('--encoder', type=str, default='BERT4Rec',
                             help='Choose a sequence encoder: GRU4Rec, Caser, BERT4Rec.')
         return SequentialModel.parse_model_args(parser)
@@ -34,7 +36,8 @@ class ContraRec(SequentialModel):
         self.gamma = args.gamma
         self.beta_a = args.beta_a
         self.beta_b = args.beta_b
-        self.temperature = args.temp
+        self.ctc_temp = args.ctc_temp
+        self.ccc_temp = args.ccc_temp
         self.encoder_name = args.encoder
         super().__init__(args, corpus)
 
@@ -45,10 +48,10 @@ class ContraRec(SequentialModel):
         elif self.encoder_name == 'Caser':
             self.encoder = CaserEncoder(self.emb_size, self.max_his, num_horizon=16, num_vertical=8, l=5)
         elif self.encoder_name == 'BERT4Rec':
-            self.encoder = BERT4RecEncoder(self.emb_size, self.max_his, self.device, num_layers=2, num_heads=2)
+            self.encoder = BERT4RecEncoder(self.emb_size, self.max_his, num_layers=2, num_heads=2)
         else:
             raise ValueError('Invalid sequence encoder.')
-        self.criterion = ContraLoss(self.device, temperature=self.temperature)
+        self.ccc_loss = ContraLoss(self.device, temperature=self.ccc_temp)
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -63,10 +66,13 @@ class ContraRec(SequentialModel):
         out_dict = {'prediction': prediction}
 
         if feed_dict['phase'] == 'train':
-            history_aug = feed_dict['history_items_aug']
-            his_aug_vectors = self.i_embeddings(history_aug)
-            his_aug_vector = self.encoder(his_aug_vectors, lengths)
-            features = torch.stack([his_vector, his_aug_vector], dim=1)  # bsz, 2, emb
+            history_a = feed_dict['history_items_a']
+            his_a_vectors = self.i_embeddings(history_a)
+            his_a_vector = self.encoder(his_a_vectors, lengths)
+            history_b = feed_dict['history_items_b']
+            his_b_vectors = self.i_embeddings(history_b)
+            his_b_vector = self.encoder(his_b_vectors, lengths)
+            features = torch.stack([his_a_vector, his_b_vector], dim=1)  # bsz, 2, emb
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
@@ -74,8 +80,14 @@ class ContraRec(SequentialModel):
         return out_dict
 
     def loss(self, out_dict):
-        contra_loss = self.criterion(out_dict['features'], labels=out_dict['labels'])
-        loss = super().loss(out_dict) + self.gamma * contra_loss
+        # predictions = out_dict['prediction']
+        # pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
+        # ctc_loss = -(pos_pred[:, None] - neg_pred).sigmoid().log().mean(dim=1).mean()
+        predictions = out_dict['prediction'] / self.ctc_temp
+        pre_softmax = (predictions - predictions.max()).softmax(dim=1)
+        ctc_loss = - self.ctc_temp * pre_softmax[:, 0].log().mean()
+        ccc_loss = self.ccc_loss(out_dict['features'], labels=out_dict['labels'])
+        loss = ctc_loss + self.gamma * ccc_loss
         return loss
 
     class Dataset(SequentialModel.Dataset):
@@ -85,19 +97,37 @@ class ContraRec(SequentialModel):
             start = np.random.randint(0, len(seq) - select_len + 1)
             idx_range = np.arange(len(seq))
             np.random.shuffle(idx_range[start: start + select_len])
-            return np.array(seq)[idx_range]
+            return seq[idx_range]
+
+        def mask_op(self, seq):
+            ratio = np.random.beta(a=self.model.beta_a, b=self.model.beta_b)
+            selected_len = int(len(seq) * ratio)
+            mask = np.full(len(seq), False)
+            mask[:selected_len] = True
+            np.random.shuffle(mask)
+            seq[mask] = 0
+            return seq
+
+        def augment(self, seq):
+            aug_seq = np.array(seq).copy()
+            if np.random.rand() > 0.5:
+                return self.mask_op(aug_seq)
+            else:
+                return self.reorder_op(aug_seq)
+            # return self.reorder_op(self.mask_op(aug_seq))
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             if self.phase == 'train':
-                history_items = self.reorder_op(feed_dict['history_items'])
-                history_items_aug = self.reorder_op(feed_dict['history_items'])
-                feed_dict['history_items'] = history_items
-                feed_dict['history_items_aug'] = history_items_aug
+                history_items_a = self.augment(feed_dict['history_items'])
+                history_items_b = self.augment(feed_dict['history_items'])
+                feed_dict['history_items_a'] = history_items_a
+                feed_dict['history_items_b'] = history_items_b
+                # feed_dict['history_items'] = history_items_a
             return feed_dict
 
 
-""" Contrastive Loss """
+""" Context-Context Contrastive Loss """
 class ContraLoss(nn.Module):
     def __init__(self, device, temperature=0.2):
         super(ContraLoss, self).__init__()
@@ -161,6 +191,7 @@ class ContraLoss(nn.Module):
         loss = - self.temperature * mean_log_prob_pos
         return loss.mean()
 
+
 """ Encoder Layers """
 class GRU4RecEncoder(nn.Module):
     def __init__(self, emb_size, hidden_size=128):
@@ -216,10 +247,8 @@ class CaserEncoder(nn.Module):
         return his_vector
 
 class BERT4RecEncoder(nn.Module):
-    def __init__(self, emb_size, max_his, device, num_layers=2, num_heads=2):
+    def __init__(self, emb_size, max_his, num_layers=2, num_heads=2):
         super().__init__()
-        self.device = device
-
         self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
         self.transformer_block = nn.ModuleList([
             layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=num_heads)
@@ -228,7 +257,7 @@ class BERT4RecEncoder(nn.Module):
 
     def forward(self, seq, lengths):
         batch_size, seq_len = seq.size(0), seq.size(1)
-        len_range = torch.from_numpy(np.arange(seq_len)).to(self.device)
+        len_range = torch.from_numpy(np.arange(seq_len)).to(seq.device)
         valid_mask = len_range[None, :] < lengths[:, None]
 
         # Position embedding

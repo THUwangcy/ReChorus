@@ -68,10 +68,13 @@ class ContraRecPro(SequentialModel):
         out_dict = {'prediction': prediction}
 
         if feed_dict['phase'] == 'train':
-            history_aug = feed_dict['history_items_aug']
-            his_aug_vectors = self.i_embeddings(history_aug)
-            his_aug_vector = self.encoder(his_aug_vectors, lengths)
-            features = torch.stack([his_vector, his_aug_vector], dim=1)  # bsz, 2, emb
+            history_a = feed_dict['history_items_a']
+            history_b = feed_dict['history_items_b']
+            his_a_vectors = self.i_embeddings(history_a)
+            his_b_vectors = self.i_embeddings(history_b)
+            his_a_vector = self.encoder(his_a_vectors, lengths)
+            his_b_vector = self.encoder(his_b_vectors, lengths)
+            features = torch.stack([his_a_vector, his_b_vector], dim=1)  # bsz, 2, emb
             features = F.normalize(features, dim=-1)
             out_dict['features'] = features  # bsz, 2, emb
             out_dict['labels'] = i_ids[:, 0]  # bsz
@@ -103,10 +106,10 @@ class ContraRecPro(SequentialModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             if self.phase == 'train':
-                history_items = self.reorder_op(feed_dict['history_items'])
-                history_items_aug = self.reorder_op(feed_dict['history_items'])
-                feed_dict['history_items'] = history_items
-                feed_dict['history_items_aug'] = history_items_aug
+                history_items_a = self.reorder_op(feed_dict['history_items'])
+                history_items_b = self.reorder_op(feed_dict['history_items'])
+                feed_dict['history_items_a'] = history_items_a
+                feed_dict['history_items_b'] = history_items_b
             return feed_dict
 
 

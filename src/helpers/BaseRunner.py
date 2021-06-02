@@ -40,7 +40,7 @@ class BaseRunner(object):
                             help='Number of processors when prepare batches in DataLoader')
         parser.add_argument('--pin_memory', type=int, default=1,
                             help='pin_memory in DataLoader')
-        parser.add_argument('--topk', type=str, default='5,10',
+        parser.add_argument('--topk', type=str, default='5,10,20',
                             help='The number of items recommended to each user.')
         parser.add_argument('--metric', type=str, default='NDCG,HR',
                             help='metrics: NDCG, HR')
@@ -139,7 +139,7 @@ class BaseRunner(object):
                     logging_str += ' *'
                 logging.info(logging_str)
 
-                if self.early_stop and self.eval_termination(main_metric_results):
+                if self.early_stop > 0 and self.eval_termination(main_metric_results):
                     logging.info("Early stop at %d based on dev result." % (epoch + 1))
                     break
         except KeyboardInterrupt:
