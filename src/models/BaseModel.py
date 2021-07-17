@@ -196,7 +196,7 @@ class GeneralModel(BaseModel):
                 neg_items = np.arange(1, self.corpus.n_items)
             else:
                 neg_items = self.data['neg_items'][index]
-            item_ids = np.concatenate([[target_item], neg_items])
+            item_ids = np.concatenate([[target_item], neg_items]).astype(int)
             feed_dict = {
                 'user_id': user_id,
                 'item_id': item_ids

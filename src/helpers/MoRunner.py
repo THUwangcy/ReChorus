@@ -16,7 +16,7 @@ from models.BaseModel import BaseModel
 from helpers.BaseRunner import BaseRunner
 
 
-class MomenRunner(BaseRunner):
+class MoRunner(BaseRunner):
     def fit(self, data: BaseModel.Dataset, epoch=-1) -> float:
         model = data.model
         if model.optimizer is None:
