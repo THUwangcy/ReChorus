@@ -8,9 +8,14 @@ ReChorus is a general PyTorch framework for Top-K recommendation with implicit f
 This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familiar with classical methods. The characteristics of our framework can be summarized as follows:
 
 - **Swift**: concentrate on your model design ***in a single file*** and implement new models quickly.
+
 - **Easy**: the framework is accomplished in ***less than a thousand lines of code***, which is easy to use with clean codes and adequate comments.
+
 - **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models.
+
 - **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers.
+
+## Structre
 
 Generally, ReChorus decomposes the whole process into three modules:
 
@@ -18,7 +23,7 @@ Generally, ReChorus decomposes the whole process into three modules:
 - [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
 - [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches
 
-
+![logo](./log/_static/module.png)
 
 
 ## Getting Started
@@ -44,10 +49,9 @@ cd src
 python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
 ```
 
-5. (optional) Run jupyter notebook in `data` folder to download and build new datasets, or prepare your own datasets according to [README](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
+5. (optional) Run jupyter notebook in `data` folder to download and build new datasets, or prepare your own datasets according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
 
-6. (optional) Implement your own models according to [README](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
-
+6. (optional) Implement your own models according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
 
 
 ## Arguments
@@ -74,8 +78,6 @@ The main arguments are listed below.
 | history_max     | 20        | The maximum length of history for sequential models.         |
 | num_neg         | 1         | The number of negative items for each training instance.     |
 | test_epoch      | -1        | Print test set metrics every test_epoch during training (-1: no print). |
-
-
 
 ## Models
 
@@ -117,7 +119,6 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py) | 0.5174 | 0.3876 | 9.9s | √ | √ | √ |
 
 For fair comparison, the batch size is fixed to 256, and the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
-
 
 
 ## Citation
