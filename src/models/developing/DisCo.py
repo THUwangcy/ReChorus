@@ -30,10 +30,19 @@ class DisCo(GeneralModel):
         self.encoder = MFEncoder(self.user_num, self.item_num, self.emb_size)
         self.criterion = DisCoLoss(self.emb_size, self.scale)
 
+        self.predictor_a = nn.Linear(self.emb_size, self.emb_size)
+        self.predictor_b = nn.Linear(self.emb_size, self.emb_size)
+        # self.predictor = nn.Sequential(
+        #     nn.Linear(self.emb_size, 128, bias=False), nn.BatchNorm1d(128),
+        #     nn.ReLU(inplace=True), nn.Linear(128, self.emb_size, bias=True)
+        # )
+
     def forward(self, feed_dict):
         self.check_list = []
         user, items = feed_dict['user_id'], feed_dict['item_id']
         u_embed, i_embed = self.encoder(user, items)
+        u_embed_proj = self.predictor_a(u_embed)
+        i_embed_proj = self.predictor_b(i_embed)
 
         prediction = (u_embed[:, None, :] * i_embed).sum(dim=-1)
         out_dict = {'prediction': prediction}
@@ -41,12 +50,15 @@ class DisCo(GeneralModel):
         if feed_dict['phase'] == 'train':
             out_dict.update({
                 'z_a': u_embed,
-                'z_b': i_embed[:, 0, :]
+                'z_b': i_embed[:, 0],
+                'z_a_proj': u_embed_proj,
+                'z_b_proj': i_embed_proj[:, 0]
             })
         return out_dict
 
     def loss(self, output):
-        loss = self.criterion(output['z_a'], output['z_b'])
+        loss = self.criterion(output['z_a'], output['z_b'],
+                              output['z_a_proj'], output['z_b_proj'])
         return loss
 
     class Dataset(GeneralModel.Dataset):
@@ -60,12 +72,6 @@ class DisCoLoss(nn.Module):
         super(DisCoLoss, self).__init__()
         self.scale = scale
         self.emb_size = emb_size
-        self.predictor_a = nn.Linear(emb_size, emb_size)
-        self.predictor_b = nn.Linear(emb_size, emb_size)
-        # self.predictor = nn.Sequential(
-        #     nn.Linear(self.emb_size, 128, bias=False), nn.BatchNorm1d(128),
-        #     nn.ReLU(inplace=True), nn.Linear(128, self.emb_size, bias=True)
-        # )
 
     @staticmethod
     def similarity(a, b):
@@ -73,7 +79,7 @@ class DisCoLoss(nn.Module):
         b = F.normalize(b, dim=-1)
         return (1 - (a * b).sum(dim=-1)).mean()
 
-    def forward(self, z_a, z_b):
+    def forward(self, z_a, z_b, z_a_proj, z_b_proj):
         """
         Args:
             z_a: user representation of shape [bsz, dim].
@@ -83,8 +89,8 @@ class DisCoLoss(nn.Module):
         """
         loss, bsz, dim = 0, z_a.size(0), z_a.size(1)
         assert dim == self.emb_size
-        z_a_proj = self.predictor_a(z_a)
-        z_b_proj = self.predictor_b(z_b)
+        # z_a_proj = self.predictor_a(z_a)
+        # z_b_proj = self.predictor_b(z_b)
 
         # Similarity
         loss += (self.similarity(z_a_proj, z_b.detach()) +
