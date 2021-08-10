@@ -71,7 +71,7 @@ def main():
     for phase in ['train', 'dev', 'test']:
         data_dict[phase] = model_name.Dataset(model, corpus, phase)
     runner = runner_name(args)
-    logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
+    # logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
     if args.load > 0:
         model.load_model()
     if args.train > 0:

@@ -8,34 +8,36 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.BaseModel import GeneralModel
+from models.general.LightGCN import LightGCN
+from models.general.LightGCN import LGCNEncoder
 
 
-class DisCo(GeneralModel):
+class DisCo_G(GeneralModel):
     extra_log_args = ['emb_size', 'scale']
 
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
-        parser.add_argument('--scale', type=float, default=0.1,
+        parser.add_argument('--scale', type=float, default=0.01,
                             help='Coefficient of the disentangle loss.')
+        parser.add_argument('--n_layers', type=int, default=3,
+                            help='Number of LightGCN layers.')
         return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         self.emb_size = args.emb_size
         self.scale = args.scale
+        self.n_layers = args.n_layers
+        self.norm_adj = LightGCN.build_adjmat(corpus.n_users, corpus.n_items, corpus.train_clicked_set)
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.encoder = MFEncoder(self.user_num, self.item_num, self.emb_size)
+        self.encoder = LGCNEncoder(self.user_num, self.item_num, self.emb_size, self.norm_adj, self.n_layers)
         self.criterion = DisCoLoss(self.emb_size, self.scale)
 
         self.predictor_a = nn.Linear(self.emb_size, self.emb_size)
         self.predictor_b = nn.Linear(self.emb_size, self.emb_size)
-        # self.predictor = nn.Sequential(
-        #     nn.Linear(self.emb_size, 128, bias=False), nn.BatchNorm1d(128),
-        #     nn.ReLU(inplace=True), nn.Linear(128, self.emb_size, bias=True)
-        # )
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -57,9 +59,7 @@ class DisCo(GeneralModel):
         return out_dict
 
     def loss(self, output):
-        loss = self.criterion(output['z_a'], output['z_b'],
-                              output['z_a_proj'], output['z_b_proj'])
-        return loss
+        return self.criterion(output['z_a'], output['z_b'], output['z_a_proj'], output['z_b_proj'])
 
     class Dataset(GeneralModel.Dataset):
         # No need to sample negative items
@@ -108,15 +108,3 @@ class DisCoLoss(nn.Module):
         loss += self.scale * dis_loss
 
         return loss
-
-
-class MFEncoder(nn.Module):
-    def __init__(self, user_num, item_num, emb_size):
-        super(MFEncoder, self).__init__()
-        self.user_embedding = nn.Embedding(user_num, emb_size)
-        self.item_embedding = nn.Embedding(item_num, emb_size)
-
-    def forward(self, user_id, item_ids):
-        u_embed = self.user_embedding(user_id)
-        i_embed = self.item_embedding(item_ids)
-        return u_embed, i_embed

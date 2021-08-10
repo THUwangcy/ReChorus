@@ -30,11 +30,8 @@ class ComiRec(SequentialModel):
         self.max_his = args.history_max
         super().__init__(args, corpus)
 
-        self.len_range = torch.from_numpy(np.arange(self.max_his)).to(self.device)
-
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
-        self.p_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
         self.W1 = nn.Linear(self.emb_size, self.attn_size)
         self.W2 = nn.Linear(self.attn_size, self.K)
 
@@ -42,16 +39,10 @@ class ComiRec(SequentialModel):
         self.check_list = []
         i_ids = feed_dict['item_id']  # [batch_size, -1]
         history = feed_dict['history_items']  # [batch_size, history_max]
-        lengths = feed_dict['lengths']  # [batch_size]
         batch_size, seq_len = history.shape
 
         valid_his = (history > 0).long()
         his_vectors = self.i_embeddings(history)
-
-        # Position embedding
-        position = (lengths[:, None] - self.len_range[None, :seq_len]) * valid_his
-        pos_vectors = self.p_embeddings(position)
-        his_vectors = his_vectors + pos_vectors
 
         # Self-attention
         attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K

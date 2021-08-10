@@ -40,7 +40,7 @@ class BaseRunner(object):
                             help='Number of processors when prepare batches in DataLoader')
         parser.add_argument('--pin_memory', type=int, default=1,
                             help='pin_memory in DataLoader')
-        parser.add_argument('--topk', type=str, default='5,10,20',
+        parser.add_argument('--topk', type=str, default='5,10,20,50',
                             help='The number of items recommended to each user.')
         parser.add_argument('--metric', type=str, default='NDCG,HR',
                             help='metrics: NDCG, HR')
