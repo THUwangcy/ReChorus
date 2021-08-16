@@ -10,13 +10,11 @@ import numpy as np
 import torch.nn.functional as F
 
 from models.BaseModel import SequentialModel
-from models.sequential.TiSASRec import TimeIntervalTransformerLayer
-from utils import layers
 
 
-class TiMiRec(SequentialModel):
+class TiMiRecLight(SequentialModel):
     runner = 'TiMiRunner'
-    extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos', 'predictor']
+    extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos']
 
     @staticmethod
     def parse_model_args(parser):
@@ -27,9 +25,7 @@ class TiMiRec(SequentialModel):
         parser.add_argument('--K', type=int, default=2,
                             help='Number of hidden intent.')
         parser.add_argument('--add_pos', type=int, default=1,
-                            help='Whether add position embedding in extractor.')
-        parser.add_argument('--predictor', type=str, default='GRU',
-                            help='Choose the main model of the predictor: TiSASRec, SASRec, GRU')
+                            help='Whether add position embedding.')
         parser.add_argument('--temp', type=float, default=1,
                             help='Temperature in knowledge distillation loss.')
         parser.add_argument('--stage', type=int, default=3,
@@ -41,25 +37,15 @@ class TiMiRec(SequentialModel):
         self.attn_size = args.attn_size
         self.K = args.K
         self.add_pos = args.add_pos
-        self.predictor = args.predictor
         self.temp = args.temp
         self.stage = args.stage
         self.max_his = args.history_max
-        self.max_time = 512  # max time intervals in TiSASRec
         super().__init__(args, corpus)
 
-        if self.stage in [2, 3] and self.predictor == 'TiSASRec':
-            setattr(corpus, 'user_min_interval', dict())
-            for u, user_df in corpus.all_df.groupby('user_id'):
-                time_seqs = user_df['time'].values
-                interval_matrix = np.abs(time_seqs[:, None] - time_seqs[None, :])
-                min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFF)
-                corpus.user_min_interval[u] = min_interval
-
-        self.extractor_path = '../model/TiMiRec/Extractor__{}__{}__emb_size={}__K={}__add_pos={}.pt' \
+        self.extractor_path = '../model/TiMiRecLight/Extractor__{}__{}__emb_size={}__K={}__add_pos={}.pt'\
             .format(corpus.dataset, args.random_seed, self.emb_size, self.K, self.add_pos)
-        self.predictor_path = '../model/TiMiRec/Predictor__{}__{}__emb_size={}__model={}.pt' \
-            .format(corpus.dataset, args.random_seed, self.emb_size, self.predictor)
+        self.predictor_path = '../model/TiMiRecLight/Predictor__{}__{}__emb_size={}.pt' \
+            .format(corpus.dataset, args.random_seed, self.emb_size)
         if self.stage == 1:
             self.model_path = self.extractor_path
         elif self.stage == 2:
@@ -70,8 +56,7 @@ class TiMiRec(SequentialModel):
             self.interest_extractor = MultiInterestExtractor(
                 self.K, self.item_num, self.emb_size, self.attn_size, self.max_his, self.add_pos)
         if self.stage in [2, 3]:
-            self.intent_predictor = IntentPredictor(
-                self.K, self.item_num, self.emb_size, self.max_his, self.predictor, self.max_time)
+            self.intent_predictor = IntentPredictor(self.K, self.item_num, self.emb_size)
 
     def load_model(self, model_path=None):
         if model_path is None:
@@ -93,11 +78,7 @@ class TiMiRec(SequentialModel):
     def forward(self, feed_dict):
         self.check_list = []
         i_ids = feed_dict['item_id']  # bsz, -1
-        history = feed_dict['history_items']  # bsz, max_his
-        t_history, user_min_t = None, None
-        if self.stage in [2, 3] and self.predictor == 'TiSASRec':
-            t_history = feed_dict['history_times']  # bsz, max_his
-            user_min_t = feed_dict['user_min_intervals']  # bsz
+        history = feed_dict['history_items']  # bsz, max_his + 1
         lengths = feed_dict['lengths']  # bsz
         batch_size, seq_len = history.shape
 
@@ -115,7 +96,7 @@ class TiMiRec(SequentialModel):
                 prediction = (interest_vectors[:, None, :, :] * i_vectors[:, :, None, :]).sum(-1)  # bsz, -1, K
                 prediction = prediction.max(-1)[0]  # bsz, -1
         elif self.stage == 2:  # pretrain predictor
-            his_vector, pred_intent = self.intent_predictor(history, lengths, t_history, user_min_t)
+            his_vector, pred_intent = self.intent_predictor(history, lengths)
             i_vectors = self.intent_predictor.i_embeddings(i_ids)
             prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         else:  # finetune
@@ -123,7 +104,7 @@ class TiMiRec(SequentialModel):
             i_vectors = self.interest_extractor.i_embeddings(i_ids)
             target_vector = i_vectors[:, 0]  # bsz, emb
             target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
-            his_vector, pred_intent = self.intent_predictor(history, lengths, t_history, user_min_t)
+            his_vector, pred_intent = self.intent_predictor(history, lengths)  # bsz, K
             if feed_dict['phase'] == 'train':
                 idx_select = pred_intent.max(-1)[1]  # bsz
                 user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
@@ -149,15 +130,6 @@ class TiMiRec(SequentialModel):
             loss = super().loss(out_dict) + self.temp * self.temp * loss
         return loss
 
-    class Dataset(SequentialModel.Dataset):
-        def _get_feed_dict(self, index):
-            feed_dict = super()._get_feed_dict(index)
-            if self.model.stage in [2, 3] and self.model.predictor == 'TiSASRec':
-                user_id = self.data['user_id'][index]
-                min_interval = self.corpus.user_min_interval[user_id]
-                feed_dict['user_min_intervals'] = min_interval
-            return feed_dict
-
 
 class MultiInterestExtractor(nn.Module):
     def __init__(self, k, item_num, emb_size, attn_size, max_his, add_pos):
@@ -170,7 +142,6 @@ class MultiInterestExtractor(nn.Module):
             self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
         self.W1 = nn.Linear(emb_size, attn_size)
         self.W2 = nn.Linear(attn_size, k)
-        self.transformer = layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=1, kq_same=False)
 
     def forward(self, history, lengths):
         batch_size, seq_len = history.shape
@@ -183,11 +154,6 @@ class MultiInterestExtractor(nn.Module):
             pos_vectors = self.p_embeddings(position)
             his_vectors = his_vectors + pos_vectors
 
-        # Self-attention
-        attn_mask = valid_his.view(batch_size, 1, 1, seq_len)
-        his_vectors = self.transformer(his_vectors, attn_mask)
-        his_vectors = his_vectors * valid_his[:, :, None].float()
-
         # Multi-Interest Extraction
         attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K
         attn_score = attn_score.masked_fill(valid_his.unsqueeze(-1) == 0, -np.inf)
@@ -199,102 +165,22 @@ class MultiInterestExtractor(nn.Module):
 
 
 class IntentPredictor(nn.Module):
-    def __init__(self, k, item_num, emb_size, max_his, predictor, max_time):
+    def __init__(self, k, item_num, emb_size):
         super(IntentPredictor, self).__init__()
         self.i_embeddings = nn.Embedding(item_num + 1, emb_size)
-
-        if predictor == 'GRU':
-            self.encoder = GRUEncoder(emb_size)
-        elif predictor == 'SASRec':
-            self.encoder = SASRecEncoder(emb_size, max_his)
-        elif predictor == 'TiSASRec':
-            self.encoder = TiSASRecEncoder(emb_size, max_his, max_time)
-        else:
-            raise ValueError('Non-Implemented Predictor.')
-
+        self.rnn = nn.GRU(input_size=emb_size, hidden_size=emb_size, batch_first=True)
         self.proj = nn.Linear(emb_size, k)
 
-    def forward(self, history, lengths, t_history, user_min_t):
-        valid_his = (history > 0).long()
+
+    def forward(self, history, lengths):
         his_vectors = self.i_embeddings(history)
-        his_vector = self.encoder(his_vectors, lengths, valid_his, t_history, user_min_t)
-        intent_pred = self.proj(his_vector)  # bsz, K
-        return his_vector, intent_pred
-
-
-class GRUEncoder(nn.Module):
-    def __init__(self, emb_size):
-        super().__init__()
-        self.rnn = nn.GRU(input_size=emb_size, hidden_size=emb_size, batch_first=True)
-
-    def forward(self, his_vectors, lengths, *args, **kwargs):
         sort_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
         sort_seq = his_vectors.index_select(dim=0, index=sort_idx)
         seq_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_seq, sort_lengths.cpu(), batch_first=True)
         output, hidden = self.rnn(seq_packed, None)
         unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
         his_vector = hidden[-1].index_select(dim=0, index=unsort_idx)
-        return his_vector
 
-
-class SASRecEncoder(nn.Module):
-    def __init__(self, emb_size, max_his):
-        super().__init__()
-        self.max_his = max_his
-        self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
-        self.transformer = layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=1, kq_same=False)
-
-    def forward(self, his_vectors, lengths, valid_his, *args, **kwargs):
-        batch_size, seq_len, emb_size = his_vectors.shape
-        len_range = torch.from_numpy(np.arange(self.max_his)).to(his_vectors.device)
-        position = (lengths[:, None] - len_range[None, :seq_len]) * valid_his
-        pos_vectors = self.p_embeddings(position)
-        his_vectors = his_vectors + pos_vectors
-        attn_mask = valid_his.view(batch_size, 1, 1, seq_len)
-        his_vectors = self.transformer(his_vectors, attn_mask)
-        his_vectors = his_vectors * valid_his[:, :, None].float()
-        # his_vector = his_vectors.sum(1) / lengths[:, None].float()
-        his_vector = his_vectors[torch.arange(batch_size), lengths - 1, :]
-        return his_vector
-
-
-class TiSASRecEncoder(nn.Module):
-    def __init__(self, emb_size, max_his, max_time):
-        super().__init__()
-        num_heads, num_layers, dropout = 1, 1, 0
-        self.max_his = max_his
-        self.max_time = max_time
-        self.p_embeddings_ = nn.Embedding(max_his + 1, emb_size)
-        self.p_v_embeddings_ = nn.Embedding(max_his + 1, emb_size)
-        self.t_embeddings_ = nn.Embedding(max_time + 1, emb_size)
-        self.t_v_embeddings_ = nn.Embedding(max_time + 1, emb_size)
-        self.ti_transformer_block = nn.ModuleList([
-            TimeIntervalTransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=num_heads,
-                                         dropout=dropout, kq_same=False)
-            for _ in range(num_layers)
-        ])
-
-    def forward(self, his_vectors, lengths, valid_his, t_history, user_min_t, *args, **kwargs):
-        batch_size, seq_len, emb_size = his_vectors.shape
-        len_range = torch.from_numpy(np.arange(self.max_his)).to(his_vectors.device)
-        # Position embedding
-        position = (lengths[:, None] - len_range[None, :seq_len]) * valid_his
-        pos_k = self.p_embeddings_(position)
-        pos_v = self.p_v_embeddings_(position)
-
-        # Interval embedding
-        interval_matrix = (t_history[:, :, None] - t_history[:, None, :]).abs()
-        interval_matrix = (interval_matrix / user_min_t.view(-1, 1, 1)).long().clamp(0, self.max_time)
-        inter_k = self.t_embeddings_(interval_matrix)
-        inter_v = self.t_v_embeddings_(interval_matrix)
-
-        causality_mask = np.tril(np.ones((1, 1, seq_len, seq_len), dtype=np.int))
-        attn_mask = torch.from_numpy(causality_mask).to(his_vectors.device)
-
-        for block in self.ti_transformer_block:
-            his_vectors = block(his_vectors, pos_k, pos_v, inter_k, inter_v, attn_mask)
-        his_vectors = his_vectors * valid_his[:, :, None].float()
-
-        # his_vector = his_vectors.sum(1) / lengths[:, None].float()  # average
-        his_vector = his_vectors[torch.arange(batch_size), lengths - 1, :]  # use the last/mask item
-        return his_vector
+        # intent_pred = self.proj(his_vector.detach())  # bsz, K
+        intent_pred = self.proj(his_vector)  # bsz, K
+        return his_vector, intent_pred

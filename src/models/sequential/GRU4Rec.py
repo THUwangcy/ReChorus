@@ -7,7 +7,7 @@ Reference:
     "Session-based Recommendations with Recurrent Neural Networks"
     Hidasi et al., ICLR'2016.
 CMD example:
-    python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 \
+    python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 128 --lr 1e-3 --l2 1e-4 --history_max 20 \
     --dataset 'Grocery_and_Gourmet_Food'
 """
 
@@ -24,7 +24,7 @@ class GRU4Rec(SequentialModel):
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
-        parser.add_argument('--hidden_size', type=int, default=100,
+        parser.add_argument('--hidden_size', type=int, default=64,
                             help='Size of hidden vectors in GRU.')
         return SequentialModel.parse_model_args(parser)
 
@@ -60,5 +60,6 @@ class GRU4Rec(SequentialModel):
 
         # Predicts
         pred_vectors = self.pred_embeddings(i_ids)
+        # pred_vectors = self.i_embeddings(i_ids)
         prediction = (rnn_vector[:, None, :] * pred_vectors).sum(-1)
         return {'prediction': prediction.view(feed_dict['batch_size'], -1)}
