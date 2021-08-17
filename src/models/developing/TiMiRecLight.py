@@ -56,7 +56,8 @@ class TiMiRecLight(SequentialModel):
             self.interest_extractor = MultiInterestExtractor(
                 self.K, self.item_num, self.emb_size, self.attn_size, self.max_his, self.add_pos)
         if self.stage in [2, 3]:
-            self.intent_predictor = IntentPredictor(self.K, self.item_num, self.emb_size)
+            self.intent_predictor = IntentPredictor(self.item_num, self.emb_size)
+            self.proj = nn.Linear(self.emb_size, self.K)
 
     def load_model(self, model_path=None):
         if model_path is None:
@@ -96,7 +97,7 @@ class TiMiRecLight(SequentialModel):
                 prediction = (interest_vectors[:, None, :, :] * i_vectors[:, :, None, :]).sum(-1)  # bsz, -1, K
                 prediction = prediction.max(-1)[0]  # bsz, -1
         elif self.stage == 2:  # pretrain predictor
-            his_vector, pred_intent = self.intent_predictor(history, lengths)
+            his_vector = self.intent_predictor(history, lengths)
             i_vectors = self.intent_predictor.i_embeddings(i_ids)
             prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         else:  # finetune
@@ -104,7 +105,8 @@ class TiMiRecLight(SequentialModel):
             i_vectors = self.interest_extractor.i_embeddings(i_ids)
             target_vector = i_vectors[:, 0]  # bsz, emb
             target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
-            his_vector, pred_intent = self.intent_predictor(history, lengths)  # bsz, K
+            his_vector = self.intent_predictor(history, lengths)  # bsz, K
+            pred_intent = self.proj(his_vector)  # bsz, K
             if feed_dict['phase'] == 'train':
                 idx_select = pred_intent.max(-1)[1]  # bsz
                 user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
@@ -165,12 +167,10 @@ class MultiInterestExtractor(nn.Module):
 
 
 class IntentPredictor(nn.Module):
-    def __init__(self, k, item_num, emb_size):
+    def __init__(self, item_num, emb_size):
         super(IntentPredictor, self).__init__()
         self.i_embeddings = nn.Embedding(item_num + 1, emb_size)
         self.rnn = nn.GRU(input_size=emb_size, hidden_size=emb_size, batch_first=True)
-        self.proj = nn.Linear(emb_size, k)
-
 
     def forward(self, history, lengths):
         his_vectors = self.i_embeddings(history)
@@ -180,7 +180,4 @@ class IntentPredictor(nn.Module):
         output, hidden = self.rnn(seq_packed, None)
         unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
         his_vector = hidden[-1].index_select(dim=0, index=unsort_idx)
-
-        # intent_pred = self.proj(his_vector.detach())  # bsz, K
-        intent_pred = self.proj(his_vector)  # bsz, K
-        return his_vector, intent_pred
+        return his_vector

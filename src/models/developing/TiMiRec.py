@@ -71,7 +71,8 @@ class TiMiRec(SequentialModel):
                 self.K, self.item_num, self.emb_size, self.attn_size, self.max_his, self.add_pos)
         if self.stage in [2, 3]:
             self.intent_predictor = IntentPredictor(
-                self.K, self.item_num, self.emb_size, self.max_his, self.predictor, self.max_time)
+                self.item_num, self.emb_size, self.max_his, self.predictor, self.max_time)
+            self.proj = nn.Linear(self.emb_size, self.K)
 
     def load_model(self, model_path=None):
         if model_path is None:
@@ -115,7 +116,7 @@ class TiMiRec(SequentialModel):
                 prediction = (interest_vectors[:, None, :, :] * i_vectors[:, :, None, :]).sum(-1)  # bsz, -1, K
                 prediction = prediction.max(-1)[0]  # bsz, -1
         elif self.stage == 2:  # pretrain predictor
-            his_vector, pred_intent = self.intent_predictor(history, lengths, t_history, user_min_t)
+            his_vector = self.intent_predictor(history, lengths, t_history, user_min_t)
             i_vectors = self.intent_predictor.i_embeddings(i_ids)
             prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         else:  # finetune
@@ -123,7 +124,8 @@ class TiMiRec(SequentialModel):
             i_vectors = self.interest_extractor.i_embeddings(i_ids)
             target_vector = i_vectors[:, 0]  # bsz, emb
             target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
-            his_vector, pred_intent = self.intent_predictor(history, lengths, t_history, user_min_t)
+            his_vector = self.intent_predictor(history, lengths, t_history, user_min_t)
+            pred_intent = self.proj(his_vector)  # bsz, K
             if feed_dict['phase'] == 'train':
                 idx_select = pred_intent.max(-1)[1]  # bsz
                 user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
@@ -199,7 +201,7 @@ class MultiInterestExtractor(nn.Module):
 
 
 class IntentPredictor(nn.Module):
-    def __init__(self, k, item_num, emb_size, max_his, predictor, max_time):
+    def __init__(self, item_num, emb_size, max_his, predictor, max_time):
         super(IntentPredictor, self).__init__()
         self.i_embeddings = nn.Embedding(item_num + 1, emb_size)
 
@@ -212,14 +214,11 @@ class IntentPredictor(nn.Module):
         else:
             raise ValueError('Non-Implemented Predictor.')
 
-        self.proj = nn.Linear(emb_size, k)
-
     def forward(self, history, lengths, t_history, user_min_t):
         valid_his = (history > 0).long()
         his_vectors = self.i_embeddings(history)
         his_vector = self.encoder(his_vectors, lengths, valid_his, t_history, user_min_t)
-        intent_pred = self.proj(his_vector)  # bsz, K
-        return his_vector, intent_pred
+        return his_vector
 
 
 class GRUEncoder(nn.Module):
