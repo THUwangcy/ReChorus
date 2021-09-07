@@ -16,7 +16,7 @@ from utils import layers
 
 class TiMiRec(SequentialModel):
     runner = 'TiMiRunner'
-    extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos', 'predictor']
+    extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos', 'predictor', 'n_layers']
 
     @staticmethod
     def parse_model_args(parser):
@@ -32,6 +32,8 @@ class TiMiRec(SequentialModel):
                             help='Choose the main model of the predictor: TiSASRec, SASRec, GRU')
         parser.add_argument('--temp', type=float, default=1,
                             help='Temperature in knowledge distillation loss.')
+        parser.add_argument('--n_layers', type=int, default=1,
+                            help='Number of the projection layer.')
         parser.add_argument('--stage', type=int, default=3,
                             help='Stage of training: 1-pretrain_extractor, 2-pretrain_predictor, 3-joint_finetune.')
         return SequentialModel.parse_model_args(parser)
@@ -43,6 +45,7 @@ class TiMiRec(SequentialModel):
         self.add_pos = args.add_pos
         self.predictor = args.predictor
         self.temp = args.temp
+        self.n_layers = args.n_layers
         self.stage = args.stage
         self.max_his = args.history_max
         self.max_time = 512  # max time intervals in TiSASRec
@@ -72,7 +75,13 @@ class TiMiRec(SequentialModel):
         if self.stage in [2, 3]:
             self.intent_predictor = IntentPredictor(
                 self.item_num, self.emb_size, self.max_his, self.predictor, self.max_time)
-            self.proj = nn.Linear(self.emb_size, self.K)
+        if self.stage == 3:
+            self.proj = nn.Sequential()
+            for i, _ in enumerate(range(self.n_layers - 1)):
+                self.proj.add_module('proj_' + str(i), nn.Linear(self.emb_size, self.emb_size))
+                self.proj.add_module('dropout_' + str(i), nn.Dropout(p=0.5))
+                self.proj.add_module('relu_' + str(i), nn.ReLU(inplace=True))
+            self.proj.add_module('proj_final', nn.Linear(self.emb_size, self.K))
 
     def load_model(self, model_path=None):
         if model_path is None:
@@ -126,6 +135,7 @@ class TiMiRec(SequentialModel):
             target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
             his_vector = self.intent_predictor(history, lengths, t_history, user_min_t)
             pred_intent = self.proj(his_vector)  # bsz, K
+            user_vector = (interest_vectors * pred_intent.softmax(-1)[:, :, None]).sum(-2)  # bsz, emb
             if feed_dict['phase'] == 'train':
                 idx_select = pred_intent.max(-1)[1]  # bsz
                 user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
@@ -133,8 +143,6 @@ class TiMiRec(SequentialModel):
                 out_dict['target_intent'] = target_intent
                 self.check_list.append(('intent', pred_intent.softmax(-1)))
                 self.check_list.append(('target', target_intent.softmax(-1)))
-            else:
-                user_vector = (interest_vectors * pred_intent.softmax(-1)[:, :, None]).sum(-2)  # bsz, emb
             prediction = (user_vector[:, None, :] * i_vectors).sum(-1)
         out_dict['prediction'] = prediction.view(batch_size, -1)
 

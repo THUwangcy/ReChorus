@@ -24,7 +24,7 @@ def parse_args():
                         help='Input commands.')
     parser.add_argument('--out_f', nargs='?', default='exp.csv',
                         help='Output csv.')
-    parser.add_argument('--base_seed', type=int, default=2019,
+    parser.add_argument('--base_seed', type=int, default=0,
                         help='Random seed at the beginning.')
     parser.add_argument('--n', type=int, default=5,
                         help='Repeat times of each command.')

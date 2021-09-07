@@ -21,7 +21,7 @@ class ComiRec(SequentialModel):
                             help='Size of attention vectors.')
         parser.add_argument('--K', type=int, default=2,
                             help='Number of hidden intent.')
-        parser.add_argument('--add_pos', type=int, default=0,
+        parser.add_argument('--add_pos', type=int, default=1,
                             help='Whether add position embedding.')
         return SequentialModel.parse_model_args(parser)
 
@@ -37,7 +37,8 @@ class ComiRec(SequentialModel):
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
-        self.p_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
+        if self.add_pos:
+            self.p_embeddings = nn.Embedding(self.max_his + 1, self.emb_size)
         self.W1 = nn.Linear(self.emb_size, self.attn_size)
         self.W2 = nn.Linear(self.attn_size, self.K)
 
