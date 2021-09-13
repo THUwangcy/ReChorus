@@ -49,7 +49,8 @@ class GRU4Rec(SequentialModel):
         # Sort and Pack
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
         sort_his_vectors = his_vectors.index_select(dim=0, index=sort_idx)
-        history_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_his_vectors, sort_his_lengths, batch_first=True)
+        history_packed = torch.nn.utils.rnn.pack_padded_sequence(
+            sort_his_vectors, sort_his_lengths.cpu(), batch_first=True)
 
         # RNN
         output, hidden = self.rnn(history_packed, None)

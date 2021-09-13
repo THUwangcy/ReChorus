@@ -55,6 +55,7 @@ class BaseReader(object):
         logging.info('Appending history info...')
         self.user_his = dict()  # store the already seen sequence of each user
         self.train_clicked_set = dict()  # store the clicked item set of each user in training set
+        self.clicked_set = dict()
         for key in ['train', 'dev', 'test']:
             df = self.data_df[key]
             position = list()
@@ -62,10 +63,12 @@ class BaseReader(object):
                 if uid not in self.user_his:
                     self.user_his[uid] = list()
                     self.train_clicked_set[uid] = set()
+                    self.clicked_set[uid] = set()
                 position.append(len(self.user_his[uid]))
                 self.user_his[uid].append((iid, t))
                 if key == 'train':
                     self.train_clicked_set[uid].add(iid)
+                self.clicked_set[uid].add(iid)
             df['position'] = position
 
 

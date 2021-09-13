@@ -144,7 +144,14 @@ class BaseModel(nn.Module):
         def collate_batch(self, feed_dicts: List[dict]) -> dict:
             feed_dict = dict()
             for key in feed_dicts[0]:
-                stack_val = np.array([d[key] for d in feed_dicts])
+                if isinstance(feed_dicts[0][key], np.ndarray):
+                    tmp_list = [len(d[key]) for d in feed_dicts]
+                    if any([tmp_list[0] != l for l in tmp_list]):
+                        stack_val = np.array([d[key] for d in feed_dicts], dtype=np.object)
+                    else:
+                        stack_val = np.array([d[key] for d in feed_dicts])
+                else:
+                    stack_val = np.array([d[key] for d in feed_dicts])
                 if stack_val.dtype == np.object:  # inconsistent length (e.g., history)
                     feed_dict[key] = pad_sequence([torch.from_numpy(x) for x in stack_val], batch_first=True)
                 else:
@@ -208,6 +215,7 @@ class GeneralModel(BaseModel):
             neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
             for i, u in enumerate(self.data['user_id']):
                 clicked_set = self.corpus.train_clicked_set[u]  # neg items are possible to appear in dev/test set
+                # clicked_set = self.corpus.clicked_set[u]  # neg items will not include dev/test set
                 for j in range(self.model.num_neg):
                     while neg_items[i][j] in clicked_set:
                         neg_items[i][j] = np.random.randint(1, self.corpus.n_items)

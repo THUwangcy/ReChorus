@@ -22,7 +22,7 @@ class ContraRec(SequentialModel):
                             help='Parameter of the beta distribution for sampling.')
         parser.add_argument('--beta_b', type=int, default=3,
                             help='Parameter of the beta distribution for sampling.')
-        parser.add_argument('--ctc_temp', type=float, default=0.5,
+        parser.add_argument('--ctc_temp', type=float, default=1,
                             help='Temperature in context-target contrastive loss.')
         parser.add_argument('--ccc_temp', type=float, default=0.2,
                             help='Temperature in context-context contrastive loss.')
@@ -110,11 +110,11 @@ class ContraRec(SequentialModel):
 
         def augment(self, seq):
             aug_seq = np.array(seq).copy()
-            if np.random.rand() > 0.5:
-                return self.mask_op(aug_seq)
-            else:
-                return self.reorder_op(aug_seq)
-            # return self.reorder_op(self.mask_op(aug_seq))
+            # if np.random.rand() > 0.5:
+            #     return self.mask_op(aug_seq)
+            # else:
+            #     return self.reorder_op(aug_seq)
+            return self.reorder_op(aug_seq)
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
