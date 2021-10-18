@@ -10,7 +10,7 @@ from models.BaseModel import GeneralModel
 
 
 class BUIR(GeneralModel):
-    runner = 'MoRunner'
+    runner = 'BUIRRunner'
     extra_log_args = ['emb_size', 'momentum']
 
     @staticmethod

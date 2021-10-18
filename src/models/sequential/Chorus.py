@@ -113,7 +113,7 @@ class Chorus(SequentialModel):
                 norm_dist = torch.distributions.normal.Normal(mu, sigma)
                 decay = -neg_norm_dist.log_prob(delta_t).exp() + norm_dist.log_prob(delta_t).exp()
             else:  # exponential by default
-                exp_dist = torch.distributions.exponential.Exponential(beta)
+                exp_dist = torch.distributions.exponential.Exponential(beta, validate_args=False)
                 decay = exp_dist.log_prob(delta_t).exp()
             decay_lst.append(decay.clamp(-1, 1))
         return torch.stack(decay_lst, dim=2)

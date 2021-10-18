@@ -70,7 +70,7 @@ class SLRCPlus(SequentialModel):
         mask = (r_intervals >= 0).float()
         delta_t = r_intervals * mask
         norm_dist = torch.distributions.normal.Normal(mus, sigmas)
-        exp_dist = torch.distributions.exponential.Exponential(betas)
+        exp_dist = torch.distributions.exponential.Exponential(betas, validate_args=False)
         decay = pis * exp_dist.log_prob(delta_t).exp() + (1 - pis) * norm_dist.log_prob(delta_t).exp()
         excitation = (alphas * decay * mask).sum(-1)  # [batch_size, -1]
 
