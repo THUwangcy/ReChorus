@@ -42,7 +42,7 @@ class ContraRec(SequentialModel):
         super().__init__(args, corpus)
 
     def _define_params(self):
-        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
+        self.i_embeddings = nn.Embedding(self.item_num + 1, self.emb_size)
         if self.encoder_name == 'GRU4Rec':
             self.encoder = GRU4RecEncoder(self.emb_size, hidden_size=128)
         elif self.encoder_name == 'Caser':
@@ -105,16 +105,16 @@ class ContraRec(SequentialModel):
             mask = np.full(len(seq), False)
             mask[:selected_len] = True
             np.random.shuffle(mask)
-            seq[mask] = 0
+            seq[mask] = self.model.item_num
             return seq
 
         def augment(self, seq):
             aug_seq = np.array(seq).copy()
-            # if np.random.rand() > 0.5:
-            #     return self.mask_op(aug_seq)
-            # else:
-            #     return self.reorder_op(aug_seq)
-            return self.reorder_op(aug_seq)
+            if np.random.rand() > 0.5:
+                return self.mask_op(aug_seq)
+            else:
+                return self.reorder_op(aug_seq)
+            # return self.reorder_op(aug_seq)
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
@@ -203,7 +203,7 @@ class GRU4RecEncoder(nn.Module):
         # Sort and Pack
         sort_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
         sort_seq = seq.index_select(dim=0, index=sort_idx)
-        seq_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_seq, sort_lengths, batch_first=True)
+        seq_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_seq, sort_lengths.cpu(), batch_first=True)
 
         # RNN
         output, hidden = self.rnn(seq_packed, None)

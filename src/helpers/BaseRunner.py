@@ -38,7 +38,7 @@ class BaseRunner(object):
                             help='optimizer: SGD, Adam, Adagrad, Adadelta')
         parser.add_argument('--num_workers', type=int, default=5,
                             help='Number of processors when prepare batches in DataLoader')
-        parser.add_argument('--pin_memory', type=int, default=1,
+        parser.add_argument('--pin_memory', type=int, default=0,
                             help='pin_memory in DataLoader')
         parser.add_argument('--topk', type=str, default='5,10,20,50',
                             help='The number of items recommended to each user.')

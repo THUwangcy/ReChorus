@@ -58,7 +58,7 @@ class NARM(SequentialModel):
         # Encoding Layer
         sort_his_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
         sort_his_vectors = his_vectors.index_select(dim=0, index=sort_idx)
-        history_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_his_vectors, sort_his_lengths, batch_first=True)
+        history_packed = nn.utils.rnn.pack_padded_sequence(sort_his_vectors, sort_his_lengths.cpu(), batch_first=True)
         _, hidden_g = self.encoder_g(history_packed, None)
         output_l, hidden_l = self.encoder_l(history_packed, None)
         output_l, _ = torch.nn.utils.rnn.pad_packed_sequence(output_l, batch_first=True)

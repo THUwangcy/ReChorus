@@ -55,10 +55,12 @@ class ComiRec(SequentialModel):
         if self.add_pos:
             position = (lengths[:, None] - self.len_range[None, :seq_len]) * valid_his
             pos_vectors = self.p_embeddings(position)
-            his_vectors = his_vectors + pos_vectors
+            his_pos_vectors = his_vectors + pos_vectors
+        else:
+            his_pos_vectors = his_vectors
 
         # Self-attention
-        attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K
+        attn_score = self.W2(self.W1(his_pos_vectors).tanh())  # bsz, his_max, K
         attn_score = attn_score.masked_fill(valid_his.unsqueeze(-1) == 0, -np.inf)
         attn_score = attn_score.transpose(-1, -2)  # bsz, K, his_max
         attn_score = (attn_score - attn_score.max()).softmax(dim=-1)

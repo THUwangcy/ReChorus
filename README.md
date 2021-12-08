@@ -137,7 +137,7 @@ git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
 git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 ```
 
-**Please cite this paper if you use our codes. Thanks!**
+**Please cite these papers if you use our codes. Thanks!**
 
 ```
 @inproceedings{wang2020make,
@@ -146,6 +146,15 @@ git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
   booktitle={Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval},
   pages={109--118},
   year={2020}
+}
+@article{王晨阳2021rechorus,
+  title={ReChorus: 一个综合, 高效, 易扩展的轻量级推荐算法框架},
+  author={王晨阳 and 任一 and 马为之 and 张敏 and 刘奕群 and 马少平},
+  journal={软件学报},
+  volume={33},
+  number={4},
+  pages={0--0},
+  year={2021}
 }
 ```
 

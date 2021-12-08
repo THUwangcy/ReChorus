@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+from datetime import datetime
 
 from models.BaseModel import SequentialModel
 
@@ -85,6 +86,20 @@ class TiMiRecLight(SequentialModel):
             return
         logging.info('Train from scratch!')
 
+    @staticmethod
+    def similarity(a, b):
+        a = F.normalize(a, dim=-1)
+        b = F.normalize(b, dim=-1)
+        return (a * b).sum(dim=-1)
+
+    @staticmethod
+    def js_div(p, q):
+        kl = nn.KLDivLoss(reduction='none')
+        p, q = p.softmax(-1), q.softmax(-1)
+        log_mean = ((p + q) / 2).log()
+        js = (kl(log_mean, p) + kl(log_mean, q)) / 2
+        return js
+
     def forward(self, feed_dict):
         self.check_list = []
         i_ids = feed_dict['item_id']  # bsz, -1
@@ -112,20 +127,30 @@ class TiMiRecLight(SequentialModel):
         else:  # finetune
             interest_vectors = self.interest_extractor(history, lengths)  # bsz, K, emb
             i_vectors = self.interest_extractor.i_embeddings(i_ids)
-            target_vector = i_vectors[:, 0]  # bsz, emb
-            target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
             his_vector = self.intent_predictor(history, lengths)  # bsz, K
+            # pred_intent = self.similarity(interest_vectors.detach(), his_vector.unsqueeze(1))  # bsz, K
             pred_intent = self.proj(his_vector)  # bsz, K
             user_vector = (interest_vectors * pred_intent.softmax(-1)[:, :, None]).sum(-2)  # bsz, emb
             if feed_dict['phase'] == 'train':
-                idx_select = pred_intent.max(-1)[1]  # bsz
-                user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
+                target_vector = i_vectors[:, 0]  # bsz, emb
+                target_intent = self.similarity(interest_vectors, target_vector.unsqueeze(1))  # bsz, K
+                # idx_select = pred_intent.max(-1)[1]  # bsz
+                # user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
                 out_dict['pred_intent'] = pred_intent
                 out_dict['target_intent'] = target_intent
                 self.check_list.append(('intent', pred_intent.softmax(-1)))
                 self.check_list.append(('target', target_intent.softmax(-1)))
             prediction = (user_vector[:, None, :] * i_vectors).sum(-1)
         out_dict['prediction'] = prediction.view(batch_size, -1)
+
+        # For JS divergence analysis
+        if self.stage != 2 and feed_dict['phase'] == 'test':
+            target_vector = i_vectors[:, 0]  # bsz, emb
+            target_intent = self.similarity(interest_vectors, target_vector.unsqueeze(1))  # bsz, K
+            idx = torch.from_numpy(np.arange(batch_size)).to(self.device)
+            rec_vector = i_vectors[idx, prediction.max(-1)[1]]
+            rec_intent = self.similarity(interest_vectors, rec_vector.unsqueeze(1))  # bsz, K
+            out_dict['js'] = self.js_div(target_intent, rec_intent).sum(-1)
 
         return out_dict
 
@@ -134,7 +159,7 @@ class TiMiRecLight(SequentialModel):
             loss = super().loss(out_dict)
         else:  # finetune
             pred_intent = out_dict['pred_intent'] / self.temp
-            target_intent = out_dict['target_intent'].detach() / self.temp
+            target_intent = out_dict['target_intent'] / self.temp
             kl_criterion = nn.KLDivLoss(reduction='batchmean')
             loss = kl_criterion(F.log_softmax(pred_intent, dim=1), F.softmax(target_intent, dim=1))
             loss = super().loss(out_dict) + self.temp * self.temp * loss
@@ -163,10 +188,12 @@ class MultiInterestExtractor(nn.Module):
             len_range = torch.from_numpy(np.arange(self.max_his)).to(history.device)
             position = (lengths[:, None] - len_range[None, :seq_len]) * valid_his
             pos_vectors = self.p_embeddings(position)
-            his_vectors = his_vectors + pos_vectors
+            his_pos_vectors = his_vectors + pos_vectors
+        else:
+            his_pos_vectors = his_vectors
 
         # Multi-Interest Extraction
-        attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K
+        attn_score = self.W2(self.W1(his_pos_vectors).tanh())  # bsz, his_max, K
         attn_score = attn_score.masked_fill(valid_his.unsqueeze(-1) == 0, -np.inf)
         attn_score = attn_score.transpose(-1, -2)  # bsz, K, his_max
         attn_score = (attn_score - attn_score.max()).softmax(dim=-1)

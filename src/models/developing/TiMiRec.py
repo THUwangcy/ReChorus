@@ -100,6 +100,12 @@ class TiMiRec(SequentialModel):
             return
         logging.info('Train from scratch!')
 
+    @staticmethod
+    def similarity(a, b):
+        a = F.normalize(a, dim=-1)
+        b = F.normalize(b, dim=-1)
+        return (a * b).sum(dim=-1)
+
     def forward(self, feed_dict):
         self.check_list = []
         i_ids = feed_dict['item_id']  # bsz, -1
@@ -131,14 +137,14 @@ class TiMiRec(SequentialModel):
         else:  # finetune
             interest_vectors = self.interest_extractor(history, lengths)  # bsz, K, emb
             i_vectors = self.interest_extractor.i_embeddings(i_ids)
-            target_vector = i_vectors[:, 0]  # bsz, emb
-            target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
             his_vector = self.intent_predictor(history, lengths, t_history, user_min_t)
             pred_intent = self.proj(his_vector)  # bsz, K
             user_vector = (interest_vectors * pred_intent.softmax(-1)[:, :, None]).sum(-2)  # bsz, emb
             if feed_dict['phase'] == 'train':
-                idx_select = pred_intent.max(-1)[1]  # bsz
-                user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
+                # idx_select = pred_intent.max(-1)[1]  # bsz
+                # user_vector = interest_vectors[torch.arange(batch_size), idx_select, :]  # bsz, emb
+                target_vector = i_vectors[:, 0]  # bsz, emb
+                target_intent = (interest_vectors * target_vector[:, None, :]).sum(-1)  # bsz, K
                 out_dict['pred_intent'] = pred_intent
                 out_dict['target_intent'] = target_intent
                 self.check_list.append(('intent', pred_intent.softmax(-1)))
@@ -180,7 +186,6 @@ class MultiInterestExtractor(nn.Module):
             self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
         self.W1 = nn.Linear(emb_size, attn_size)
         self.W2 = nn.Linear(attn_size, k)
-        self.transformer = layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=1, kq_same=False)
 
     def forward(self, history, lengths):
         batch_size, seq_len = history.shape
@@ -191,15 +196,12 @@ class MultiInterestExtractor(nn.Module):
             len_range = torch.from_numpy(np.arange(self.max_his)).to(history.device)
             position = (lengths[:, None] - len_range[None, :seq_len]) * valid_his
             pos_vectors = self.p_embeddings(position)
-            his_vectors = his_vectors + pos_vectors
-
-        # Self-attention
-        attn_mask = valid_his.view(batch_size, 1, 1, seq_len)
-        his_vectors = self.transformer(his_vectors, attn_mask)
-        his_vectors = his_vectors * valid_his[:, :, None].float()
+            his_pos_vectors = his_vectors + pos_vectors
+        else:
+            his_pos_vectors = his_vectors
 
         # Multi-Interest Extraction
-        attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K
+        attn_score = self.W2(self.W1(his_pos_vectors).tanh())  # bsz, his_max, K
         attn_score = attn_score.masked_fill(valid_his.unsqueeze(-1) == 0, -np.inf)
         attn_score = attn_score.transpose(-1, -2)  # bsz, K, his_max
         attn_score = (attn_score - attn_score.max()).softmax(dim=-1)

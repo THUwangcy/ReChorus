@@ -17,27 +17,6 @@ from helpers.BaseRunner import BaseRunner
 
 
 class TiMiRunner(BaseRunner):
-    def fit(self, data: BaseModel.Dataset, epoch=-1) -> float:
-        model = data.model
-        if model.optimizer is None:
-            model.optimizer = self._build_optimizer(model)
-        data.actions_before_epoch()  # must sample before multi thread start
-
-        model.train()
-        loss_lst = list()
-        dl = DataLoader(data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
-                        collate_fn=data.collate_batch, pin_memory=self.pin_memory)
-        for batch in tqdm(dl, leave=False, desc='Epoch {:<3}'.format(epoch), ncols=100, mininterval=1):
-            batch['epoch'] = epoch
-            batch = utils.batch_to_gpu(batch, model.device)
-            model.optimizer.zero_grad()
-            out_dict = model(batch)
-            loss = model.loss(out_dict)
-            loss.backward()
-            model.optimizer.step()
-            loss_lst.append(loss.detach().cpu().data.numpy())
-        return np.mean(loss_lst).item()
-
     def train(self, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
         model = data_dict['train'].model
         main_metric_results, dev_results = list(), list()
@@ -90,3 +69,25 @@ class TiMiRunner(BaseRunner):
         logging.info(os.linesep + "Best Iter(dev)={:>5}\t dev=({}) [{:<.1f} s] ".format(
             best_epoch + 1, utils.format_metric(dev_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
+
+    def predict(self, data: BaseModel.Dataset):
+        """
+        The returned prediction is a 2D-array, each row corresponds to all the candidates,
+        and the ground-truth item poses the first.
+        Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
+                 predictions like: [[1,3,4], [2,5,6]]
+        """
+        data.model.eval()
+        predictions = list()
+        js_div = list()
+        dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
+                        collate_fn=data.collate_batch, pin_memory=self.pin_memory)
+        for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
+            out_dict = data.model(utils.batch_to_gpu(batch, data.model.device))
+            predictions.extend(out_dict['prediction'].cpu().data.numpy())
+            if 'js' in out_dict:
+                js_div.extend(out_dict['js'].cpu().data.numpy())
+        if len(js_div) > 0:
+            print('JS DIV:', np.mean(js_div))
+            np.save('../log/js', np.array(js_div))
+        return np.array(predictions)

@@ -12,22 +12,20 @@ from utils import layers
 
 
 class S3Rec(SequentialModel):
-    extra_log_args = ['mip_weight', 'sp_weight', 'stage', 'encoder']
+    extra_log_args = ['emb_size', 'mip_weight', 'sp_weight', 'mask_ratio', 'stage']
 
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
                             help='Size of embedding vectors.')
-        parser.add_argument('--mip_weight', type=float, default=1,
+        parser.add_argument('--mip_weight', type=float, default=0.2,
                             help='Coefficient of the MIP loss.')
         parser.add_argument('--sp_weight', type=float, default=0.5,
                             help='Coefficient of the SP loss.')
-        parser.add_argument('--mask_ratio', type=float, default=0.1,
+        parser.add_argument('--mask_ratio', type=float, default=0.2,
                             help='Proportion of masked positions in the sequence.')
         parser.add_argument('--stage', type=int, default=1,
                             help='Stage of training: 1-pretrain, 2-finetune, default-from_scratch.')
-        parser.add_argument('--encoder', type=str, default='BERT4Rec',
-                            help='Choose a sequence encoder: GRU4Rec, Caser, BERT4Rec.')
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
@@ -36,13 +34,11 @@ class S3Rec(SequentialModel):
         self.sp_weight = args.sp_weight
         self.mask_ratio = args.mask_ratio
         self.stage = args.stage
-        self.encoder_name = args.encoder
         self.max_his = args.history_max
-        # self.max_his = max([len(seq) for seq in corpus.user_his.values()])
         super().__init__(args, corpus)
 
         # assert(self.stage in [1, 2])
-        self.pre_path = '../model/S3Rec/Pre__{}__encoder={}.pt'.format(corpus.dataset, self.encoder_name)
+        self.pre_path = '../model/S3Rec/Pre__{}.pt'.format(corpus.dataset)
         self.model_path = self.pre_path if self.stage == 1 else self.model_path
 
     def actions_before_train(self):
@@ -53,15 +49,8 @@ class S3Rec(SequentialModel):
                 logging.info('Train from scratch!')
 
     def _define_params(self):
-        self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
-        if self.encoder_name == 'GRU4Rec':
-            self.encoder = GRU4RecEncoder(self.emb_size, hidden_size=128)
-        elif self.encoder_name == 'Caser':
-            self.encoder = CaserEncoder(self.emb_size, self.max_his, num_horizon=16, num_vertical=8, l=5)
-        elif self.encoder_name == 'BERT4Rec':
-            self.encoder = BERT4RecEncoder(self.emb_size, self.max_his, num_layers=2, num_heads=2)
-        else:
-            raise ValueError('Invalid sequence encoder.')
+        self.i_embeddings = nn.Embedding(self.item_num + 1, self.emb_size, padding_idx=0)
+        self.encoder = BERT4RecEncoder(self.emb_size, self.max_his, num_layers=2, num_heads=2, dropout=0.2)
         self.mip_norm = nn.Linear(self.emb_size, self.emb_size)
         self.sp_norm = nn.Linear(self.emb_size, self.emb_size)
 
@@ -74,6 +63,7 @@ class S3Rec(SequentialModel):
     def forward(self, feed_dict):
         self.check_list = []
         if self.stage == 1 and feed_dict['phase'] == 'train':
+            mask_token = self.item_num
             # MIP
             mask_seq, seq_len = feed_dict['mask_seq'], feed_dict['seq_len']
             seq_vectors = self.i_embeddings(mask_seq)
@@ -84,7 +74,7 @@ class S3Rec(SequentialModel):
             neg_score = self._masked_item_prediction(seq_output, neg_vectors)
             mip_distance = torch.sigmoid(pos_score - neg_score)
             valid_mask = torch.arange(mask_seq.size(1)).to(self.device)[None, :] < seq_len[:, None]
-            mip_mask = (feed_dict['mask_seq'] == 0).float() * valid_mask.float()
+            mip_mask = (feed_dict['mask_seq'] == mask_token).float() * valid_mask.float()
             # SP
             seg_seq_vectors = self.i_embeddings(feed_dict['mask_seg_seq'])
             pos_seg_vectors = self.i_embeddings(feed_dict['pos_seg'])
@@ -150,25 +140,26 @@ class S3Rec(SequentialModel):
             return item
 
         def _get_mask_seq(self, seq):
+            mask_token = self.model.item_num  # 0 is reserved for padding
             # MIP
             mask_seq, pos_item, neg_item = seq.copy(), seq.copy(), seq.copy()
             for idx, item in enumerate(seq):
                 prob = np.random.random()
                 if prob < self.model.mask_ratio:
-                    mask_seq[idx] = 0
+                    mask_seq[idx] = mask_token
                     neg_item[idx] = self._neg_sample(seq)
             # SP
-            if len(seq) < 4:
+            if len(seq) < 2:
                 mask_seg_seq, pos_seg, neg_seg = seq.copy(), seq.copy(), seq.copy()
             else:
-                sample_len = np.random.randint(1, len(seq) // 2)
+                sample_len = np.random.randint(1, len(seq) // 2 + 1)
                 start_id = np.random.randint(0, len(seq) - sample_len)
                 neg_start_id = np.random.randint(0, len(self.long_seq) - sample_len)
                 pos_segment = seq[start_id:start_id + sample_len]
                 neg_segment = self.long_seq[neg_start_id:neg_start_id + sample_len]
-                mask_seg_seq = seq[:start_id] + [0] * sample_len + seq[start_id + sample_len:]
-                pos_seg = [0] * start_id + pos_segment + [0] * (len(seq) - (start_id + sample_len))
-                neg_seg = [0] * start_id + neg_segment + [0] * (len(seq) - (start_id + sample_len))
+                mask_seg_seq = seq[:start_id] + [mask_token] * sample_len + seq[start_id + sample_len:]
+                pos_seg = [mask_token] * start_id + pos_segment + [mask_token] * (len(seq) - (start_id + sample_len))
+                neg_seg = [mask_token] * start_id + neg_segment + [mask_token] * (len(seq) - (start_id + sample_len))
             return mask_seq, pos_item, neg_item, mask_seg_seq, pos_seg, neg_seg
 
         def _get_feed_dict(self, index):
@@ -189,68 +180,17 @@ class S3Rec(SequentialModel):
             return feed_dict
 
 
-""" Encoder Layers """
-class GRU4RecEncoder(nn.Module):
-    def __init__(self, emb_size, hidden_size=128):
-        super().__init__()
-        self.rnn = nn.GRU(input_size=emb_size, hidden_size=hidden_size, batch_first=True)
-        self.out = nn.Linear(hidden_size, emb_size, bias=False)
-
-    def forward(self, seq, lengths):
-        # Sort and Pack
-        sort_lengths, sort_idx = torch.topk(lengths, k=len(lengths))
-        sort_seq = seq.index_select(dim=0, index=sort_idx)
-        seq_packed = torch.nn.utils.rnn.pack_padded_sequence(sort_seq, sort_lengths, batch_first=True)
-
-        # RNN
-        output, hidden = self.rnn(seq_packed, None)
-
-        # Unsort
-        sort_rnn_vector = self.out(hidden[-1])
-        unsort_idx = torch.topk(sort_idx, k=len(lengths), largest=False)[1]
-        rnn_vector = sort_rnn_vector.index_select(dim=0, index=unsort_idx)
-
-        return rnn_vector
-
-class CaserEncoder(nn.Module):
-    def __init__(self, emb_size, max_his, num_horizon=16, num_vertical=8, l=5):
-        super().__init__()
-        self.max_his = max_his
-        lengths = [i + 1 for i in range(l)]
-        self.conv_h = nn.ModuleList(
-            [nn.Conv2d(in_channels=1, out_channels=num_horizon, kernel_size=(i, emb_size)) for i in lengths])
-        self.conv_v = nn.Conv2d(in_channels=1, out_channels=num_vertical, kernel_size=(max_his, 1))
-        self.fc_dim_h = num_horizon * len(lengths)
-        self.fc_dim_v = num_vertical * emb_size
-        fc_dim_in = self.fc_dim_v + self.fc_dim_h
-        self.fc = nn.Linear(fc_dim_in, emb_size)
-
-    def forward(self, seq, lengths):
-        batch_size, seq_len = seq.size(0), seq.size(1)
-        pad_len = self.max_his - seq_len
-        seq = F.pad(seq, [0, 0, 0, pad_len]).unsqueeze(1)
-
-        # Convolution Layers
-        out_v = self.conv_v(seq).view(-1, self.fc_dim_v)
-        out_hs = list()
-        for conv in self.conv_h:
-            conv_out = conv(seq).squeeze(3).relu()
-            pool_out = F.max_pool1d(conv_out, conv_out.size(2)).squeeze(2)
-            out_hs.append(pool_out)
-        out_h = torch.cat(out_hs, 1)
-
-        # Fully-connected Layers
-        his_vector = self.fc(torch.cat([out_v, out_h], 1))
-        return his_vector
-
+""" Encoder Layer """
 class BERT4RecEncoder(nn.Module):
-    def __init__(self, emb_size, max_his, num_layers=2, num_heads=2):
+    def __init__(self, emb_size, max_his, num_layers=2, num_heads=2, dropout=0.2):
         super().__init__()
         self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
         self.transformer_block = nn.ModuleList([
             layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=num_heads)
             for _ in range(num_layers)
         ])
+        self.layer_norm = nn.LayerNorm(emb_size)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, seq, lengths):
         batch_size, seq_len = seq.size(0), seq.size(1)
@@ -261,6 +201,7 @@ class BERT4RecEncoder(nn.Module):
         position = len_range[None, :] * valid_mask.long()
         pos_vectors = self.p_embeddings(position)
         seq = seq + pos_vectors
+        seq = self.dropout(self.layer_norm(seq))
 
         # Self-attention
         attn_mask = valid_mask.view(batch_size, 1, 1, seq_len)
