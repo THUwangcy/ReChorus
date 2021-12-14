@@ -80,6 +80,7 @@ class TiMiRunner(BaseRunner):
         data.model.eval()
         predictions = list()
         js_div = list()
+        dis = list()
         dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
                         collate_fn=data.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
@@ -87,7 +88,11 @@ class TiMiRunner(BaseRunner):
             predictions.extend(out_dict['prediction'].cpu().data.numpy())
             if 'js' in out_dict:
                 js_div.extend(out_dict['js'].cpu().data.numpy())
+            if 'dis' in out_dict:
+                dis.extend(out_dict['dis'].cpu().data.numpy())
         if len(js_div) > 0:
             print('JS DIV:', np.mean(js_div))
             np.save('../log/js', np.array(js_div))
+        if len(dis) > 0:
+            print('Interest Dis:', np.mean(dis))
         return np.array(predictions)

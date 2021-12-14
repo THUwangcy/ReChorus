@@ -96,7 +96,7 @@ class TiMiRec(SequentialModel):
     def actions_before_train(self):
         if self.stage == 3 and os.path.exists(self.extractor_path):
             self.load_model(self.extractor_path)
-            self.load_model(self.predictor_path)
+            # self.load_model(self.predictor_path)
             return
         logging.info('Train from scratch!')
 
@@ -105,6 +105,14 @@ class TiMiRec(SequentialModel):
         a = F.normalize(a, dim=-1)
         b = F.normalize(b, dim=-1)
         return (a * b).sum(dim=-1)
+
+    @staticmethod
+    def js_div(p, q):
+        kl = nn.KLDivLoss(reduction='none')
+        p, q = p.softmax(-1), q.softmax(-1)
+        log_mean = ((p + q) / 2).log()
+        js = (kl(log_mean, p) + kl(log_mean, q)) / 2
+        return js
 
     def forward(self, feed_dict):
         self.check_list = []
@@ -152,6 +160,12 @@ class TiMiRec(SequentialModel):
             prediction = (user_vector[:, None, :] * i_vectors).sum(-1)
         out_dict['prediction'] = prediction.view(batch_size, -1)
 
+        # For JS divergence analysis
+        if self.stage == 3 and feed_dict['phase'] == 'test':
+            target_vector = i_vectors[:, 0]  # bsz, emb
+            target_intent = self.similarity(interest_vectors, target_vector.unsqueeze(1))  # bsz, K
+            out_dict['js'] = self.js_div(target_intent, pred_intent).sum(-1)
+
         return out_dict
 
     def loss(self, out_dict: dict):
@@ -186,6 +200,7 @@ class MultiInterestExtractor(nn.Module):
             self.p_embeddings = nn.Embedding(max_his + 1, emb_size)
         self.W1 = nn.Linear(emb_size, attn_size)
         self.W2 = nn.Linear(attn_size, k)
+        self.transformer = layers.TransformerLayer(d_model=emb_size, d_ff=emb_size, n_heads=1, kq_same=False)
 
     def forward(self, history, lengths):
         batch_size, seq_len = history.shape
@@ -196,12 +211,15 @@ class MultiInterestExtractor(nn.Module):
             len_range = torch.from_numpy(np.arange(self.max_his)).to(history.device)
             position = (lengths[:, None] - len_range[None, :seq_len]) * valid_his
             pos_vectors = self.p_embeddings(position)
-            his_pos_vectors = his_vectors + pos_vectors
-        else:
-            his_pos_vectors = his_vectors
+            his_vectors = his_vectors + pos_vectors
+
+        # Self-attention
+        attn_mask = valid_his.view(batch_size, 1, 1, seq_len)
+        his_vectors = self.transformer(his_vectors, attn_mask)
+        his_vectors = his_vectors * valid_his[:, :, None].float()
 
         # Multi-Interest Extraction
-        attn_score = self.W2(self.W1(his_pos_vectors).tanh())  # bsz, his_max, K
+        attn_score = self.W2(self.W1(his_vectors).tanh())  # bsz, his_max, K
         attn_score = attn_score.masked_fill(valid_his.unsqueeze(-1) == 0, -np.inf)
         attn_score = attn_score.transpose(-1, -2)  # bsz, K, his_max
         attn_score = (attn_score - attn_score.max()).softmax(dim=-1)

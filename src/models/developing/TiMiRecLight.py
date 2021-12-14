@@ -82,7 +82,7 @@ class TiMiRecLight(SequentialModel):
     def actions_before_train(self):
         if self.stage == 3 and os.path.exists(self.extractor_path):
             self.load_model(self.extractor_path)
-            self.load_model(self.predictor_path)
+            # self.load_model(self.predictor_path)
             return
         logging.info('Train from scratch!')
 
@@ -151,6 +151,11 @@ class TiMiRecLight(SequentialModel):
             rec_vector = i_vectors[idx, prediction.max(-1)[1]]
             rec_intent = self.similarity(interest_vectors, rec_vector.unsqueeze(1))  # bsz, K
             out_dict['js'] = self.js_div(target_intent, rec_intent).sum(-1)
+            out_dict['dis'] = (interest_vectors[:, 0, :] - interest_vectors[:, 0, :]).pow(2).sum(-1)
+            for i in range(self.K - 1):
+                for j in range(i + 1, self.K):
+                    out_dict['dis'] += (interest_vectors[:, i, :] - interest_vectors[:, j, :]).pow(2).sum(-1)
+            out_dict['dis'] /= (self.K * (self.K - 1) / 2)
 
         return out_dict
 
@@ -159,7 +164,8 @@ class TiMiRecLight(SequentialModel):
             loss = super().loss(out_dict)
         else:  # finetune
             pred_intent = out_dict['pred_intent'] / self.temp
-            target_intent = out_dict['target_intent'] / self.temp
+            target_intent = out_dict['target_intent'].detach() / self.temp
+            # target_intent = out_dict['target_intent'] / self.temp
             kl_criterion = nn.KLDivLoss(reduction='batchmean')
             loss = kl_criterion(F.log_softmax(pred_intent, dim=1), F.softmax(target_intent, dim=1))
             loss = super().loss(out_dict) + self.temp * self.temp * loss
