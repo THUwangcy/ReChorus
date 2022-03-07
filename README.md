@@ -1,6 +1,6 @@
 # ContraRec
 
-![idea](./log/_static/idea.png)
+<img src="./log/_static/idea.png" alt="idea" style="zoom:67%;" />
 ---
 
 This is our public implementation for the paper:
