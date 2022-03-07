@@ -4,15 +4,11 @@ We use the public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.ht
 
 Our framework can also work with other datasets easily. We describe the required files below.
 
-
-
 **train.csv**
 
 - Format: `user_id \t item_id \t time`
 - All ids **begin from 1** (0 is reserved for NaN), and the followings are the same.
 - Need to be sorted in **time-ascending order** when running sequential models.
-
-
 
 **test.csv & dev.csv**
 
@@ -22,6 +18,3 @@ Our framework can also work with other datasets easily. We describe the required
 - If there is no `neg_items` column, the evaluation will be performed over all the items by default.
 
 ![dev/test data format](../log/_static/format_test.png)
-
-
-
