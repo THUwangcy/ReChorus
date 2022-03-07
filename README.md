@@ -5,9 +5,22 @@
 
 This is our public implementation for the paper:
 
-*Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](). In TOIS'21.*
+*Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://chenchongthu.github.io/files/TOIS-KDA-wcy.pdf). In TOIS'21.*
 
 **Please cite this paper if you use our codes. Thanks!**
+
+```
+@article{wang2020toward,
+  title={Toward dynamic user intention: Temporal evolutionary effects of item relations in sequential recommendation},
+  author={Wang, Chenyang and Ma, Weizhi and Zhang, Min and Chen, Chong and Liu, Yiqun and Ma, Shaoping},
+  journal={ACM Transactions on Information Systems (TOIS)},
+  volume={39},
+  number={2},
+  pages={1--33},
+  year={2020},
+  publisher={ACM New York, NY, USA}
+}
+```
 
 
 
