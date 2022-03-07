@@ -2,6 +2,15 @@
 # @Author  : Chenyang Wang
 # @Email   : THUwangcy@gmail.com
 
+""" FPMC
+Reference:
+    "Factorizing Personalized Markov Chains for Next-Basket Recommendation"
+    Rendle et al., WWW'2010.
+CMD example:
+    python main.py --model_name FPMC --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 20 \
+    --dataset 'Grocery_and_Gourmet_Food'
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np

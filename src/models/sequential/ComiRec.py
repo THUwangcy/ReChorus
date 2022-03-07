@@ -2,6 +2,15 @@
 # @Author  : Chenyang Wang
 # @Email   : THUwangcy@gmail.com
 
+""" ComiRec
+Reference:
+    "Controllable Multi-Interest Framework for Recommendation"
+    Cen et al., KDD'2020.
+CMD example:
+    python main.py --model_name ComiRec --emb_size 64 --lr 1e-3 --l2 1e-6 --attn_size 8 --K 4 --add_pos 1 \
+    --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np

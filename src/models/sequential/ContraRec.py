@@ -1,4 +1,15 @@
 # -*- coding: UTF-8 -*-
+# @Author  : Chenyang Wang
+# @Email   : THUwangcy@gmail.com
+
+""" ContraRec
+Reference:
+    "Sequential Recommendation with Multiple Contrast Signals"
+    Wang et al., TOIS'2022.
+CMD example:
+    python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --encoder BERT4Rec \
+    --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --dataset Grocery_and_Gourmet_Food
+"""
 
 import torch
 import torch.nn as nn
@@ -39,6 +50,7 @@ class ContraRec(SequentialModel):
         self.ctc_temp = args.ctc_temp
         self.ccc_temp = args.ccc_temp
         self.encoder_name = args.encoder
+        self.mask_token = corpus.n_items
         super().__init__(args, corpus)
 
     def _define_params(self):
@@ -80,9 +92,6 @@ class ContraRec(SequentialModel):
         return out_dict
 
     def loss(self, out_dict):
-        # predictions = out_dict['prediction']
-        # pos_pred, neg_pred = predictions[:, 0], predictions[:, 1:]
-        # ctc_loss = -(pos_pred[:, None] - neg_pred).sigmoid().log().mean(dim=1).mean()
         predictions = out_dict['prediction'] / self.ctc_temp
         pre_softmax = (predictions - predictions.max()).softmax(dim=1)
         ctc_loss = - self.ctc_temp * pre_softmax[:, 0].log().mean()
@@ -105,7 +114,7 @@ class ContraRec(SequentialModel):
             mask = np.full(len(seq), False)
             mask[:selected_len] = True
             np.random.shuffle(mask)
-            seq[mask] = self.model.item_num
+            seq[mask] = self.model.mask_token
             return seq
 
         def augment(self, seq):
@@ -114,7 +123,6 @@ class ContraRec(SequentialModel):
                 return self.mask_op(aug_seq)
             else:
                 return self.reorder_op(aug_seq)
-            # return self.reorder_op(aug_seq)
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
@@ -123,7 +131,6 @@ class ContraRec(SequentialModel):
                 history_items_b = self.augment(feed_dict['history_items'])
                 feed_dict['history_items_a'] = history_items_a
                 feed_dict['history_items_b'] = history_items_b
-                # feed_dict['history_items'] = history_items_a
             return feed_dict
 
 
@@ -134,29 +141,19 @@ class ContraLoss(nn.Module):
         self.device = device
         self.temperature = temperature
 
-    def forward(self, features, labels=None, mask=None):
+    def forward(self, features, labels=None):
         """
-        If both `labels` and `mask` are None, it degenerates to SimCLR loss
+        If both `labels` and `mask` are None, it degenerates to InfoNCE loss
         Args:
-            features: hidden vector of shape [bsz, n_views, ...].
+            features: hidden vector of shape [bsz, n_views, dim].
             labels: target item of shape [bsz].
-            mask: contrastive mask of shape [bsz, bsz], mask_{i,j}=1 if sequence j
-                has the same target item as sequence i. Can be asymmetric.
         Returns:
             A loss scalar.
         """
-        if len(features.shape) < 3:
-            raise ValueError('`features` needs to be [bsz, n_views, ...],'
-                             'at least 3 dimensions are required')
-        if len(features.shape) > 3:
-            features = features.view(features.shape[0], features.shape[1], -1)
-
         batch_size = features.shape[0]
-        if labels is not None and mask is not None:
-            raise ValueError('Cannot define both `labels` and `mask`')
-        elif labels is None and mask is None:
+        if labels is None:
             mask = torch.eye(batch_size, dtype=torch.float32).to(self.device)
-        elif labels is not None:
+        else:
             labels = labels.contiguous().view(-1, 1)
             if labels.shape[0] != batch_size:
                 raise ValueError('Num of labels does not match num of features')

@@ -2,6 +2,14 @@
 # @Author  : Chenyang Wang
 # @Email   : THUwangcy@gmail.com
 
+""" BUIR
+Reference:
+    "Bootstrapping User and Item Representations for One-Class Collaborative Filtering"
+    Lee et al., SIGIR'2021.
+CMD example:
+    python main.py --model_name BUIR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food'
+"""
+
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F

@@ -9,7 +9,7 @@ import numpy as np
 from time import time
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from typing import Dict, List, NoReturn
+from typing import Dict, List
 
 from utils import utils
 from models.BaseModel import BaseModel
@@ -101,7 +101,7 @@ class BaseRunner(object):
             model.customize_parameters(), lr=self.learning_rate, weight_decay=self.l2)
         return optimizer
 
-    def train(self, data_dict: Dict[str, BaseModel.Dataset]) -> NoReturn:
+    def train(self, data_dict: Dict[str, BaseModel.Dataset]):
         model = data_dict['train'].model
         main_metric_results, dev_results = list(), list()
         self._check_time(start=True)

@@ -2,6 +2,15 @@
 # @Author  : Chenyang Wang
 # @Email   : THUwangcy@gmail.com
 
+""" LightGCN
+Reference:
+    "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"
+    He et al., SIGIR'2020.
+CMD example:
+    python main.py --model_name LightGCN --emb_size 64 --n_layers 3 --lr 1e-3 --l2 1e-8 \
+    --dataset 'Grocery_and_Gourmet_Food'
+"""
+
 import torch
 import numpy as np
 import torch.nn as nn

@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset as BaseDataset
 from torch.nn.utils.rnn import pad_sequence
-from typing import NoReturn, List
+from typing import List
 
 from utils import utils
 from helpers.BaseReader import BaseReader
@@ -51,7 +51,7 @@ class BaseModel(nn.Module):
     """
     Key Methods
     """
-    def _define_params(self) -> NoReturn:
+    def _define_params(self):
         pass
 
     def forward(self, feed_dict: dict) -> dict:
@@ -78,14 +78,14 @@ class BaseModel(nn.Module):
         optimize_dict = [{'params': weight_p}, {'params': bias_p, 'weight_decay': 0}]
         return optimize_dict
 
-    def save_model(self, model_path=None) -> NoReturn:
+    def save_model(self, model_path=None):
         if model_path is None:
             model_path = self.model_path
         utils.check_dir(model_path)
         torch.save(self.state_dict(), model_path)
         # logging.info('Save model to ' + model_path[:50] + '...')
 
-    def load_model(self, model_path=None) -> NoReturn:
+    def load_model(self, model_path=None):
         if model_path is None:
             model_path = self.model_path
         self.load_state_dict(torch.load(model_path))
@@ -127,7 +127,7 @@ class BaseModel(nn.Module):
             return self.buffer_dict[index] if self.buffer else self._get_feed_dict(index)
 
         # Prepare model-specific variables and buffer feed dicts
-        def _prepare(self) -> NoReturn:
+        def _prepare(self):
             if self.buffer:
                 for i in tqdm(range(len(self)), leave=False, desc=('Prepare ' + self.phase)):
                     self.buffer_dict[i] = self._get_feed_dict(i)
@@ -137,7 +137,7 @@ class BaseModel(nn.Module):
             pass
 
         # Called before each training epoch
-        def actions_before_epoch(self) -> NoReturn:
+        def actions_before_epoch(self):
             pass
 
         # Collate a batch according to the list of feed dicts
@@ -211,7 +211,7 @@ class GeneralModel(BaseModel):
             return feed_dict
 
         # Sample negative items for all the instances
-        def actions_before_epoch(self) -> NoReturn:
+        def actions_before_epoch(self):
             neg_items = np.random.randint(1, self.corpus.n_items, size=(len(self), self.model.num_neg))
             for i, u in enumerate(self.data['user_id']):
                 clicked_set = self.corpus.train_clicked_set[u]  # neg items are possible to appear in dev/test set

@@ -6,7 +6,7 @@ import argparse
 import logging
 import numpy as np
 import pandas as pd
-from typing import NoReturn
+
 
 from helpers.BaseReader import BaseReader
 from utils import utils
@@ -28,7 +28,7 @@ class KGReader(BaseReader):
 
         self._construct_kg()
 
-    def _construct_kg(self) -> NoReturn:
+    def _construct_kg(self):
         logging.info('Constructing relation triplets...')
 
         self.triplet_set = set()

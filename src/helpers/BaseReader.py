@@ -6,7 +6,6 @@ import argparse
 import logging
 import numpy as np
 import pandas as pd
-from typing import NoReturn
 
 from utils import utils
 
@@ -30,7 +29,7 @@ class BaseReader(object):
         self._read_data()
         self._append_his_info()
 
-    def _read_data(self) -> NoReturn:
+    def _read_data(self):
         logging.info('Reading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
         self.data_df = dict()
         for key in ['train', 'dev', 'test']:
@@ -47,7 +46,7 @@ class BaseReader(object):
         logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(
             self.n_users - 1, self.n_items - 1, len(self.all_df)))
 
-    def _append_his_info(self) -> NoReturn:
+    def _append_his_info(self):
         """
         Add history info to data_df: position
         ! Need data_df to be sorted by time in ascending order
