@@ -1,6 +1,6 @@
 torch==1.1.0
-numpy==1.16.4
-ipython==7.0.1
+numpy==1.21.0
+ipython==7.16.3
 jupyter==1.0.0
 tqdm==4.51.0
 pandas==0.24.2
