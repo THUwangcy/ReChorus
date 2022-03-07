@@ -1,97 +1,55 @@
 Model,Test,Best Iter,Time,Seed,Run CMD
-,"HR@10:0.4684,HR@5:0.3578,NDCG@10:0.2843,NDCG@5:0.2484",100,242.3,2019,python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4662,HR@5:0.3575,NDCG@10:0.2830,NDCG@5:0.2477",93,246.2,2020,python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4659,HR@5:0.3587,NDCG@10:0.2848,NDCG@5:0.2499",99,242.9,2021,python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4630,HR@5:0.3542,NDCG@10:0.2814,NDCG@5:0.2460",83,211.3,2022,python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4710,HR@5:0.3590,NDCG@10:0.2841,NDCG@5:0.2478",99,241.5,2023,python main.py --model_name BPR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-BPR,"0.4669,0.3574,0.2835,0.2480",,,,
+,"HR@5:0.1739,NDCG@5:0.1213,HR@10:0.2386,NDCG@10:0.1422,HR@20:0.3118,NDCG@20:0.1606,HR@50:0.4191,NDCG@50:0.1820",195,2693.5,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 0 --gpu 2
+,"HR@5:0.1703,NDCG@5:0.1192,HR@10:0.2370,NDCG@10:0.1407,HR@20:0.3124,NDCG@20:0.1598,HR@50:0.4184,NDCG@50:0.1809",179,2666.8,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 1 --gpu 2
+,"HR@5:0.1726,NDCG@5:0.1206,HR@10:0.2409,NDCG@10:0.1426,HR@20:0.3154,NDCG@20:0.1614,HR@50:0.4171,NDCG@50:0.1816",185,2937.1,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 2 --gpu 2
+,"HR@5:0.1718,NDCG@5:0.1204,HR@10:0.2391,NDCG@10:0.1421,HR@20:0.3134,NDCG@20:0.1609,HR@50:0.4178,NDCG@50:0.1817",200,2954.1,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 3 --gpu 2
+,"HR@5:0.1708,NDCG@5:0.1195,HR@10:0.2374,NDCG@10:0.1410,HR@20:0.3114,NDCG@20:0.1597,HR@50:0.4159,NDCG@50:0.1805",193,2757.0,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 4 --gpu 2
+ContraRec,"0.1719,0.1202,0.2386,0.1417,0.3129,0.1605,0.4177,0.1813",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4267,HR@5:0.3187,NDCG@10:0.2561,NDCG@5:0.2210",32,107.1,2019,python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4313,HR@5:0.3290,NDCG@10:0.2602,NDCG@5:0.2271",29,143.5,2020,python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4259,HR@5:0.3269,NDCG@10:0.2569,NDCG@5:0.2248",34,125.0,2021,python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4286,HR@5:0.3225,NDCG@10:0.2549,NDCG@5:0.2205",39,175.2,2022,python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4345,HR@5:0.3269,NDCG@10:0.2590,NDCG@5:0.2241",35,123.6,2023,python main.py --model_name NCF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-NCF,"0.4294,0.3248,0.2574,0.2235",,,,
+,"HR@5:0.1796,NDCG@5:0.1298,HR@10:0.2389,NDCG@10:0.1489,HR@20:0.3067,NDCG@20:0.1660,HR@50:0.4026,NDCG@50:0.1851",109,2038.6,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 0 --gpu 2
+,"HR@5:0.1805,NDCG@5:0.1306,HR@10:0.2404,NDCG@10:0.1500,HR@20:0.3104,NDCG@20:0.1677,HR@50:0.4075,NDCG@50:0.1870",106,2026.2,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 1 --gpu 2
+,"HR@5:0.1828,NDCG@5:0.1320,HR@10:0.2451,NDCG@10:0.1521,HR@20:0.3142,NDCG@20:0.1695,HR@50:0.4075,NDCG@50:0.1881",103,1992.2,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 2 --gpu 2
+,"HR@5:0.1812,NDCG@5:0.1307,HR@10:0.2440,NDCG@10:0.1510,HR@20:0.3116,NDCG@20:0.1680,HR@50:0.4064,NDCG@50:0.1869",107,2061.7,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 3 --gpu 2
+,"HR@5:0.1768,NDCG@5:0.1270,HR@10:0.2361,NDCG@10:0.1461,HR@20:0.3064,NDCG@20:0.1639,HR@50:0.4021,NDCG@50:0.1829",110,2112.9,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Beauty --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 1 --random_seed 4 --gpu 2
+ContraRec,"0.1802,0.1300,0.2409,0.1496,0.3099,0.1670,0.4052,0.1860",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4494,HR@5:0.3577,NDCG@10:0.2991,NDCG@5:0.2696",64,213.2,2019,python main.py --model_name Tensor --emb_size 64 --lr 1e-4 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4511,HR@5:0.3552,NDCG@10:0.2984,NDCG@5:0.2675",64,193.7,2020,python main.py --model_name Tensor --emb_size 64 --lr 1e-4 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4514,HR@5:0.3521,NDCG@10:0.2971,NDCG@5:0.2650",61,184.5,2021,python main.py --model_name Tensor --emb_size 64 --lr 1e-4 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4532,HR@5:0.3549,NDCG@10:0.2976,NDCG@5:0.2659",53,161.8,2022,python main.py --model_name Tensor --emb_size 64 --lr 1e-4 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4530,HR@5:0.3538,NDCG@10:0.2988,NDCG@5:0.2668",54,208.6,2023,python main.py --model_name Tensor --emb_size 64 --lr 1e-4 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-Tensor,"0.4516,0.3547,0.2982,0.2670",,,,
+,"HR@5:0.3040,NDCG@5:0.2134,HR@10:0.4215,NDCG@10:0.2513,HR@20:0.5555,NDCG@20:0.2852,HR@50:0.7330,NDCG@50:0.3206",127,10384.0,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 0 --gpu 2
+,"HR@5:0.3043,NDCG@5:0.2128,HR@10:0.4220,NDCG@10:0.2508,HR@20:0.5564,NDCG@20:0.2847,HR@50:0.7321,NDCG@50:0.3197",129,10563.0,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 1 --gpu 2
+,"HR@5:0.3038,NDCG@5:0.2132,HR@10:0.4206,NDCG@10:0.2509,HR@20:0.5543,NDCG@20:0.2847,HR@50:0.7309,NDCG@50:0.3199",107,9016.3,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 2 --gpu 2
+,"HR@5:0.3037,NDCG@5:0.2124,HR@10:0.4210,NDCG@10:0.2503,HR@20:0.5545,NDCG@20:0.2840,HR@50:0.7312,NDCG@50:0.3192",138,11216.5,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 3 --gpu 2
+,"HR@5:0.3050,NDCG@5:0.2141,HR@10:0.4246,NDCG@10:0.2528,HR@20:0.5577,NDCG@20:0.2863,HR@50:0.7339,NDCG@50:0.3214",104,8817.0,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 4 --gpu 2
+ContraRec,"0.3042,0.2132,0.4219,0.2512,0.5557,0.2850,0.7322,0.3202",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4731,HR@5:0.3673,NDCG@10:0.2928,NDCG@5:0.2586",35,203.3,2019,python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4757,HR@5:0.3698,NDCG@10:0.2977,NDCG@5:0.2635",40,224.0,2020,python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4725,HR@5:0.3643,NDCG@10:0.2935,NDCG@5:0.2586",52,266.6,2021,python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4708,HR@5:0.3663,NDCG@10:0.2936,NDCG@5:0.2598",43,233.4,2022,python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4665,HR@5:0.3644,NDCG@10:0.2911,NDCG@5:0.2582",49,199.4,2023,python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-GRU4Rec,"0.4717,0.3664,0.2937,0.2597",,,,
+,"HR@5:0.3093,NDCG@5:0.2186,HR@10:0.4259,NDCG@10:0.2562,HR@20:0.5577,NDCG@20:0.2895,HR@50:0.7330,NDCG@50:0.3245",51,6280.6,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 0 --gpu 2
+,"HR@5:0.3103,NDCG@5:0.2188,HR@10:0.4276,NDCG@10:0.2566,HR@20:0.5598,NDCG@20:0.2900,HR@50:0.7328,NDCG@50:0.3245",52,5904.5,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 1 --gpu 2
+,"HR@5:0.3101,NDCG@5:0.2198,HR@10:0.4257,NDCG@10:0.2571,HR@20:0.5570,NDCG@20:0.2903,HR@50:0.7306,NDCG@50:0.3249",56,6671.6,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 2 --gpu 2
+,"HR@5:0.3106,NDCG@5:0.2190,HR@10:0.4256,NDCG@10:0.2561,HR@20:0.5562,NDCG@20:0.2891,HR@50:0.7310,NDCG@50:0.3239",56,6749.9,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 3 --gpu 2
+,"HR@5:0.3114,NDCG@5:0.2201,HR@10:0.4288,NDCG@10:0.2580,HR@20:0.5599,NDCG@20:0.2911,HR@50:0.7347,NDCG@50:0.3259",52,5942.9,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Yelp2018 --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 5 --random_seed 4 --gpu 2
+ContraRec,"0.3103,0.2193,0.4267,0.2568,0.5581,0.2900,0.7324,0.3247",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4598,HR@5:0.3568,NDCG@10:0.2893,NDCG@5:0.2561",48,424.4,2019,python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 16 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4727,HR@5:0.3675,NDCG@10:0.2950,NDCG@5:0.2610",40,381.9,2020,python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 16 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4697,HR@5:0.3618,NDCG@10:0.2920,NDCG@5:0.2572",38,372.6,2021,python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 16 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4672,HR@5:0.3602,NDCG@10:0.2941,NDCG@5:0.2596",40,284.8,2022,python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 16 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4665,HR@5:0.3641,NDCG@10:0.2919,NDCG@5:0.2589",38,353.6,2023,python main.py --model_name NARM --emb_size 64 --hidden_size 100 --attention_size 16 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-NARM,"0.4672,0.3621,0.2925,0.2586",,,,
+,"HR@5:0.7113,NDCG@5:0.5620,HR@10:0.8102,NDCG@10:0.5942,HR@20:0.8768,NDCG@20:0.6112,HR@50:0.9261,NDCG@50:0.6212",184,62888.1,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 0.01 --random_seed 0 --gpu 2
+,"HR@5:0.7054,NDCG@5:0.5571,HR@10:0.8060,NDCG@10:0.5898,HR@20:0.8742,NDCG@20:0.6072,HR@50:0.9231,NDCG@50:0.6171",114,42270.9,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 0.01 --random_seed 1 --gpu 2
+,"HR@5:0.7080,NDCG@5:0.5596,HR@10:0.8084,NDCG@10:0.5924,HR@20:0.8744,NDCG@20:0.6092,HR@50:0.9244,NDCG@50:0.6193",166,58601.7,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 0.01 --random_seed 2 --gpu 2
+,"HR@5:0.7057,NDCG@5:0.5579,HR@10:0.8058,NDCG@10:0.5905,HR@20:0.8738,NDCG@20:0.6078,HR@50:0.9234,NDCG@50:0.6178",139,49847.3,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 0.01 --random_seed 3 --gpu 2
+,"HR@5:0.7031,NDCG@5:0.5566,HR@10:0.8046,NDCG@10:0.5897,HR@20:0.8727,NDCG@20:0.6071,HR@50:0.9233,NDCG@50:0.6173",170,59685.0,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 1 --ctc_temp 1 --ccc_temp 0.2 --batch_size 4096 --gamma 0.01 --random_seed 4 --gpu 2
+ContraRec,"0.7067,0.5586,0.8070,0.5913,0.8744,0.6085,0.9241,0.6185",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4736,HR@5:0.3880,NDCG@10:0.3206,NDCG@5:0.2930",51,775.2,2019,python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4749,HR@5:0.3880,NDCG@10:0.3199,NDCG@5:0.2918",45,714.7,2020,python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4734,HR@5:0.3869,NDCG@10:0.3192,NDCG@5:0.2913",51,609.5,2021,python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4800,HR@5:0.3932,NDCG@10:0.3240,NDCG@5:0.2959",44,707.0,2022,python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4759,HR@5:0.3877,NDCG@10:0.3178,NDCG@5:0.2893",46,728.4,2023,python main.py --model_name SASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-SASRec,"0.4756,0.3888,0.3203,0.2923",,,,
+,"HR@5:0.6985,NDCG@5:0.5665,HR@10:0.7912,NDCG@10:0.5967,HR@20:0.8572,NDCG@20:0.6136,HR@50:0.9119,NDCG@50:0.6245",15,10403.3,0,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 0.1 --random_seed 0 --gpu 2
+,"HR@5:0.6985,NDCG@5:0.5676,HR@10:0.7900,NDCG@10:0.5973,HR@20:0.8543,NDCG@20:0.6137,HR@50:0.9086,NDCG@50:0.6246",17,13251.1,1,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 0.1 --random_seed 1 --gpu 2
+,"HR@5:0.6989,NDCG@5:0.5671,HR@10:0.7919,NDCG@10:0.5974,HR@20:0.8567,NDCG@20:0.6138,HR@50:0.9127,NDCG@50:0.6251",16,11750.7,2,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 0.1 --random_seed 2 --gpu 2
+,"HR@5:0.6965,NDCG@5:0.5647,HR@10:0.7882,NDCG@10:0.5945,HR@20:0.8551,NDCG@20:0.6115,HR@50:0.9132,NDCG@50:0.6233",15,14002.3,3,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 0.1 --random_seed 3 --gpu 2
+,"HR@5:0.6955,NDCG@5:0.5649,HR@10:0.7864,NDCG@10:0.5945,HR@20:0.8579,NDCG@20:0.6127,HR@50:0.9124,NDCG@50:0.6237",15,11219.8,4,python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 50 --dataset Gowalla --encoder BERT4Rec --num_neg 64 --ctc_temp 0.5 --ccc_temp 0.2 --batch_size 4096 --gamma 0.1 --random_seed 4 --gpu 2
+ContraRec,"0.6976,0.5662,0.7895,0.5961,0.8562,0.6131,0.9118,0.6242",,,,
 ,,,,,
 ,,,,,
 ,,,,,
-,"HR@10:0.4843,HR@5:0.3946,NDCG@10:0.3215,NDCG@5:0.2925",41,2162.8,2019,python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.4790,HR@5:0.3912,NDCG@10:0.3196,NDCG@5:0.2911",42,2021.1,2020,python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.4789,HR@5:0.3913,NDCG@10:0.3234,NDCG@5:0.2951",50,2496.0,2021,python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.4864,HR@5:0.3945,NDCG@10:0.3251,NDCG@5:0.2954",49,2451.4,2022,python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.4793,HR@5:0.3866,NDCG@10:0.3169,NDCG@5:0.2869",50,1916.1,2023,python main.py --model_name TiSASRec --emb_size 64 --num_layers 1 --num_heads 1 --lr 1e-4 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-TiSASRec,"0.4816,0.3916,0.3213,0.2922",,,,
-,,,,,
-,,,,,
-,,,,,
-,"HR@10:0.5516,HR@5:0.4261,NDCG@10:0.3443,NDCG@5:0.3037",89,810.7,2019,python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 0 --lr 1e-4 --l2 1e-8 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.5480,HR@5:0.4221,NDCG@10:0.3397,NDCG@5:0.2990",100,809.6,2020,python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 0 --lr 1e-4 --l2 1e-8 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.5463,HR@5:0.4202,NDCG@10:0.3396,NDCG@5:0.2988",91,811.2,2021,python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 0 --lr 1e-4 --l2 1e-8 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.5472,HR@5:0.4222,NDCG@10:0.3416,NDCG@5:0.3011",96,801.6,2022,python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 0 --lr 1e-4 --l2 1e-8 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.5499,HR@5:0.4235,NDCG@10:0.3435,NDCG@5:0.3025",89,804.6,2023,python main.py --model_name CFKG --emb_size 64 --margin 1 --include_attr 0 --lr 1e-4 --l2 1e-8 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-CFKG,"0.5486,0.4228,0.3417,0.3010",,,,
-,,,,,
-,,,,,
-,,,,,
-,"HR@10:0.5655,HR@5:0.4501,NDCG@10:0.3695,NDCG@5:0.3321",74,376.7,2019,python main.py --model_name SLRCPlus --emb_size 64 --lr 5e-4 --l2 1e-5 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.5625,HR@5:0.4508,NDCG@10:0.3691,NDCG@5:0.3327",69,379.8,2020,python main.py --model_name SLRCPlus --emb_size 64 --lr 5e-4 --l2 1e-5 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.5652,HR@5:0.4520,NDCG@10:0.3700,NDCG@5:0.3332",75,399.2,2021,python main.py --model_name SLRCPlus --emb_size 64 --lr 5e-4 --l2 1e-5 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.5658,HR@5:0.4513,NDCG@10:0.3709,NDCG@5:0.3337",58,300.0,2022,python main.py --model_name SLRCPlus --emb_size 64 --lr 5e-4 --l2 1e-5 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.5666,HR@5:0.4527,NDCG@10:0.3698,NDCG@5:0.3329",75,333.7,2023,python main.py --model_name SLRCPlus --emb_size 64 --lr 5e-4 --l2 1e-5 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-SLRCPlus,"0.5651,0.4514,0.3699,0.3329",,,,
-,,,,,
-,,,,,
-,,,,,
-,"HR@10:0.6000,HR@5:0.4739,NDCG@10:0.3854,NDCG@5:0.3444",39,286.5,2019,python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2 --random_seed 2019 --gpu 0
-,"HR@10:0.5997,HR@5:0.4744,NDCG@10:0.3859,NDCG@5:0.3452",56,392.3,2020,python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2 --random_seed 2020 --gpu 0
-,"HR@10:0.5992,HR@5:0.4740,NDCG@10:0.3841,NDCG@5:0.3434",41,316.0,2021,python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2 --random_seed 2021 --gpu 0
-,"HR@10:0.5985,HR@5:0.4749,NDCG@10:0.3857,NDCG@5:0.3454",55,303.5,2022,python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2 --random_seed 2022 --gpu 0
-,"HR@10:0.5987,HR@5:0.4723,NDCG@10:0.3842,NDCG@5:0.3430",58,402.5,2023,python main.py --model_name Chorus --emb_size 64 --margin 1 --lr_scale 0.1 --lr 1e-3 --l2 0 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food' --base_method 'BPR' --stage 2 --random_seed 2023 --gpu 0
-Chorus,"0.5992,0.4739,0.3851,0.3443",,,,
-,,,,,
-,,,,,
-,,,,,
-,"HR@10:0.6316,HR@5:0.5209,NDCG@10:0.4236,NDCG@5:0.3877",16,423.9,2019,python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2019 --gpu 0
-,"HR@10:0.6318,HR@5:0.5194,NDCG@10:0.4266,NDCG@5:0.3901",23,498.8,2020,python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2020 --gpu 0
-,"HR@10:0.6182,HR@5:0.5132,NDCG@10:0.4198,NDCG@5:0.3857",27,554.0,2021,python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2021 --gpu 0
-,"HR@10:0.6255,HR@5:0.5166,NDCG@10:0.4220,NDCG@5:0.3867",16,421.9,2022,python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2022 --gpu 0
-,"HR@10:0.6274,HR@5:0.5168,NDCG@10:0.4236,NDCG@5:0.3878",14,399.0,2023,python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food' --random_seed 2023 --gpu 0
-KDA,"0.6269,0.5174,0.4231,0.3876",,,,
