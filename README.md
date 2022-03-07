@@ -74,14 +74,14 @@ The table below lists the results of different models in `Grocery_and_Gourmet_Fo
 
 | Model                                                        |  HR@5  | NDCG@5 | Time/iter |  Sequential  |  Knowledge   |  Time-aware  |
 | :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
-| [BPR](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/general/BPR.py) | 0.3242 | 0.2223 |   2.5s    |              |              |              |
-| [GMF](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/general/GMF.py) | 0.3178 | 0.2195 |   2.9s    |              |              |              |
-| [Tensor](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/general/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | √ |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/sequential/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | √ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/sequential/NARM.py) | 0.3590 | 0.2573 |    22s    | √ |              |              |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/general/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | √ |              |
-| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/sequential/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/sequential/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |
+| [BPR](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/BPR.py) | 0.3242 | 0.2223 |   2.5s    |              |              |              |
+| [GMF](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/GMF.py) | 0.3178 | 0.2195 |   2.9s    |              |              |              |
+| [Tensor](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/Tensor.py) | 0.3478 | 0.2623 |   3.2s    |              |              | √ |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/GRU4Rec.py) | 0.3560 | 0.2532 |    11s    | √ |              |              |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/NARM.py) | 0.3590 | 0.2573 |    22s    | √ |              |              |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/CFKG.py) | 0.4337 | 0.3081 |    11s    |              | √ |              |
+| [SLRC'](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/SLRC.py) | 0.4513 | 0.3329 |   6.5s    | √ | √ | √ |
+| [Chorus](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/models/Chorus.py) | 0.4754 | 0.3448 |   7.6s    | √ | √ | √ |
 
 Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/SIGIR20/src/utils/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
