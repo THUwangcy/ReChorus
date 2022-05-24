@@ -25,7 +25,6 @@ Generally, ReChorus decomposes the whole process into three modules:
 
 ![logo](./log/_static/module.png)
 
-
 ## Getting Started
 
 1. Install [Anaconda](https://docs.conda.io/en/latest/miniconda.html) with Python >= 3.5
@@ -53,30 +52,29 @@ python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Gr
 
 6. (optional) Implement your own models according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
 
-
 ## Arguments
 
 The main arguments are listed below.
 
-| Args            | Default   | Description                                                  |
-| --------------- | --------- | ------------------------------------------------------------ |
-| model_name      | 'BPRMF'   | The name of the model class.                                 |
-| lr              | 1e-3      | Learning rate.                                               |
-| l2              | 0         | Weight decay in optimizer.                                   |
-| test_all        | 0         | Wheter to rank all the items during evaluation.              |
-| metrics         | 'NDCG,HR' | The list of evaluation metrics (seperated by comma).         |
-| topk            | '5,10,20' | The list of K in evaluation metrics (seperated by comma).    |
-| num_workers     | 5         | Number of processes when preparing batches.                  |
-| batch_size      | 256       | Batch size during training.                                  |
-| eval_batch_size | 256       | Batch size during inference.                                 |
-| load            | 0         | Whether to load model checkpoint and continue to train.      |
-| train           | 1         | Wheter to perform model training.                            |
-| regenerate      | 0         | Wheter to regenerate intermediate files.                     |
-| random_seed     | 0         | Random seed of everything.                                   |
-| gpu             | '0'       | The visible GPU device (pass an empty string '' to only use CPU). |
-| buffer          | 1         | Whether to buffer batches for dev/test.                      |
-| history_max     | 20        | The maximum length of history for sequential models.         |
-| num_neg         | 1         | The number of negative items for each training instance.     |
+| Args            | Default   | Description                                                             |
+| --------------- | --------- | ----------------------------------------------------------------------- |
+| model_name      | 'BPRMF'   | The name of the model class.                                            |
+| lr              | 1e-3      | Learning rate.                                                          |
+| l2              | 0         | Weight decay in optimizer.                                              |
+| test_all        | 0         | Wheter to rank all the items during evaluation.                         |
+| metrics         | 'NDCG,HR' | The list of evaluation metrics (seperated by comma).                    |
+| topk            | '5,10,20' | The list of K in evaluation metrics (seperated by comma).               |
+| num_workers     | 5         | Number of processes when preparing batches.                             |
+| batch_size      | 256       | Batch size during training.                                             |
+| eval_batch_size | 256       | Batch size during inference.                                            |
+| load            | 0         | Whether to load model checkpoint and continue to train.                 |
+| train           | 1         | Wheter to perform model training.                                       |
+| regenerate      | 0         | Wheter to regenerate intermediate files.                                |
+| random_seed     | 0         | Random seed of everything.                                              |
+| gpu             | '0'       | The visible GPU device (pass an empty string '' to only use CPU).       |
+| buffer          | 1         | Whether to buffer batches for dev/test.                                 |
+| history_max     | 20        | The maximum length of history for sequential models.                    |
+| num_neg         | 1         | The number of negative items for each training instance.                |
 | test_epoch      | -1        | Print test set metrics every test_epoch during training (-1: no print). |
 
 ## Models
@@ -107,27 +105,26 @@ We have implemented the following methods (still updating):
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (151.3k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item (also support ranking over all the items with `--test_all 1`).
 
-| Model                                                        |  HR@5  | NDCG@5 | Time/iter |  Sequential  |  Knowledge   |  Time-aware  |
-| :----------------------------------------------------------- | :----: | :----: | :-------: | :----------: | :----------: | :----------: |
-| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py) | 0.3574 | 0.2480 |   2.5s    |              |              |              |
-| [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py) | 0.3248 | 0.2235 |   3.4s   |              |              |              |
-| [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py) | 0.3713 | 0.2577 | 6.1s | | | |
-| [BUIR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BUIR.py) | 0.3639 | 0.2542 | 3.3s | | | |
-| [FPMC](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/FPMC.py) | 0.3618 | 0.2816 | 3.4s | √ | | |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py) | 0.3664 | 0.2597 |    4.9s    | √ |              |              |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py) | 0.3621 | 0.2586 |    8.2s    | √ |              |              |
-| [Caser](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Caser.py) | 0.3576 | 0.2518 | 7.8s | √ | | |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py) | 0.3888 | 0.2923 | 7.2s | √ | | |
-| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py) | 0.3763 | 0.2694 | 5.1s | √ | | |
-| [ContraRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraRec.py) | 0.4269 | 0.3290 | 5.6s | √ | | |
-| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py) | 0.3916 | 0.2922 | 35.7s | √ | | √ |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py) | 0.4228 | 0.3010 |    8.7s    |              | √ |              |
-| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py) | 0.4514 | 0.3329 |   4.3s   | √ | √ | √ |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py) | 0.4739 | 0.3443 |   4.9s   | √ | √ | √ |
-| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py) | 0.5174 | 0.3876 | 9.9s | √ | √ | √ |
+| Model                                                                                             | HR@5   | NDCG@5 | Time/iter | Sequential | Knowledge | Time-aware |
+|:------------------------------------------------------------------------------------------------- |:------:|:------:|:---------:|:----------:|:---------:|:----------:|
+| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py)              | 0.3574 | 0.2480 | 2.5s      |            |           |            |
+| [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py)              | 0.3248 | 0.2235 | 3.4s      |            |           |            |
+| [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py)      | 0.3713 | 0.2577 | 6.1s      |            |           |            |
+| [BUIR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BUIR.py)              | 0.3639 | 0.2542 | 3.3s      |            |           |            |
+| [FPMC](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/FPMC.py)           | 0.3618 | 0.2816 | 3.4s      | √          |           |            |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py)     | 0.3664 | 0.2597 | 4.9s      | √          |           |            |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py)           | 0.3621 | 0.2586 | 8.2s      | √          |           |            |
+| [Caser](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Caser.py)         | 0.3576 | 0.2518 | 7.8s      | √          |           |            |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py)       | 0.3888 | 0.2923 | 7.2s      | √          |           |            |
+| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py)     | 0.3763 | 0.2694 | 5.1s      | √          |           |            |
+| [ContraRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraRec.py) | 0.4269 | 0.3290 | 5.6s      | √          |           |            |
+| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py)   | 0.3916 | 0.2922 | 35.7s     | √          |           | √          |
+| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py)              | 0.4228 | 0.3010 | 8.7s      |            | √         |            |
+| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py)      | 0.4514 | 0.3329 | 4.3s      | √          | √         | √          |
+| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py)       | 0.4739 | 0.3443 | 4.9s      | √          | √         | √          |
+| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py)             | 0.5174 | 0.3876 | 9.9s      | √          | √         | √          |
 
 For fair comparison, the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
-
 
 ## Citation
 
@@ -173,11 +170,11 @@ git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
 ```
 
 ## Contact
+
 Chenyang Wang (THUwangcy@gmail.com)
 
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
+
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=flat-square

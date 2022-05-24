@@ -1,4 +1,4 @@
-# Source Code	
+# Source Code
 
 `main.py` serves as the entrance of our framework, and there are three main packages. 
 
@@ -17,8 +17,6 @@
 - `main.py`: main entrance, connect all the modules
 - `exp.py`: repeat experiments in *run.sh* and save averaged results to csv 
 - `run.sh`: running commands for each model
-
-
 
 ### Define a New Model
 
@@ -39,7 +37,7 @@ class NewModel(GeneralModel):
         prediction = (...)
         out_dict = {'prediction': prediction.view(feed_dict['batch_size'], -1)}
         return out_dict
-    
+
     class Dataset(GeneralModel.Dataset):
         # construct feed_dict for a single instance (called by __getitem__)
         # will be collated to a integrated feed dict for each batch
@@ -49,7 +47,4 @@ class NewModel(GeneralModel):
             return feed_dict
 ```
 
-
-
 If the model definition is more complicated, you can inherit other functions in *BaseModel* (e.g. `loss`, `customize_parameters`) and *Dataset* (e.g. `_prepare`, `actions_before_epoch`), which needs deeper understandings about [BaseModel.py](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py) and [BaseRunner.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py). You can also implement a new runner class to accommodate different experimental settings.
-
