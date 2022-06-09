@@ -25,6 +25,8 @@ from models.BaseModel import SequentialModel
 
 
 class Caser(SequentialModel):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'num_horizon', 'num_vertical', 'L']
 
     @staticmethod
@@ -40,13 +42,15 @@ class Caser(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.max_his = args.history_max
         self.num_horizon = args.num_horizon
         self.num_vertical = args.num_vertical
         self.l = args.L
         assert self.l <= self.max_his  # use L instead of max_his to avoid excessive conv_h
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)

@@ -18,6 +18,7 @@ from models.BaseModel import GeneralModel
 
 
 class BUIR(GeneralModel):
+    reader = 'BaseReader'
     runner = 'BUIRRunner'
     extra_log_args = ['emb_size', 'momentum']
 
@@ -29,19 +30,6 @@ class BUIR(GeneralModel):
                             help='Momentum update.')
         return GeneralModel.parse_model_args(parser)
 
-    def __init__(self, args, corpus):
-        self.emb_size = args.emb_size
-        self.momentum = args.momentum
-        super().__init__(args, corpus)
-
-    def _define_params(self):
-        self.user_online = nn.Embedding(self.user_num, self.emb_size)
-        self.user_target = nn.Embedding(self.user_num, self.emb_size)
-        self.item_online = nn.Embedding(self.item_num, self.emb_size)
-        self.item_target = nn.Embedding(self.item_num, self.emb_size)
-        self.predictor = nn.Linear(self.emb_size, self.emb_size)
-        self.bn = nn.BatchNorm1d(self.emb_size, eps=0, affine=False, track_running_stats=False)
-
     @staticmethod
     def init_weights(m):
         if 'Linear' in str(type(m)):
@@ -51,16 +39,30 @@ class BUIR(GeneralModel):
         elif 'Embedding' in str(type(m)):
             nn.init.xavier_normal_(m.weight.data)
 
-    def actions_before_train(self):
+    def __init__(self, args, corpus):
+        super().__init__(args, corpus)
+        self.emb_size = args.emb_size
+        self.momentum = args.momentum
+        self._define_params()
+        self.apply(self.init_weights)
+
         for param_o, param_t in zip(self.user_online.parameters(), self.user_target.parameters()):
             param_t.data.copy_(param_o.data)
             param_t.requires_grad = False
         for param_o, param_t in zip(self.item_online.parameters(), self.item_target.parameters()):
             param_t.data.copy_(param_o.data)
             param_t.requires_grad = False
-        super().actions_before_train()
 
-    # will be called by MoRunner
+
+    def _define_params(self):
+        self.user_online = nn.Embedding(self.user_num, self.emb_size)
+        self.user_target = nn.Embedding(self.user_num, self.emb_size)
+        self.item_online = nn.Embedding(self.item_num, self.emb_size)
+        self.item_target = nn.Embedding(self.item_num, self.emb_size)
+        self.predictor = nn.Linear(self.emb_size, self.emb_size)
+        self.bn = nn.BatchNorm1d(self.emb_size, eps=0, affine=False, track_running_stats=False)
+
+    # will be called by BUIRRunner
     def _update_target(self):
         for param_o, param_t in zip(self.user_online.parameters(), self.user_target.parameters()):
             param_t.data = param_t.data * self.momentum + param_o.data * (1. - self.momentum)

@@ -12,10 +12,10 @@ class POP(GeneralModel):
     Should run with --train 0
     """
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.popularity = np.zeros(corpus.n_items)
         for i in corpus.data_df['train']['item_id'].values:
             self.popularity[i] += 1
-        super().__init__(args, corpus)
 
     def forward(self, feed_dict):
         self.check_list = []

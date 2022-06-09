@@ -10,6 +10,8 @@ from utils import layers
 
 
 class CLRec(SequentialModel):
+    reader = 'BaseReader'
+    runner = 'BaseRunner'
     extra_log_args = ['batch_size', 'temp']
 
     @staticmethod
@@ -21,10 +23,12 @@ class CLRec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.temp = args.temp
         self.max_his = args.history_max
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)

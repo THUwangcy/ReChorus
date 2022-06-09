@@ -18,6 +18,8 @@ from models.BaseModel import SequentialModel
 
 
 class NARM(SequentialModel):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'hidden_size', 'attention_size']
 
     @staticmethod
@@ -31,10 +33,12 @@ class NARM(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.hidden_size = args.hidden_size
         self.attention_size = args.attention_size
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)

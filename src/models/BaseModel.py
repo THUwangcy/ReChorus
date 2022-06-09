@@ -38,15 +38,11 @@ class BaseModel(nn.Module):
 
     def __init__(self, args, corpus: BaseReader):
         super(BaseModel, self).__init__()
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = args.device
         self.model_path = args.model_path
         self.buffer = args.buffer
         self.optimizer = None
         self.check_list = list()  # observe tensors in check_list every check_epoch
-
-        self._define_params()
-        self.total_parameters = self.count_variables()
-        logging.info('#params: %d' % self.total_parameters)
 
     """
     Key Methods
@@ -95,9 +91,6 @@ class BaseModel(nn.Module):
         total_parameters = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return total_parameters
 
-    def actions_before_train(self):  # e.g., re-initial some special parameters
-        pass
-
     def actions_after_train(self):  # e.g., save selected parameters
         pass
 
@@ -111,11 +104,8 @@ class BaseModel(nn.Module):
             self.phase = phase  # train / dev / test
 
             self.buffer_dict = dict()
-            self.buffer = self.model.buffer and self.phase != 'train'
             self.data = utils.df_to_dict(corpus.data_df[phase])
             # ↑ DataFrame is not compatible with multi-thread operations
-
-            self._prepare()
 
         def __len__(self):
             if type(self.data) == dict:
@@ -124,19 +114,21 @@ class BaseModel(nn.Module):
             return len(self.data)
 
         def __getitem__(self, index: int) -> dict:
-            return self.buffer_dict[index] if self.buffer else self._get_feed_dict(index)
-
-        # Prepare model-specific variables and buffer feed dicts
-        def _prepare(self):
-            if self.buffer:
-                for i in tqdm(range(len(self)), leave=False, desc=('Prepare ' + self.phase)):
-                    self.buffer_dict[i] = self._get_feed_dict(i)
+            if self.model.buffer and self.phase != 'train':
+                return self.buffer_dict[index]
+            return self._get_feed_dict(index)
 
         # ! Key method to construct input data for a single instance
         def _get_feed_dict(self, index: int) -> dict:
             pass
 
-        # Called before each training epoch
+        # Called after initialization
+        def prepare(self):
+            if self.model.buffer and self.phase != 'train':
+                for i in tqdm(range(len(self)), leave=False, desc=('Prepare ' + self.phase)):
+                    self.buffer_dict[i] = self._get_feed_dict(i)
+
+        # Called before each training epoch (only for the training dataset)
         def actions_before_epoch(self):
             pass
 
@@ -173,12 +165,12 @@ class GeneralModel(BaseModel):
         return BaseModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.user_num = corpus.n_users
         self.item_num = corpus.n_items
         self.num_neg = args.num_neg
         self.dropout = args.dropout
         self.test_all = args.test_all
-        super().__init__(args, corpus)
 
     def loss(self, out_dict: dict) -> torch.Tensor:
         """
@@ -223,6 +215,8 @@ class GeneralModel(BaseModel):
 
 
 class SequentialModel(GeneralModel):
+    reader = 'SeqReader'
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--history_max', type=int, default=20,
@@ -230,15 +224,15 @@ class SequentialModel(GeneralModel):
         return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
-        self.history_max = args.history_max
         super().__init__(args, corpus)
+        self.history_max = args.history_max
 
     class Dataset(GeneralModel.Dataset):
-        def _prepare(self):
+        def __init__(self, model, corpus, phase):
+            super().__init__(model, corpus, phase)
             idx_select = np.array(self.data['position']) > 0  # history length must be non-zero
             for key in self.data:
                 self.data[key] = np.array(self.data[key])[idx_select]
-            super()._prepare()
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)

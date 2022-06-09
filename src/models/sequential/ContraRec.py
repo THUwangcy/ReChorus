@@ -21,6 +21,8 @@ from utils import layers
 
 
 class ContraRec(SequentialModel):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['gamma', 'num_neg', 'batch_size', 'ctc_temp', 'ccc_temp', 'encoder']
 
     @staticmethod
@@ -42,6 +44,7 @@ class ContraRec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.max_his = args.history_max
         self.gamma = args.gamma
@@ -51,7 +54,8 @@ class ContraRec(SequentialModel):
         self.ccc_temp = args.ccc_temp
         self.encoder_name = args.encoder
         self.mask_token = corpus.n_items
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num + 1, self.emb_size)

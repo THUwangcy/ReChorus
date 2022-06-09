@@ -25,6 +25,7 @@ from models.BaseModel import SequentialModel
 
 class Chorus(SequentialModel):
     reader = 'KGReader'
+    runner = 'BaseRunner'
     extra_log_args = ['margin', 'lr_scale', 'stage']
 
     @staticmethod
@@ -46,6 +47,7 @@ class Chorus(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.margin = args.margin
         self.stage = args.stage
         self.kg_lr = args.lr_scale * args.lr
@@ -59,21 +61,20 @@ class Chorus(SequentialModel):
             self.category_num = corpus.item_meta_df[self.category_col].max() + 1
         else:
             self.category_col, self.category_num = None, 1  # a virtual global category
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
         assert self.stage in [1, 2]
         self.pretrain_path = '../model/Chorus/KG__{}__emb_size={}__margin={}.pt' \
             .format(corpus.dataset, self.emb_size, self.margin)
         if self.stage == 1:
             self.model_path = self.pretrain_path
-        self.relation_range = torch.from_numpy(np.arange(self.relation_num)).to(self.device)
-
-    def actions_before_train(self):
         if self.stage == 2:
             if os.path.exists(self.pretrain_path):
                 self.load_model(self.pretrain_path)
             else:
                 raise ValueError('Pre-trained KG model does not exist, please run with "--stage 1"')
+        self.relation_range = torch.from_numpy(np.arange(self.relation_num)).to(self.device)
 
     def _define_params(self):
         self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)
@@ -195,7 +196,8 @@ class Chorus(SequentialModel):
             return super().customize_parameters()
 
     class Dataset(SequentialModel.Dataset):
-        def _prepare(self):
+        def __init__(self, model, corpus, phase):
+            super().__init__(model, corpus, phase)
             self.kg_train = self.model.stage == 1 and self.phase == 'train'
             if self.kg_train:
                 self.data = utils.df_to_dict(self.corpus.relation_df)
@@ -206,7 +208,6 @@ class Chorus(SequentialModel):
                 items = self.corpus.item_meta_df['item_id']
                 categories = self.corpus.item_meta_df[col_name] if col_name is not None else np.zeros_like(items)
                 self.item2cate = dict(zip(items, categories))
-                super()._prepare()
 
         def _get_feed_dict(self, index):
             if self.kg_train:

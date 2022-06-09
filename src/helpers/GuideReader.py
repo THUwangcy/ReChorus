@@ -10,7 +10,7 @@ import pandas as pd
 from utils import utils
 
 
-class BaseReader(object):
+class GuideReader(object):
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--path', type=str, default='../data/',
@@ -25,20 +25,11 @@ class BaseReader(object):
         self.sep = args.sep
         self.prefix = args.path
         self.dataset = args.dataset
-        self._read_data()
 
-        self.train_clicked_set = dict()  # store the clicked item set of each user in training set
-        self.residual_clicked_set = dict()  # store the residual clicked item set of each user
-        for key in ['train', 'dev', 'test']:
-            df = self.data_df[key]
-            for uid, iid in zip(df['user_id'], df['item_id']):
-                if uid not in self.train_clicked_set:
-                    self.train_clicked_set[uid] = set()
-                    self.residual_clicked_set[uid] = set()
-                if key == 'train':
-                    self.train_clicked_set[uid].add(iid)
-                else:
-                    self.residual_clicked_set[uid].add(iid)
+        self._read_data()
+        self._append_his_info()
+        item_meta_path = os.path.join(self.prefix, self.dataset, 'item_meta.csv')
+        self.item_meta_df = pd.read_csv(item_meta_path, sep=self.sep)
 
     def _read_data(self):
         logging.info('Reading data from \"{}\", dataset = \"{}\" '.format(self.prefix, self.dataset))
@@ -48,7 +39,7 @@ class BaseReader(object):
             self.data_df[key] = utils.eval_list_columns(self.data_df[key])
 
         logging.info('Counting dataset statistics...')
-        self.all_df = pd.concat([self.data_df[key][['user_id', 'item_id', 'time']] for key in ['train', 'dev', 'test']])
+        self.all_df = pd.concat([df[['user_id', 'item_id', 'time']] for df in self.data_df.values()])
         self.n_users, self.n_items = self.all_df['user_id'].max() + 1, self.all_df['item_id'].max() + 1
         for key in ['dev', 'test']:
             if 'neg_items' in self.data_df[key]:
@@ -56,3 +47,27 @@ class BaseReader(object):
                 assert (neg_items >= self.n_items).sum() == 0  # assert negative items don't include unseen ones
         logging.info('"# user": {}, "# item": {}, "# entry": {}'.format(
             self.n_users - 1, self.n_items - 1, len(self.all_df)))
+
+    def _append_his_info(self):
+        """
+        Add history info to data_df: position
+        ! Need data_df to be sorted by time in ascending order
+        """
+        logging.info('Appending history info...')
+        self.user_his = dict()  # store the already seen sequence of each user
+        self.train_clicked_set = dict()  # store the clicked item set of each user in training set
+        self.clicked_set = dict()
+        for key in ['train', 'dev', 'test']:
+            df = self.data_df[key]
+            position = list()
+            for uid, iid, t in zip(df['user_id'], df['item_id'], df['time']):
+                if uid not in self.user_his:
+                    self.user_his[uid] = list()
+                    self.train_clicked_set[uid] = set()
+                    self.clicked_set[uid] = set()
+                position.append(len(self.user_his[uid]))
+                self.user_his[uid].append((iid, t))
+                if key == 'train':
+                    self.train_clicked_set[uid].add(iid)
+                self.clicked_set[uid].add(iid)
+            df['position'] = position

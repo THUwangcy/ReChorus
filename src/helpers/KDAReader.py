@@ -12,7 +12,7 @@ from helpers.KGReader import KGReader
 
 
 """ Data Reading for KDA """
-class DFTReader(KGReader):
+class KDAReader(KGReader):
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--t_scalar', type=int, default=60,
@@ -104,17 +104,3 @@ class DFTReader(KGReader):
             self.freq_x[i] = dft_res
 
         del self.interval_dict
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser()
-    parser = DFTReader.parse_data_args(parser)
-    args, extras = parser.parse_known_args()
-
-    args.path = '../../data/'
-    corpus = DFTReader(args)
-
-    corpus_path = os.path.join(args.path, args.dataset, 'DFTReader.pkl')
-    logging.info('Save corpus to {}'.format(corpus_path))
-    pickle.dump(corpus, open(corpus_path, 'wb'))

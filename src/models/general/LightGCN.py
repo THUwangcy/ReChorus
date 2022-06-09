@@ -20,6 +20,8 @@ from models.BaseModel import GeneralModel
 
 
 class LightGCN(GeneralModel):
+    reader = 'BaseReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'n_layers']
 
     @staticmethod
@@ -31,10 +33,12 @@ class LightGCN(GeneralModel):
         return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.n_layers = args.n_layers
         self.norm_adj = self.build_adjmat(corpus.n_users, corpus.n_items, corpus.train_clicked_set)
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     @staticmethod
     def build_adjmat(user_count, item_count, train_mat, selfloop_flag=False):

@@ -191,8 +191,7 @@ class BaseRunner(object):
         if data.model.test_all:
             rows, cols = list(), list()
             for i, u in enumerate(data.data['user_id']):
-                clicked_items = [x[0] for x in data.corpus.user_his[u]]
-                # clicked_items = [data.data['item_id'][i]]
+                clicked_items = list(data.corpus.train_clicked_set[u] | data.corpus.residual_clicked_set[u])
                 idx = list(np.ones_like(clicked_items) * i)
                 rows.extend(idx)
                 cols.extend(clicked_items)

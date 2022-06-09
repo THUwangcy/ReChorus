@@ -27,6 +27,7 @@ from helpers.KGReader import KGReader
 
 class SLRCPlus(SequentialModel):
     reader = 'KGReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size']
 
     @staticmethod
@@ -38,10 +39,12 @@ class SLRCPlus(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus: KGReader):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.time_scalar = args.time_scalar
         self.relation_num = len(corpus.item_relations) + 1
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.u_embeddings = nn.Embedding(self.user_num, self.emb_size)

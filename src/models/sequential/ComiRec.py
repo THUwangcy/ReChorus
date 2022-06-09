@@ -20,6 +20,8 @@ from utils import layers
 
 
 class ComiRec(SequentialModel):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'attn_size', 'K']
 
     @staticmethod
@@ -35,14 +37,15 @@ class ComiRec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.attn_size = args.attn_size
         self.K = args.K
         self.add_pos = args.add_pos
         self.max_his = args.history_max
-        super().__init__(args, corpus)
-
         self.len_range = torch.from_numpy(np.arange(self.max_his)).to(self.device)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
