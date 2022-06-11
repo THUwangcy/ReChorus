@@ -15,8 +15,7 @@ from helpers.BaseReader import BaseReader
 
 
 class BaseModel(nn.Module):
-    reader = 'BaseReader'
-    runner = 'BaseRunner'
+    reader, runner = None, None  # choose helpers in specific model classes
     extra_log_args = []
 
     @staticmethod
@@ -154,6 +153,8 @@ class BaseModel(nn.Module):
 
 
 class GeneralModel(BaseModel):
+    reader, runner = 'BaseReader', 'BaseRunner'
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--num_neg', type=int, default=1,
@@ -185,7 +186,7 @@ class GeneralModel(BaseModel):
         loss = -((pos_pred[:, None] - neg_pred).sigmoid() * neg_softmax).sum(dim=1).log().mean()
         # neg_pred = (neg_pred * neg_softmax).sum(dim=1)
         # loss = F.softplus(-(pos_pred - neg_pred)).mean()
-        # ↑ For numerical stability, we use 'softplus(-x)' instead of '-log_sigmoid(x)'
+        # ↑ For numerical stability, use 'softplus(-x)' instead of '-log_sigmoid(x)'
         return loss
 
     class Dataset(BaseModel.Dataset):

@@ -16,16 +16,16 @@ from helpers.BaseRunner import BaseRunner
 
 
 class MoRunner(BaseRunner):
-    def fit(self, data: BaseModel.Dataset, epoch=-1) -> float:
-        model = data.model
+    def fit(self, dataset: BaseModel.Dataset, epoch=-1) -> float:
+        model = dataset.model
         if model.optimizer is None:
             model.optimizer = self._build_optimizer(model)
-        data.actions_before_epoch()  # must sample before multi thread start
+        dataset.actions_before_epoch()  # must sample before multi thread start
 
         model.train()
         loss_lst = list()
-        dl = DataLoader(data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
-                        collate_fn=data.collate_batch, pin_memory=self.pin_memory)
+        dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
+                        collate_fn=dataset.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, desc='Epoch {:<3}'.format(epoch), ncols=100, mininterval=1):
             batch = utils.batch_to_gpu(batch, model.device)
             model.optimizer.zero_grad()
