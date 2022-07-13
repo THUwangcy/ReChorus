@@ -10,6 +10,10 @@ from models.BaseModel import SequentialModel
 
 
 class SRGNN(SequentialModel):
+    reader = 'BaseReader'
+    runner = 'BaseRunner'
+    extra_log_args = ['num_layers']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -19,9 +23,11 @@ class SRGNN(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.num_layers = args.num_layers
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size, padding_idx=0)

@@ -6,10 +6,14 @@ import numpy as np
 
 from utils import layers
 from models.BaseModel import SequentialModel
-from helpers.DFTReader import DFTReader
+from helpers.KDAReader import KDAReader
 
 
 class FourierTA(SequentialModel):
+    reader = 'BaseReader'
+    runner = 'BaseRunner'
+    extra_log_args = ['t_scalar']
+
     @staticmethod
     def parse_model_args(parser):
         parser.add_argument('--emb_size', type=int, default=64,
@@ -19,10 +23,12 @@ class FourierTA(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.freq_dim = args.emb_size
         self.emb_size = args.emb_size
         self.t_scalar = args.t_scalar
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.user_embeddings = nn.Embedding(self.user_num, self.emb_size)
@@ -69,7 +75,7 @@ class FourierTA(SequentialModel):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             delta_t = self.data['time'][index] - feed_dict['history_times']
-            feed_dict['history_delta_t'] = DFTReader.norm_time(delta_t, self.model.t_scalar)
+            feed_dict['history_delta_t'] = KDAReader.norm_time(delta_t, self.model.t_scalar)
             return feed_dict
 
 

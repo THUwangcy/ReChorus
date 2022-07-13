@@ -27,6 +27,7 @@ from helpers.KGReader import KGReader
 
 class CFKG(GeneralModel):
     reader = 'KGReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'margin', 'include_attr']
 
     @staticmethod
@@ -38,11 +39,13 @@ class CFKG(GeneralModel):
         return GeneralModel.parse_model_args(parser)
 
     def __init__(self, args, corpus: KGReader):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.margin = args.margin
         self.relation_num = corpus.n_relations
         self.entity_num = corpus.n_entities
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.e_embeddings = nn.Embedding(self.user_num + self.entity_num, self.emb_size)
@@ -73,7 +76,8 @@ class CFKG(GeneralModel):
         return loss
 
     class Dataset(GeneralModel.Dataset):
-        def _prepare(self):
+        def __init__(self, model, corpus, phase):
+            super().__init__(model, corpus, phase)
             if self.phase == 'train':
                 interaction_df = pd.DataFrame({
                     'head': self.data['user_id'],
@@ -83,7 +87,6 @@ class CFKG(GeneralModel):
                 self.data = utils.df_to_dict(pd.concat((self.corpus.relation_df, interaction_df), axis=0))
                 self.neg_heads = np.zeros(len(self), dtype=int)
                 self.neg_tails = np.zeros(len(self), dtype=int)
-            super()._prepare()
 
         def _get_feed_dict(self, index):
             if self.phase == 'train':

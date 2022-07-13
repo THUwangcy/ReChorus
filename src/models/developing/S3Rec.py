@@ -12,6 +12,8 @@ from utils import layers
 
 
 class S3Rec(SequentialModel):
+    reader = 'BaseReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'mip_weight', 'sp_weight', 'mask_ratio', 'stage']
 
     @staticmethod
@@ -29,19 +31,19 @@ class S3Rec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.mip_weight = args.mip_weight
         self.sp_weight = args.sp_weight
         self.mask_ratio = args.mask_ratio
         self.stage = args.stage
         self.max_his = args.history_max
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
         # assert(self.stage in [1, 2])
         self.pre_path = '../model/S3Rec/Pre__{}.pt'.format(corpus.dataset)
         self.model_path = self.pre_path if self.stage == 1 else self.model_path
-
-    def actions_before_train(self):
         if self.stage == 2:  # fine-tune
             if os.path.exists(self.pre_path):
                 self.load_model(self.pre_path)
@@ -111,7 +113,8 @@ class S3Rec(SequentialModel):
         return loss
 
     class Dataset(SequentialModel.Dataset):
-        def _prepare(self):
+        def __init__(self, model, corpus, phase):
+            super().__init__(model, corpus, phase)
             self.pre_train = self.model.stage == 1 and self.phase == 'train'
             if self.pre_train:
                 self.long_seq = list()
@@ -126,8 +129,6 @@ class S3Rec(SequentialModel):
                         item_seq.append(trunc_instance)
                         seq_len.append(len(trunc_instance))
                 self.data = {'item_seq': item_seq, 'seq_len': seq_len}
-            else:
-                super()._prepare()
 
         def actions_before_epoch(self):
             if self.model.stage != 1:

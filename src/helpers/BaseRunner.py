@@ -155,16 +155,16 @@ class BaseRunner(object):
             best_epoch + 1, utils.format_metric(dev_results[best_epoch]), self.time[1] - self.time[0]))
         model.load_model()
 
-    def fit(self, data: BaseModel.Dataset, epoch=-1) -> float:
-        model = data.model
+    def fit(self, dataset: BaseModel.Dataset, epoch=-1) -> float:
+        model = dataset.model
         if model.optimizer is None:
             model.optimizer = self._build_optimizer(model)
-        data.actions_before_epoch()  # must sample before multi thread start
+        dataset.actions_before_epoch()  # must sample before multi thread start
 
         model.train()
         loss_lst = list()
-        dl = DataLoader(data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
-                        collate_fn=data.collate_batch, pin_memory=self.pin_memory)
+        dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
+                        collate_fn=dataset.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, desc='Epoch {:<3}'.format(epoch), ncols=100, mininterval=1):
             batch = utils.batch_to_gpu(batch, model.device)
             model.optimizer.zero_grad()
@@ -182,44 +182,46 @@ class BaseRunner(object):
             return True
         return False
 
-    def evaluate(self, data: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
+    def evaluate(self, dataset: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
         """
         Evaluate the results for an input dataset.
         :return: result dict (key: metric@k)
         """
-        predictions = self.predict(data)
-        if data.model.test_all:
-            rows, cols = list(), list()
-            for i, u in enumerate(data.data['user_id']):
-                clicked_items = [x[0] for x in data.corpus.user_his[u]]
-                # clicked_items = [data.data['item_id'][i]]
-                idx = list(np.ones_like(clicked_items) * i)
-                rows.extend(idx)
-                cols.extend(clicked_items)
-            predictions[rows, cols] = -np.inf
+        predictions = self.predict(dataset)
         return self.evaluate_method(predictions, topks, metrics)
 
-    def predict(self, data: BaseModel.Dataset) -> np.ndarray:
+    def predict(self, dataset: BaseModel.Dataset) -> np.ndarray:
         """
         The returned prediction is a 2D-array, each row corresponds to all the candidates,
         and the ground-truth item poses the first.
         Example: ground-truth items: [1, 2], 2 negative items for each instance: [[3,4], [5,6]]
                  predictions like: [[1,3,4], [2,5,6]]
         """
-        data.model.eval()
+        dataset.model.eval()
         predictions = list()
-        dl = DataLoader(data, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
-                        collate_fn=data.collate_batch, pin_memory=self.pin_memory)
+        dl = DataLoader(dataset, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
+                        collate_fn=dataset.collate_batch, pin_memory=self.pin_memory)
         for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
-            prediction = data.model(utils.batch_to_gpu(batch, data.model.device))['prediction']
+            prediction = dataset.model(utils.batch_to_gpu(batch, dataset.model.device))['prediction']
             predictions.extend(prediction.cpu().data.numpy())
-        return np.array(predictions)
+        predictions = np.array(predictions)
 
-    def print_res(self, data: BaseModel.Dataset) -> str:
+        if dataset.model.test_all:
+            rows, cols = list(), list()
+            for i, u in enumerate(dataset.data['user_id']):
+                clicked_items = list(dataset.corpus.train_clicked_set[u] | dataset.corpus.residual_clicked_set[u])
+                idx = list(np.ones_like(clicked_items) * i)
+                rows.extend(idx)
+                cols.extend(clicked_items)
+            predictions[rows, cols] = -np.inf
+
+        return predictions
+
+    def print_res(self, dataset: BaseModel.Dataset) -> str:
         """
         Construct the final result string before/after training
         :return: test result string
         """
-        result_dict = self.evaluate(data, self.topk, self.metrics)
+        result_dict = self.evaluate(dataset, self.topk, self.metrics)
         res_str = '(' + utils.format_metric(result_dict) + ')'
         return res_str

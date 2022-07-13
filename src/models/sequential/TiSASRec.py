@@ -19,6 +19,8 @@ from models.sequential.SASRec import SASRec
 
 
 class TiSASRec(SASRec):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'num_layers', 'num_heads', 'time_max']
 
     @staticmethod
@@ -28,8 +30,10 @@ class TiSASRec(SASRec):
         return SASRec.parse_model_args(parser)
 
     def __init__(self, args, corpus):
-        self.max_time = args.time_max
         super().__init__(args, corpus)
+        self.max_time = args.time_max
+        self._define_params()
+        self.apply(self.init_weights)
 
         setattr(corpus, 'user_min_interval', dict())
         for u, user_df in corpus.all_df.groupby('user_id'):

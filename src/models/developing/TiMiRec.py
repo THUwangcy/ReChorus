@@ -15,6 +15,7 @@ from utils import layers
 
 
 class TiMiRec(SequentialModel):
+    reader = 'BaseReader'
     runner = 'TiMiRunner'
     extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos', 'predictor', 'n_layers']
 
@@ -39,6 +40,7 @@ class TiMiRec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.attn_size = args.attn_size
         self.K = args.K
@@ -49,7 +51,8 @@ class TiMiRec(SequentialModel):
         self.stage = args.stage
         self.max_his = args.history_max
         self.max_time = 512  # max time intervals in TiSASRec
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
         if self.stage in [2, 3] and self.predictor == 'TiSASRec':
             setattr(corpus, 'user_min_interval', dict())

@@ -14,6 +14,7 @@ from models.BaseModel import SequentialModel
 
 
 class TiMiRecLight(SequentialModel):
+    reader = 'BaseReader'
     runner = 'TiMiRunner'
     extra_log_args = ['emb_size', 'attn_size', 'K', 'temp', 'add_pos', 'n_layers']
 
@@ -36,6 +37,7 @@ class TiMiRecLight(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.attn_size = args.attn_size
         self.K = args.K
@@ -44,7 +46,8 @@ class TiMiRecLight(SequentialModel):
         self.n_layers = args.n_layers
         self.stage = args.stage
         self.max_his = args.history_max
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
         self.extractor_path = '../model/TiMiRecLight/Extractor__{}__{}__emb_size={}__K={}__add_pos={}.pt'\
             .format(corpus.dataset, args.random_seed, self.emb_size, self.K, self.add_pos)

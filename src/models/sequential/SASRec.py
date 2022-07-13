@@ -22,6 +22,8 @@ from utils import layers
 
 
 class SASRec(SequentialModel):
+    reader = 'SeqReader'
+    runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'num_layers', 'num_heads']
 
     @staticmethod
@@ -35,12 +37,14 @@ class SASRec(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.emb_size = args.emb_size
         self.max_his = args.history_max
         self.num_layers = args.num_layers
         self.num_heads = args.num_heads
-        super().__init__(args, corpus)
         self.len_range = torch.from_numpy(np.arange(self.max_his)).to(self.device)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)

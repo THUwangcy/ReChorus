@@ -5,7 +5,7 @@ import sys
 import pickle
 import logging
 import argparse
-import numpy as np
+import pandas as pd
 import torch
 
 from helpers import *
@@ -16,20 +16,20 @@ from utils import utils
 
 
 def parse_global_args(parser):
-    parser.add_argument('--gpu', type=str, default='0',
-                        help='Set CUDA_VISIBLE_DEVICES')
+    parser.add_argument('--gpu', type=str, default='',
+                        help='Set CUDA_VISIBLE_DEVICES, default for CPU only')
     parser.add_argument('--verbose', type=int, default=logging.INFO,
                         help='Logging Level, 0, 10, ..., 50')
     parser.add_argument('--log_file', type=str, default='',
                         help='Logging file path')
     parser.add_argument('--random_seed', type=int, default=0,
-                        help='Random seed of numpy and pytorch.')
+                        help='Random seed of numpy and pytorch')
     parser.add_argument('--load', type=int, default=0,
                         help='Whether load model and continue to train')
     parser.add_argument('--train', type=int, default=1,
                         help='To train the model or not.')
     parser.add_argument('--regenerate', type=int, default=0,
-                        help='Whether to regenerate intermediate files.')
+                        help='Whether to regenerate intermediate files')
     return parser
 
 
@@ -40,14 +40,14 @@ def main():
     logging.info(utils.format_arg_str(args, exclude_lst=exclude))
 
     # Random seed
-    np.random.seed(args.random_seed)
-    torch.manual_seed(args.random_seed)
-    torch.cuda.manual_seed(args.random_seed)
-    torch.backends.cudnn.deterministic = True
+    utils.init_seed(args.random_seed)
 
     # GPU
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    logging.info('GPU available: {}'.format(torch.cuda.is_available()))
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    args.device = torch.device('cpu')
+    if args.gpu != '' and torch.cuda.is_available():
+        args.device = torch.device('cuda')
+    logging.info('Device: {}'.format(args.device))
 
     # Read data
     corpus_path = os.path.join(args.path, args.dataset, model_name.reader + '.pkl')
@@ -60,35 +60,52 @@ def main():
         pickle.dump(corpus, open(corpus_path, 'wb'))
 
     # Define model
-    model = model_name(args, corpus)
+    model = model_name(args, corpus).to(args.device)
+    logging.info('#params: {}'.format(model.count_variables()))
     logging.info(model)
-    model.apply(model.init_weights)
-    model.actions_before_train()
-    model.to(model.device)
 
     # Run model
     data_dict = dict()
     for phase in ['train', 'dev', 'test']:
         data_dict[phase] = model_name.Dataset(model, corpus, phase)
+        data_dict[phase].prepare()
     runner = runner_name(args)
     # logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
     if args.load > 0:
         model.load_model()
     if args.train > 0:
         runner.train(data_dict)
-    logging.info(os.linesep + 'Test After Training: ' + runner.print_res(data_dict['test']))
-
+    eval_res = runner.print_res(data_dict['test'])
+    logging.info(os.linesep + 'Test After Training: ' + eval_res)
+    # save_rec_results(data_dict['dev'], runner, 100)
     model.actions_after_train()
     logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
 
 
+def save_rec_results(dataset, runner, topk):
+    result_path = os.path.join(args.path, args.dataset, 'rec-{}.csv'.format(init_args.model_name))
+    logging.info('Saving top-{} recommendation results to: {}'.format(topk, result_path))
+    predictions = runner.predict(dataset)  # n_users, n_candidates
+    users, rec_items = list(), list()
+    for i in range(len(dataset)):
+        info = dataset[i]
+        users.append(info['user_id'])
+        item_scores = zip(info['item_id'], predictions[i])
+        sorted_lst = sorted(item_scores, key=lambda x: x[1], reverse=True)[:topk]
+        rec_items.append([x[0] for x in sorted_lst])
+    rec_df = pd.DataFrame(columns=['user_id', 'rec_items'])
+    rec_df['user_id'] = users
+    rec_df['rec_items'] = rec_items
+    rec_df.to_csv(result_path, sep=args.sep, index=False)
+
+
 if __name__ == '__main__':
     init_parser = argparse.ArgumentParser(description='Model')
-    init_parser.add_argument('--model_name', type=str, default='BPR', help='Choose a model to run.')
+    init_parser.add_argument('--model_name', type=str, default='BPRMF', help='Choose a model to run.')
     init_args, init_extras = init_parser.parse_known_args()
     model_name = eval('{0}.{0}'.format(init_args.model_name))
-    reader_name = eval('{0}.{0}'.format(model_name.reader))
-    runner_name = eval('{0}.{0}'.format(model_name.runner))
+    reader_name = eval('{0}.{0}'.format(model_name.reader))  # model chooses the reader
+    runner_name = eval('{0}.{0}'.format(model_name.runner))  # model chooses the runner
 
     # Args
     parser = argparse.ArgumentParser(description='')

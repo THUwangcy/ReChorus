@@ -18,11 +18,12 @@ import pandas as pd
 
 from utils import layers
 from models.BaseModel import SequentialModel
-from helpers.DFTReader import DFTReader
+from helpers.KDAReader import KDAReader
 
 
 class KDA(SequentialModel):
-    reader = 'DFTReader'
+    reader = 'KDAReader'
+    runner = 'BaseRunner'
     extra_log_args = ['num_layers', 'num_heads', 'gamma', 'freq_rand', 'include_val']
 
     @staticmethod
@@ -46,6 +47,7 @@ class KDA(SequentialModel):
         return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
+        super().__init__(args, corpus)
         self.relation_num = corpus.n_relations
         self.entity_num = corpus.n_entities
         self.freq_x = corpus.freq_x
@@ -61,7 +63,8 @@ class KDA(SequentialModel):
         self.gamma = args.gamma
         if self.gamma < 0:
             self.gamma = len(corpus.relation_df) / len(corpus.all_df)
-        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.user_embeddings = nn.Embedding(self.user_num, self.emb_size)
@@ -193,7 +196,6 @@ class KDA(SequentialModel):
             if self.phase == 'train':
                 self.kg_data, self.neg_heads, self.neg_tails = None, None, None
 
-        def _prepare(self):
             # Prepare item-to-value dict
             item_val = self.corpus.item_meta_df.copy()
             item_val[self.corpus.item_relations] = 0  # set the value of natural item relations to None
@@ -204,13 +206,12 @@ class KDA(SequentialModel):
             self.item_val_dict = dict()
             for item, vals in zip(item_val['item_id'].values, item_vals.tolist()):
                 self.item_val_dict[item] = [0] + vals  # the first dimension None for the virtual relation
-            super()._prepare()
 
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             feed_dict['item_val'] = [self.item_val_dict[item] for item in feed_dict['item_id']]
             delta_t = self.data['time'][index] - feed_dict['history_times']
-            feed_dict['history_delta_t'] = DFTReader.norm_time(delta_t, self.corpus.t_scalar)
+            feed_dict['history_delta_t'] = KDAReader.norm_time(delta_t, self.corpus.t_scalar)
             if self.phase == 'train':
                 feed_dict['head_id'] = np.concatenate([[self.kg_data['head'][index]], self.neg_heads[index]])
                 feed_dict['tail_id'] = np.concatenate([[self.kg_data['tail'][index]], self.neg_tails[index]])

@@ -88,6 +88,7 @@ We have implemented the following methods (still updating):
 - [Learning over Knowledge-Base Embeddings for Recommendation](https://arxiv.org/pdf/1803.06540.pdf) (CFKG [SIGIR'18])
 - [LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation](https://dl.acm.org/doi/abs/10.1145/3397271.3401063?casa_token=mMzWDMq9WxQAAAAA%3AsUQEeXtBSLjctZa7qfyOO25nOBqdHWW8ukbjZUeOmcprZcmF3QBWKBtdICrMDidOy8MJ28n3Z1zy5g) (LightGCN [SIGIR'20])
 - [Bootstrapping User and Item Representations for One-Class Collaborative Filtering](https://arxiv.org/pdf/2105.06323) (BUIR [SIGIR'21])
+- [Towards Representation Alignment and Uniformity in Collaborative Filtering](https://arxiv.org/pdf/2206.12811.pdf) (DirectAU [KDD'22])
 
 **Sequential Recommender**
 
@@ -111,6 +112,7 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py)              | 0.3248 | 0.2235 | 3.4s      |            |           |            |
 | [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py)      | 0.3713 | 0.2577 | 6.1s      |            |           |            |
 | [BUIR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BUIR.py)              | 0.3639 | 0.2542 | 3.3s      |            |           |            |
+| [DirectAU](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/DirectAU.py)      | 0.3898 | 0.2755 | 3.3s      |            |           |            |
 | [FPMC](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/FPMC.py)           | 0.3618 | 0.2816 | 3.4s      | √          |           |            |
 | [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py)     | 0.3664 | 0.2597 | 4.9s      | √          |           |            |
 | [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py)           | 0.3621 | 0.2586 | 8.2s      | √          |           |            |
@@ -148,7 +150,7 @@ git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
 ```
 
-**Please cite either of these papers if you use our codes. Thanks!**
+**If you find ReChorus is helpful to your research, please cite either of the papers. Thanks!**
 
 ```
 @inproceedings{wang2020make,
