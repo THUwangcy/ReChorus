@@ -13,6 +13,8 @@ python main.py --model_name LightGCN --emb_size 64 --n_layers 3 --lr 1e-3 --l2 1
 
 python main.py --model_name BUIR --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset 'Grocery_and_Gourmet_Food'
 
+python main.py --model_name DirectAU --emb_size 64 --lr 1e-3 --l2 1e-5 --gamma 0.3 --epoch 500 --dataset 'Grocery_and_Gourmet_Food'
+
 python main.py --model_name FPMC --emb_size 64 --lr 1e-3 --l2 1e-6 --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
 
 python main.py --model_name GRU4Rec --emb_size 64 --hidden_size 100 --lr 1e-3 --l2 1e-4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food'

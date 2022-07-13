@@ -5,6 +5,7 @@ import sys
 import pickle
 import logging
 import argparse
+import pandas as pd
 import torch
 
 from helpers import *
@@ -76,9 +77,26 @@ def main():
         runner.train(data_dict)
     eval_res = runner.print_res(data_dict['test'])
     logging.info(os.linesep + 'Test After Training: ' + eval_res)
-
+    # save_rec_results(data_dict['dev'], runner, 100)
     model.actions_after_train()
     logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
+
+
+def save_rec_results(dataset, runner, topk):
+    result_path = os.path.join(args.path, args.dataset, 'rec-{}.csv'.format(init_args.model_name))
+    logging.info('Saving top-{} recommendation results to: {}'.format(topk, result_path))
+    predictions = runner.predict(dataset)  # n_users, n_candidates
+    users, rec_items = list(), list()
+    for i in range(len(dataset)):
+        info = dataset[i]
+        users.append(info['user_id'])
+        item_scores = zip(info['item_id'], predictions[i])
+        sorted_lst = sorted(item_scores, key=lambda x: x[1], reverse=True)[:topk]
+        rec_items.append([x[0] for x in sorted_lst])
+    rec_df = pd.DataFrame(columns=['user_id', 'rec_items'])
+    rec_df['user_id'] = users
+    rec_df['rec_items'] = rec_items
+    rec_df.to_csv(result_path, sep=args.sep, index=False)
 
 
 if __name__ == '__main__':
