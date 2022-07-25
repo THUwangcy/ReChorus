@@ -1,0 +1,10 @@
+
+## -------- BPRMF ---------- ##
+
+python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
+
+## -------- LightGCN ---------- ##
+python main.py --model_name LightGCN --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
+
+
+
