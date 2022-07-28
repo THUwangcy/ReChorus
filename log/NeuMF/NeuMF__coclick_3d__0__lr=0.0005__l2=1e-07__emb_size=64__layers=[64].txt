@@ -1,0 +1,78 @@
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 12:04:51 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_3d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 1         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 5         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Reading data from "../data/", dataset = "coclick_3d" 
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 12:04:58 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_3d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 1         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 5         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Reading data from "../data/", dataset = "coclick_3d" 
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 21:24:57 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_3d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 0         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 5         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Reading data from "../data/", dataset = "coclick_3d" 

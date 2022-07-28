@@ -4,7 +4,14 @@
 python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
 
 ## -------- LightGCN ---------- ##
-python main.py --model_name LightGCN --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
+python main.py --model_name LightGCN --emb_size 64 --n_layers 3 --lr 1e-3 --l2 1e-8 --dataset 'coclick_1d' --batch_size 100000 --gpu '0' --num_workers 8
 
+
+
+## NeuMF on coclick_3d ##
+python main.py --model_name NeuMF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'coclick_3d' --batch_size 500000 --gpu '0'
+
+## NeuMF on coclick_1d ##
+python main.py --model_name NeuMF --emb_size 64 --layers '[64]' --lr 5e-4 --l2 1e-7 --dropout 0.2 --dataset 'coclick_1d' --batch_size 500000 --gpu '0' --num_workers 8
 
 

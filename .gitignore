@@ -8,3 +8,8 @@ figure/
 doc/
 model/
 search.py
+data/coclick_1d
+data/coclick_3d
+data/dev.csv
+data/test.csv
+data/train.csv

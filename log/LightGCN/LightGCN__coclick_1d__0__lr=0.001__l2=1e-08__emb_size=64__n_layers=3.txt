@@ -1,0 +1,26 @@
+INFO:root:Namespace(model_name='LightGCN')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-26 02:12:09 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 100000    
+ dataset         | coclick_1d
+ dropout         | 0         
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 0         
+ l2              | 1e-08     
+ lr              | 0.001     
+ n_layers        | 3         
+ num_neg         | 1         
+ num_workers     | 8         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Load corpus from ../data/coclick_1d/BaseReader.pkl

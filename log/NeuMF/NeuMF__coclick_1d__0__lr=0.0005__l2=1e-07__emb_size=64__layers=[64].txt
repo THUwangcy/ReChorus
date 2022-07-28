@@ -1,0 +1,113 @@
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 21:25:34 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_1d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 0         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 5         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Reading data from "../data/", dataset = "coclick_1d" 
+INFO:root:Counting dataset statistics...
+INFO:root:"# user": 2635631, "# item": 2635631, "# entry": 15473378
+INFO:root:Save corpus to ../data/coclick_1d/BaseReader.pkl
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 21:26:20 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_1d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 0         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 8         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Load corpus from ../data/coclick_1d/BaseReader.pkl
+INFO:root:#params: 674730176
+INFO:root:NeuMF(
+  (mf_u_embeddings): Embedding(2635632, 64)
+  (mf_i_embeddings): Embedding(2635632, 64)
+  (mlp_u_embeddings): Embedding(2635632, 64)
+  (mlp_i_embeddings): Embedding(2635632, 64)
+  (mlp): ModuleList(
+    (0): Linear(in_features=128, out_features=64, bias=True)
+  )
+  (dropout_layer): Dropout(p=0.2)
+  (prediction): Linear(in_features=128, out_features=1, bias=False)
+)
+INFO:root:Optimizer: Adam
+INFO:root:Namespace(model_name='NeuMF')
+INFO:root:--------------------------------------------- BEGIN: 2022-07-25 21:49:39 ---------------------------------------------
+INFO:root:
+==============================
+ Arguments       | Values     
+==============================
+ batch_size      | 500000    
+ dataset         | coclick_1d
+ dropout         | 0.2       
+ early_stop      | 10        
+ emb_size        | 64        
+ epoch           | 200       
+ eval_batch_size | 256       
+ gpu             | 0         
+ l2              | 1e-07     
+ layers          | [64]      
+ lr              | 0.0005    
+ num_neg         | 1         
+ num_workers     | 8         
+ optimizer       | Adam      
+ random_seed     | 0         
+ test_all        | 0         
+ topk            | 5,10,20,50
+==============================
+INFO:root:Device: cuda
+INFO:root:Load corpus from ../data/coclick_1d/BaseReader.pkl
+INFO:root:#params: 674730176
+INFO:root:NeuMF(
+  (mf_u_embeddings): Embedding(2635632, 64)
+  (mf_i_embeddings): Embedding(2635632, 64)
+  (mlp_u_embeddings): Embedding(2635632, 64)
+  (mlp_i_embeddings): Embedding(2635632, 64)
+  (mlp): ModuleList(
+    (0): Linear(in_features=128, out_features=64, bias=True)
+  )
+  (dropout_layer): Dropout(p=0.2, inplace=False)
+  (prediction): Linear(in_features=128, out_features=1, bias=False)
+)
+INFO:root:Optimizer: Adam
+INFO:root:Epoch 1     loss=0.6927 [28.9 s]    dev=(HR@5:0.8038,NDCG@5:0.6772) [1.2 s] *
+INFO:root:Epoch 2     loss=0.6831 [26.0 s]    dev=(HR@5:0.8729,NDCG@5:0.7480) [1.2 s] *
+INFO:root:Epoch 3     loss=0.6288 [26.2 s]    dev=(HR@5:0.8858,NDCG@5:0.7568) [1.2 s] *
+INFO:root:Early stop manually
+INFO:root:
+--------------------------------------------- END: 2022-07-25 21:52:17 ---------------------------------------------
