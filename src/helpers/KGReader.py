@@ -8,16 +8,16 @@ import numpy as np
 import pandas as pd
 
 
-from helpers.BaseReader import BaseReader
+from helpers.SeqReader import SeqReader
 from utils import utils
 
 
-class KGReader(BaseReader):
+class KGReader(SeqReader):
     @staticmethod
     def parse_data_args(parser):
         parser.add_argument('--include_attr', type=int, default=0,
                             help='Whether include attribute-based relations.')
-        return BaseReader.parse_data_args(parser)
+        return SeqReader.parse_data_args(parser)
 
     def __init__(self, args):
         super().__init__(args)
