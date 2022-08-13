@@ -1,12 +1,10 @@
 # TiMiRec
 
-![model](/Users/wangcy/Documents/Projects/ReChorus/log/_static/model.png)
+![model](./log/_static/model.png)
 
 This is our public implementation for the paper:
 
 *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. Target-Interest Distillation for Multi-Interest Recommendation. In CIKM'22.*
-
-
 
 ### Getting Started
 
@@ -59,15 +57,11 @@ The main arguments of TiMiRec are listed below.
 
 Commands to reproduce the results can be found in [run.sh](https://github.com/THUwangcy/ReChorus/blob/CIKM22/src/run.sh).
 
-
-
 ## Citation
 
 ```
 TBD
 ```
-
-
 
 ## Contact
 
