@@ -7,12 +7,10 @@ Reference:
     "Target Interest Distillation for Multi-Interest Recommendation"
     Wang et al., CIKM'2022.
 CMD example:
-    python main.py --model_name TiMiRec --dataset Grocery_and_Gourmet_Food \
-                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 4 \
-                   --add_pos 1 --add_trm 1 --stage pretrain
-    python main.py --model_name TiMiRec --dataset Grocery_and_Gourmet_Food \
-                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 4 \
-                   --add_pos 1 --add_trm 1 --stage finetune --temp 1 --n_layers 1
+    python main.py --model_name TiMiRec --dataset ml-1m --lr 1e-4 --l2 1e-6 --history_max 20 \
+                   --K 2 --add_pos 1 --add_trm 1 --stage pretrain
+    python main.py --model_name TiMiRec --dataset ml-1m --lr 1e-4 --l2 1e-6 --history_max 20 \
+                   --K 2 --add_pos 1 --add_trm 1 --stage finetune --check_epoch 10 --temp 0.5 --n_layers 2
 """
 
 import os
