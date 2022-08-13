@@ -12,7 +12,7 @@ from utils import layers
 
 
 class S3Rec(SequentialModel):
-    reader = 'BaseReader'
+    reader = 'SeqReader'
     runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'mip_weight', 'sp_weight', 'mask_ratio', 'stage']
 

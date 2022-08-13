@@ -10,7 +10,7 @@ from models.BaseModel import SequentialModel
 
 
 class SRGNN(SequentialModel):
-    reader = 'BaseReader'
+    reader = 'SeqReader'
     runner = 'BaseRunner'
     extra_log_args = ['num_layers']
 
@@ -27,7 +27,9 @@ class SRGNN(SequentialModel):
         self.emb_size = args.emb_size
         self.num_layers = args.num_layers
         self._define_params()
-        self.apply(self.init_weights)
+        std = 1.0 / np.sqrt(self.emb_size)
+        for weight in self.parameters():
+            weight.data.uniform_(-std, std)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size, padding_idx=0)
@@ -36,11 +38,6 @@ class SRGNN(SequentialModel):
         self.linear3 = nn.Linear(self.emb_size, 1, bias=False)
         self.linear_transform = nn.Linear(self.emb_size * 2, self.emb_size, bias=True)
         self.gnn = GNN(self.emb_size, self.num_layers)
-
-    def actions_before_train(self):
-        std = 1.0 / np.sqrt(self.emb_size)
-        for weight in self.parameters():
-            weight.data.uniform_(-std, std)
 
     def _get_slice(self, item_seq):
         items, n_node, A, alias_inputs = [], [], [], []

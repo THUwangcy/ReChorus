@@ -10,7 +10,7 @@ from utils import layers
 
 
 class CLRec(SequentialModel):
-    reader = 'BaseReader'
+    reader = 'SeqReader'
     runner = 'BaseRunner'
     extra_log_args = ['batch_size', 'temp']
 

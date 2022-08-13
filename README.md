@@ -102,7 +102,7 @@ We have implemented the following methods (still updating):
 - [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf) (Chorus [SIGIR'20])
 - [Controllable Multi-Interest Framework for Recommendation](https://dl.acm.org/doi/pdf/10.1145/3394486.3403344?casa_token=r35exDCLzSsAAAAA:hbdvRtwvH7LlbllHH7gITV_mpA5hYnAFXcpT2bW8MnbK7Gta50E60xNhC6KoQtY6AGOHaEVsK_GRVQ) (ComiRec [KDD'20])
 - [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://chenchongthu.github.io/files/TOIS-KDA-wcy.pdf) (KDA [TOIS'21])
-- [Sequential Recommendation with Multiple Contrast Signals]() (ContraRec [TOIS'22])
+- [Sequential Recommendation with Multiple Contrast Signals](https://dl.acm.org/doi/pdf/10.1145/3522673) (ContraRec [TOIS'22])
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (151.3k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item (also support ranking over all the items with `--test_all 1`).
 
@@ -130,27 +130,7 @@ For fair comparison, the embedding size is set to 64. We strive to tune all the 
 
 ## Citation
 
-This is also our public implementation for the following papers (codes and datasets to reproduce the results can be found at corresponding branch):
-
-* *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
-
-```bash
-git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
-```
-
-* *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://chenchongthu.github.io/files/TOIS-KDA-wcy.pdf). In TOIS'21.*
-
-```bash
-git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
-```
-
-- *Chenyang Wang, Weizhi Ma, Chong, Chen, Min Zhang, Yiqun Liu, and Shaoping Ma. [Sequential Recommendation with Multiple Contrast Signals](). In TOIS'22.*
-
-```bash
-git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
-```
-
-**If you find ReChorus is helpful to your research, please cite either of the papers. Thanks!**
+**If you find ReChorus is helpful to your research, please cite either of the following papers. Thanks!**
 
 ```
 @inproceedings{wang2020make,
@@ -169,6 +149,26 @@ git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
   pages={0--0},
   year={2021}
 }
+```
+
+This is also our public implementation for the following papers (codes and datasets to reproduce the results can be found at corresponding branch):
+
+- *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
+
+```bash
+git clone -b SIGIR20 https://github.com/THUwangcy/ReChorus.git
+```
+
+- *Chenyang Wang, Weizhi Ma, Min Zhang, Chong Chen, Yiqun Liu, and Shaoping Ma. [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://chenchongthu.github.io/files/TOIS-KDA-wcy.pdf). In TOIS'21.*
+
+```bash
+git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
+```
+
+- *Chenyang Wang, Weizhi Ma, Chong, Chen, Min Zhang, Yiqun Liu, and Shaoping Ma. [Sequential Recommendation with Multiple Contrast Signals](https://dl.acm.org/doi/pdf/10.1145/3522673). In TOIS'22.*
+
+```bash
+git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
 ```
 
 ## Contact

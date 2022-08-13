@@ -66,6 +66,12 @@ class KDA(SequentialModel):
         self._define_params()
         self.apply(self.init_weights)
 
+        if not self.freq_rand:
+            dft_freq_real = torch.tensor(np.real(self.freq_x))  # R * n_freq
+            dft_freq_imag = torch.tensor(np.imag(self.freq_x))
+            self.relational_dynamic_aggregation.freq_real.weight.data.copy_(dft_freq_real)
+            self.relational_dynamic_aggregation.freq_imag.weight.data.copy_(dft_freq_imag)
+
     def _define_params(self):
         self.user_embeddings = nn.Embedding(self.user_num, self.emb_size)
         self.entity_embeddings = nn.Embedding(self.entity_num, self.emb_size)
@@ -86,13 +92,6 @@ class KDA(SequentialModel):
             self.A_out = nn.Linear(self.attention_size, 1, bias=False)
         # Prediction
         self.item_bias = nn.Embedding(self.item_num, 1)
-
-    def actions_before_train(self):
-        if not self.freq_rand:
-            dft_freq_real = torch.tensor(np.real(self.freq_x))  # R * n_freq
-            dft_freq_imag = torch.tensor(np.imag(self.freq_x))
-            self.relational_dynamic_aggregation.freq_real.weight.data.copy_(dft_freq_real)
-            self.relational_dynamic_aggregation.freq_imag.weight.data.copy_(dft_freq_imag)
 
     def forward(self, feed_dict):
         self.check_list = []

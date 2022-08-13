@@ -10,7 +10,7 @@ from helpers.KDAReader import KDAReader
 
 
 class FourierTA(SequentialModel):
-    reader = 'BaseReader'
+    reader = 'SeqReader'
     runner = 'BaseRunner'
     extra_log_args = ['t_scalar']
 

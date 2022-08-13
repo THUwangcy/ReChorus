@@ -7,7 +7,7 @@ Reference:
     "Towards Representation Alignment and Uniformity in Collaborative Filtering"
     Wang et al., KDD'2022.
 CMD example:
-    python main.py --model_name DirectAU  --dataset 'Grocery_and_Gourmet_Food' \
+    python main.py --model_name DirectAU --dataset Grocery_and_Gourmet_Food \
                    --emb_size 64 --lr 1e-3 --l2 1e-6 --epoch 500 --gamma 0.3
 """
 

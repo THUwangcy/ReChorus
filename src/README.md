@@ -27,6 +27,11 @@ class NewModel(GeneralModel):
     reader = 'BaseReader'  # assign a reader class, BaseReader by default
     runner = 'BaseRunner'  # assign a runner class, BaseRunner by default
 
+    def __init__(self, args, corpus):
+        super().__init__(args, corpus)
+        self._define_params()
+        self.apply(self.init_weights)
+
     def _define_params(self):
         # define parameters in the model
 
