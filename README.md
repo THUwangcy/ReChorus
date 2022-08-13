@@ -4,7 +4,7 @@
 
 This is our public implementation for the paper:
 
-*Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. Target-Interest Distillation for Multi-Interest Recommendation. In CIKM'22.*
+*Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target-Interest Distillation for Multi-Interest Recommendation](). In CIKM'22.*
 
 ### Getting Started
 
