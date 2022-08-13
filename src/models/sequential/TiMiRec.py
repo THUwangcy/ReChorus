@@ -70,11 +70,10 @@ class TiMiRec(SequentialModel):
         if self.stage == 'pretrain':
             self.model_path = self.extractor_path
         elif self.stage == 'finetune':
-            # if os.path.exists(self.extractor_path):
-            #     self.load_model(self.extractor_path)
-            # else:
-            #     logging.info('Train from scratch!')
-            logging.info('Train from scratch!')
+            if os.path.exists(self.extractor_path):
+                self.load_model(self.extractor_path)
+            else:
+                logging.info('Train from scratch!')
         else:
             raise ValueError('Invalid stage: ' + self.stage)
 
@@ -148,12 +147,11 @@ class TiMiRec(SequentialModel):
         if self.stage == 'pretrain':  # pretrain
             loss = super().loss(out_dict)
         else:  # finetune
-            # pred_intent = out_dict['pred_intent'] / self.temp
-            # target_intent = out_dict['target_intent'].detach() / self.temp
-            # kl_criterion = nn.KLDivLoss(reduction='batchmean')
-            # loss = kl_criterion(F.log_softmax(pred_intent, dim=1), F.softmax(target_intent, dim=1))
-            # loss = super().loss(out_dict) + self.temp * self.temp * loss
-            loss = super().loss(out_dict)
+            pred_intent = out_dict['pred_intent'] / self.temp
+            target_intent = out_dict['target_intent'].detach() / self.temp
+            kl_criterion = nn.KLDivLoss(reduction='batchmean')
+            loss = kl_criterion(F.log_softmax(pred_intent, dim=1), F.softmax(target_intent, dim=1))
+            loss = super().loss(out_dict) + self.temp * self.temp * loss
         return loss
 
 
