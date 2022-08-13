@@ -4,9 +4,7 @@
 
 This is our public implementation for the paper:
 
-*Chenyang Wang, Weizhi Ma, Chong Chen, Min Zhang, Yiqun Liu, and Shaoping Ma. [Sequential Recommendation with Multiple Contrast Signals](). In TOIS'22.*
-
-**Please cite this paper if you use our codes. Thanks!**
+*Chenyang Wang, Weizhi Ma, Chong Chen, Min Zhang, Yiqun Liu, and Shaoping Ma. [Sequential Recommendation with Multiple Contrast Signals](https://dl.acm.org/doi/pdf/10.1145/3522673). In TOIS'22.*
 
 ### Getting Started
 
@@ -63,6 +61,20 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [NARM](https://github.com/THUwangcy/ReChorus/tree/TOIS22/src/models/sequential/NARM.py)           | 0.3621     | 0.2586     | 8.2s      | √          |
 | [SASRec](https://github.com/THUwangcy/ReChorus/tree/TOIS22/src/models/sequential/SASRec.py)       | 0.3888     | 0.2923     | 7.2s      | √          |
 | [ContraRec](https://github.com/THUwangcy/ReChorus/tree/TOIS22/src/models/sequential/ContraRec.py) | **0.4269** | **0.3290** | 5.6s      | √          |
+
+## Citation
+
+```
+@article{wang2022sequential,
+  title={Sequential Recommendation with Multiple Contrast Signals},
+  author={Wang, Chenyang and Ma, Weizhi and Chen, Chong},
+  journal={ACM Transactions on Information Systems (TOIS)},
+  year={2022},
+  publisher={ACM New York, NY}
+}
+```
+
+
 
 ## Contact
 
