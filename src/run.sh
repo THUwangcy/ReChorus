@@ -37,3 +37,6 @@ python main.py --model_name ComiRec --emb_size 64 --lr 1e-3 --l2 1e-6 --attn_siz
 python main.py --model_name KDA --emb_size 64 --include_attr 1 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --dataset 'Grocery_and_Gourmet_Food'
 
 python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --encoder BERT4Rec --gamma 1 --temp 0.2 --batch_size 4096 --dataset 'Grocery_and_Gourmet_Food'
+
+python main.py --model_name TiMiRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 --add_pos 1 --add_trm 1 --stage pretrain --dataset 'Grocery_and_Gourmet_Food'
+python main.py --model_name TiMiRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 --add_pos 1 --add_trm 1 --stage finetune --temp 1 --n_layers 1 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food'

@@ -103,11 +103,13 @@ We have implemented the following methods (still updating):
 - [Controllable Multi-Interest Framework for Recommendation](https://dl.acm.org/doi/pdf/10.1145/3394486.3403344?casa_token=r35exDCLzSsAAAAA:hbdvRtwvH7LlbllHH7gITV_mpA5hYnAFXcpT2bW8MnbK7Gta50E60xNhC6KoQtY6AGOHaEVsK_GRVQ) (ComiRec [KDD'20])
 - [Towards Dynamic User Intention: Temporal Evolutionary Effects of Item Relations in Sequential Recommendation](https://chenchongthu.github.io/files/TOIS-KDA-wcy.pdf) (KDA [TOIS'21])
 - [Sequential Recommendation with Multiple Contrast Signals](https://dl.acm.org/doi/pdf/10.1145/3522673) (ContraRec [TOIS'22])
+- [Target Interest Distillation for Multi-Interest Recommendation]() (TiMiRec [CIKM'22])
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (151.3k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item (also support ranking over all the items with `--test_all 1`).
 
 | Model                                                                                             | HR@5   | NDCG@5 | Time/iter | Sequential | Knowledge | Time-aware |
 |:------------------------------------------------------------------------------------------------- |:------:|:------:|:---------:|:----------:|:---------:|:----------:|
+| [MostPop](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/POP.py)            | 0.2065 | 0.1301 | -         |            |           |            |
 | [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py)              | 0.3574 | 0.2480 | 2.5s      |            |           |            |
 | [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py)              | 0.3248 | 0.2235 | 3.4s      |            |           |            |
 | [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py)      | 0.3713 | 0.2577 | 6.1s      |            |           |            |
@@ -115,12 +117,13 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [DirectAU](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/DirectAU.py)      | 0.3898 | 0.2755 | 3.3s      |            |           |            |
 | [FPMC](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/FPMC.py)           | 0.3618 | 0.2816 | 3.4s      | √          |           |            |
 | [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py)     | 0.3664 | 0.2597 | 4.9s      | √          |           |            |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py)           | 0.3621 | 0.2586 | 8.2s      | √          |           |            |
+| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py)           | 0.3621 | 0.2586 | 7.5s      | √          |           |            |
 | [Caser](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Caser.py)         | 0.3576 | 0.2518 | 7.8s      | √          |           |            |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py)       | 0.3888 | 0.2923 | 7.2s      | √          |           |            |
-| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py)     | 0.3763 | 0.2694 | 5.1s      | √          |           |            |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py)       | 0.3888 | 0.2923 | 5.5s      | √          |           |            |
+| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py)     | 0.3763 | 0.2694 | 4.5s      | √          |           |            |
+| [TiMiRec+]((https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiMiRec.py)   | 0.4063 | 0.3087 | 8.8s      | √          |           |            |
 | [ContraRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraRec.py) | 0.4269 | 0.3290 | 5.6s      | √          |           |            |
-| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py)   | 0.3916 | 0.2922 | 35.7s     | √          |           | √          |
+| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py)   | 0.3916 | 0.2922 | 7.6s      | √          |           | √          |
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py)              | 0.4228 | 0.3010 | 8.7s      |            | √         |            |
 | [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py)      | 0.4514 | 0.3329 | 4.3s      | √          | √         | √          |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py)       | 0.4739 | 0.3443 | 4.9s      | √          | √         | √          |
@@ -169,6 +172,12 @@ git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 
 ```bash
 git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
+```
+
+- *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target Interest Distillation for Multi-Interest Recommendation](). In CIKM'22.*
+
+```bash
+git clone -b CIKM22 https://github.com/THUwangcy/ReChorus.git
 ```
 
 ## Contact

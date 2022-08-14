@@ -15,7 +15,7 @@ from models.BaseModel import BaseModel
 from helpers.BaseRunner import BaseRunner
 
 
-class MoRunner(BaseRunner):
+class BUIRRunner(BaseRunner):
     def fit(self, dataset: BaseModel.Dataset, epoch=-1) -> float:
         model = dataset.model
         if model.optimizer is None:

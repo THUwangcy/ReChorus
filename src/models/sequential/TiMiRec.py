@@ -8,10 +8,10 @@ Reference:
     Wang et al., CIKM'2022.
 CMD example:
     python main.py --model_name TiMiRec --dataset Grocery_and_Gourmet_Food \
-                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 4 \
+                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 \
                    --add_pos 1 --add_trm 1 --stage pretrain
     python main.py --model_name TiMiRec --dataset Grocery_and_Gourmet_Food \
-                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 4 \
+                   --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 \
                    --add_pos 1 --add_trm 1 --stage finetune --temp 1 --n_layers 1
 """
 
