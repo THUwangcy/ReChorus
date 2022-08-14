@@ -121,7 +121,7 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [Caser](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Caser.py)         | 0.3576 | 0.2518 | 7.8s      | √          |           |            |
 | [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py)       | 0.3888 | 0.2923 | 5.5s      | √          |           |            |
 | [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py)     | 0.3763 | 0.2694 | 4.5s      | √          |           |            |
-| [TiMiRec+]((https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiMiRec.py)   | 0.4063 | 0.3087 | 8.8s      | √          |           |            |
+| [TiMiRec+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiMiRec.py)    | 0.4063 | 0.3087 | 8.8s      | √          |           |            |
 | [ContraRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraRec.py) | 0.4269 | 0.3290 | 5.6s      | √          |           |            |
 | [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py)   | 0.3916 | 0.2922 | 7.6s      | √          |           | √          |
 | [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py)              | 0.4228 | 0.3010 | 8.7s      |            | √         |            |
