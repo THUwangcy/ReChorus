@@ -15,32 +15,44 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from models.sequential.SASRec import SASRec
+from models.BaseModel import SequentialModel
 
 
-class TiSASRec(SASRec):
+class TiSASRec(SequentialModel):
     reader = 'SeqReader'
     runner = 'BaseRunner'
     extra_log_args = ['emb_size', 'num_layers', 'num_heads', 'time_max']
 
     @staticmethod
     def parse_model_args(parser):
+        parser.add_argument('--emb_size', type=int, default=64,
+                            help='Size of embedding vectors.')
+        parser.add_argument('--num_layers', type=int, default=1,
+                            help='Number of self-attention layers.')
+        parser.add_argument('--num_heads', type=int, default=4,
+                            help='Number of attention heads.')
         parser.add_argument('--time_max', type=int, default=512,
                             help='Max time intervals.')
-        return SASRec.parse_model_args(parser)
+        return SequentialModel.parse_model_args(parser)
 
     def __init__(self, args, corpus):
         super().__init__(args, corpus)
+        self.emb_size = args.emb_size
+        self.max_his = args.history_max
+        self.num_layers = args.num_layers
+        self.num_heads = args.num_heads
         self.max_time = args.time_max
-        self._define_params()
-        self.apply(self.init_weights)
+        self.len_range = torch.from_numpy(np.arange(self.max_his)).to(self.device)
 
-        setattr(corpus, 'user_min_interval', dict())
+        self.user_min_interval = dict()
         for u, user_df in corpus.all_df.groupby('user_id'):
             time_seqs = user_df['time'].values
             interval_matrix = np.abs(time_seqs[:, None] - time_seqs[None, :])
             min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFF)
-            corpus.user_min_interval[u] = min_interval
+            self.user_min_interval[u] = min_interval
+
+        self._define_params()
+        self.apply(self.init_weights)
 
     def _define_params(self):
         self.i_embeddings = nn.Embedding(self.item_num, self.emb_size)
@@ -94,11 +106,11 @@ class TiSASRec(SASRec):
         prediction = (his_vector[:, None, :] * i_vectors).sum(-1)
         return {'prediction': prediction.view(batch_size, -1)}
 
-    class Dataset(SASRec.Dataset):
+    class Dataset(SequentialModel.Dataset):
         def _get_feed_dict(self, index):
             feed_dict = super()._get_feed_dict(index)
             user_id = self.data['user_id'][index]
-            min_interval = self.corpus.user_min_interval[user_id]
+            min_interval = self.model.user_min_interval[user_id]
             feed_dict['user_min_intervals'] = min_interval
             return feed_dict
 
