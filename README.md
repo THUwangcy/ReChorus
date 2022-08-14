@@ -63,17 +63,19 @@ We use the public [Amazon dataset](http://jmcauley.ucsd.edu/data/amazon/links.h
 
 The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (145.8k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item.
 
-| Model                                                                                           | HR@5   | NDCG@5 | Time/iter | Sequential | Transformer |
-| ----------------------------------------------------------------------------------------------- | ------ | ------ | --------- | ---------- | ----------- |
-| [BPR](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/general/BPR.py)              | 0.3574 | 0.2480 | 2.5s      |            |             |
-| [LightGCN](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/general/LightGCN.py)    | 0.3713 | 0.2577 | 6.1s      |            |             |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/GRU4Rec.py)   | 0.3664 | 0.2597 | 4.9s      | √          |             |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/SASRec.py)     | 0.3888 | 0.2923 | 7.2s      | √          | √           |
-| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiSASRec.py) | 0.3916 | 0.2922 | 7.6s      | √          | √           |
-| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/ComiRec.py)   | 0.3763 | 0.2694 | 4.5s      | √          |             |
-| [ComiRec+](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)  |        |        |           | √          | √           |
-| [TiMiRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)   |        |        |           | √          |             |
-| [TiMiRec+](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)  | 0.4063 | 0.3087 | 8.8s      | √          | √           |
+| Model                                                                                           | HR@5       | NDCG@5     | Time/iter | Sequential | Transformer |
+| ----------------------------------------------------------------------------------------------- | ---------- | ---------- | --------- | ---------- | ----------- |
+| [BPR](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/general/BPR.py)              | 0.3574     | 0.2480     | 2.5s      |            |             |
+| [LightGCN](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/general/LightGCN.py)    | 0.3713     | 0.2577     | 6.1s      |            |             |
+| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/GRU4Rec.py)   | 0.3664     | 0.2597     | 4.9s      | √          |             |
+| [YouTube](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/YouTube.py)   | 0.3643     | 0.2601     | 2.9s      | √          |             |
+| [MIND](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/MIND.py)         | 0.3935     | 0.2803     | 4.5s      | √          |             |
+| [SASRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/SASRec.py)     | 0.3888     | 0.2923     | 7.2s      | √          | √           |
+| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiSASRec.py) | 0.3916     | 0.2922     | 7.6s      | √          | √           |
+| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/ComiRec.py)   | 0.3763     | 0.2694     | 4.5s      | √          |             |
+| [ComiRec+](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)  | 0.3904     | 0.2909     | 7.1s      | √          | √           |
+| [TiMiRec](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)   | 0.4020     | 0.2922     | 6.4s      | √          |             |
+| [TiMiRec+](https://github.com/THUwangcy/ReChorus/tree/CIKM22/src/models/sequential/TiMiRec.py)  | **0.4063** | **0.3087** | 8.8s      | √          | √           |
 
 ## Citation
 
