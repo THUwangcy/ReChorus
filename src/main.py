@@ -87,15 +87,18 @@ def save_rec_results(dataset, runner, topk):
     logging.info('Saving top-{} recommendation results to: {}'.format(topk, result_path))
     predictions = runner.predict(dataset)  # n_users, n_candidates
     sort_idx = (-predictions).argsort(axis=1)
-    users, rec_items = list(), list()
+    # sort_idx = runner.pred_sort(dataset, predictions)
+    users, rec_items, pred_scores = list(), list(), list()
     for i in range(len(dataset)):
         candidates = dataset[i]['item_id']
         sort_lst = sort_idx[i][:topk]
         users.append(dataset[i]['user_id'])
         rec_items.append([candidates[idx] for idx in sort_lst])
-    rec_df = pd.DataFrame(columns=['user_id', 'rec_items'])
+        pred_scores.append([predictions[i][idx] for idx in sort_lst])
+    rec_df = pd.DataFrame(columns=['user_id', 'rec_items', 'pred_scores'])
     rec_df['user_id'] = users
     rec_df['rec_items'] = rec_items
+    rec_df['pred_scores'] = pred_scores
     rec_df.to_csv(result_path, sep=args.sep, index=False)
 
 

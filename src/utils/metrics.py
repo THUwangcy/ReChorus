@@ -7,7 +7,7 @@ from collections import Counter
 
 def hr_(hit, target_items, item_set):
     idx = np.in1d(target_items, list(item_set))
-    return hit[idx].mean()
+    return hit[idx]
 
 def ndcg_(hit, gt_rank, target_items, item_set):
     idx = np.in1d(target_items, list(item_set))
@@ -21,7 +21,13 @@ def coverage_(rec_items, item_set, n_items):
 def ratio_(rec_items, item_set):
     items = np.concatenate(rec_items)
     idx = np.in1d(items, list(item_set))
-    return idx.sum() / len(items)
+    # return idx.sum() / len(items)
+    test_num, k = rec_items.shape
+    coef = [1 / np.log2(pos + 2) for pos in range(k)]
+    coef = np.array([coef] * test_num)
+    coef = coef / coef.sum(1, keepdims=True)
+    coef = np.concatenate(coef)
+    return (idx * coef).sum() / test_num
 
 def gini_index_(rec_items, item_set):
     item_idx = np.in1d(rec_items.flatten(), list(item_set))

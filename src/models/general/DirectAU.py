@@ -19,8 +19,8 @@ from models.BaseModel import GeneralModel
 
 
 class DirectAU(GeneralModel):
-    reader = 'BaseReader'
-    runner = 'BaseRunner'
+    reader = 'GuideReader'
+    runner = 'GuideRunner'
     extra_log_args = ['emb_size', 'gamma']
 
     @staticmethod
