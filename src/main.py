@@ -50,26 +50,26 @@ def main():
     logging.info('Device: {}'.format(args.device))
 
     # Read data
-    corpus_path = os.path.join(args.path, args.dataset, model_name.reader + '.pkl')
+    corpus_path = os.path.join(args.path, args.dataset, reader_name + '.pkl')
     if not args.regenerate and os.path.exists(corpus_path):
         logging.info('Load corpus from {}'.format(corpus_path))
         corpus = pickle.load(open(corpus_path, 'rb'))
     else:
-        corpus = reader_name(args)
+        corpus = reader_class(args)
         logging.info('Save corpus to {}'.format(corpus_path))
         pickle.dump(corpus, open(corpus_path, 'wb'))
 
     # Define model
-    model = model_name(args, corpus).to(args.device)
+    model = model_class(args, corpus).to(args.device)
     logging.info('#params: {}'.format(model.count_variables()))
     logging.info(model)
 
     # Run model
     data_dict = dict()
     for phase in ['train', 'dev', 'test']:
-        data_dict[phase] = model_name.Dataset(model, corpus, phase)
+        data_dict[phase] = model_class.Dataset(model, corpus, phase)
         data_dict[phase].prepare()
-    runner = runner_name(args)
+    runner = runner_class(args)
     # logging.info('Test Before Training: ' + runner.print_res(data_dict['test']))
     if args.load > 0:
         model.load_model()
@@ -77,7 +77,7 @@ def main():
         runner.train(data_dict)
     eval_res = runner.print_res(data_dict['test'])
     logging.info(os.linesep + 'Test After Training: ' + eval_res)
-    save_rec_results(data_dict['test'], runner, 100)
+    # save_rec_results(data_dict['test'], runner, 100)
     model.actions_after_train()
     logging.info(os.linesep + '-' * 45 + ' END: ' + utils.get_time() + ' ' + '-' * 45)
 
@@ -105,22 +105,26 @@ def save_rec_results(dataset, runner, topk):
 if __name__ == '__main__':
     init_parser = argparse.ArgumentParser(description='Model')
     init_parser.add_argument('--model_name', type=str, default='BPRMF', help='Choose a model to run.')
+    init_parser.add_argument('--reader_name', type=str, default=None, help='Choose a reader object.')
+    init_parser.add_argument('--runner_name', type=str, default=None, help='Choose a runner object.')
     init_args, init_extras = init_parser.parse_known_args()
-    model_name = eval('{0}.{0}'.format(init_args.model_name))
-    reader_name = eval('{0}.{0}'.format(model_name.reader))  # model chooses the reader
-    runner_name = eval('{0}.{0}'.format(model_name.runner))  # model chooses the runner
+    model_class = eval('{0}.{0}'.format(init_args.model_name))
+    reader_name = model_class.reader if init_args.reader_name is None else init_args.reader_name
+    reader_class = eval('{0}.{0}'.format(reader_name))
+    runner_name = model_class.runner if init_args.runner_name is None else init_args.runner_name
+    runner_class = eval('{0}.{0}'.format(runner_name))
 
     # Args
     parser = argparse.ArgumentParser(description='')
     parser = parse_global_args(parser)
-    parser = reader_name.parse_data_args(parser)
-    parser = runner_name.parse_runner_args(parser)
-    parser = model_name.parse_model_args(parser)
+    parser = reader_class.parse_data_args(parser)
+    parser = runner_class.parse_runner_args(parser)
+    parser = model_class.parse_model_args(parser)
     args, extras = parser.parse_known_args()
 
     # Logging configuration
     log_args = [init_args.model_name, args.dataset, str(args.random_seed)]
-    for arg in ['lr', 'l2'] + model_name.extra_log_args:
+    for arg in ['lr', 'l2'] + model_class.extra_log_args:
         log_args.append(arg + '=' + str(eval('args.' + arg)))
     log_file_name = '__'.join(log_args).replace(' ', '__')
     if args.log_file == '':
