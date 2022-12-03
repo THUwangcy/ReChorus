@@ -14,9 +14,8 @@ def ndcg_(hit, gt_rank, target_items, item_set):
     ndcg = (hit[idx] / np.log2(gt_rank[idx] + 1))
     return ndcg
 
-def coverage_(rec_items, item_set, n_items):
+def coverage_(rec_items, item_set):
     return len(set(np.concatenate(rec_items)) & item_set) / len(item_set)
-    # return len(set(np.concatenate(rec_items)) & item_set) / n_items
 
 def ratio_(rec_items, item_set):
     items = np.concatenate(rec_items)
