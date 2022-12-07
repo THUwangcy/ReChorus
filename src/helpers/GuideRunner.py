@@ -72,13 +72,13 @@ class GuideRunner(BaseRunner):
                     ndcg_lst = ndcg_(hit, gt_rank, target_items, all_item)
                     evaluations[key] = ndcg_lst.mean()
 
-                    eval_key = 'CV@{}'.format(k)
+                    eval_key = 'REO@{}'.format(k)
                     group_ndcg = list()
                     for quality in range(int(target_quality.max()) + 1):
                         group_ndcg.append(ndcg_lst[target_quality == quality].mean())
                     evaluations[eval_key] = np.std(group_ndcg) / np.mean(group_ndcg)
 
-                    eval_key = 'u-CV@{}'.format(k)
+                    eval_key = 'CV@{}'.format(k)
                     evaluations[eval_key] = np.std(ndcg_lst) / np.mean(ndcg_lst)
 
                     eval_key = '{}_HQI@{}'.format(metric, k)

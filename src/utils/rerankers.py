@@ -269,35 +269,39 @@ def per(dataset, predictions, max_topk, policy='par', personal=True, lambda_=0.5
             user_target_exp = self.target_exp[idx] * np.sum(self.pos_weight)
             cur_exp = np.zeros(self.quality_level, dtype=np.float)
 
+            # 1. fill in the positions with slack
             for pos in range(max_topk):  # for each position to be recommended
+                for k in self.sort_idx[idx]:
+                    quality = quality_sign[k]
+                    assume_exp = cur_exp[quality] + self.pos_weight[pos]
+                    if assume_exp <= user_target_exp[quality] and candidates[k] not in selected:
+                        cur_exp[quality] = assume_exp
+                        selected.add(candidates[k])
+                        rec_lst[pos] = k
+                        tmp_pred[k] = -np.inf
+                        break
 
-                # 1. determine the possible quality to be placed
-                possible_quality = set()
-                for q in range(self.quality_level):
-                    if cur_exp[q] + self.pos_weight[pos] <= user_target_exp[q]:
-                        possible_quality.add(q)
-                if len(possible_quality) == 0:  # all the quality exceed the target exposure
+            # 2. fill in the blanks with MMR
+            for pos in range(max_topk):
+                if rec_lst[pos] == -1:  # all the quality exceed the target exposure
                     quality_score = np.ones(self.quality_level) * -1  # score of top-item for each quality
-                    for k in self.sort_idx[idx]:
+                    item_idx = np.ones(self.quality_level) * -1
+                    for r, k in enumerate(self.sort_idx[idx]):
                         q = quality_sign[k]
                         if quality_score[q] == -1 and candidates[k] not in selected:
                             assume_exp = cur_exp.copy()
                             assume_exp[q] += self.pos_weight[pos]
                             disparity = ((assume_exp - user_target_exp) ** 2).sum() / 2
-                            quality_score[q] = lambda_ * (1. / (k + 1)) - (1 - lambda_) * disparity
+                            quality_score[q] = lambda_ * (1. / (r + 1)) - (1 - lambda_) * disparity
+                            item_idx[q] = k
                             if (quality_score < 0).sum() == 0:
                                 break
-                    possible_quality.add(np.argmax(quality_score))
-
-                # 2. find the first item with the possible quality
-                for k in self.sort_idx[idx]:
-                    quality = quality_sign[k]
-                    if quality in possible_quality and candidates[k] not in selected:
-                        cur_exp[quality] += self.pos_weight[pos]
-                        selected.add(candidates[k])
-                        rec_lst[pos] = k
-                        tmp_pred[k] = -np.inf
-                        break
+                    max_k = int(item_idx[np.argmax(quality_score)])
+                    quality = quality_sign[max_k]
+                    cur_exp[quality] += self.pos_weight[pos]
+                    selected.add(candidates[max_k])
+                    rec_lst[pos] = max_k
+                    tmp_pred[max_k] = -np.inf
 
             rec_lst[max_topk:] = (-tmp_pred).argsort()[:-max_topk]
             return rec_lst
