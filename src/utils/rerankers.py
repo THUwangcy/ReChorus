@@ -3,6 +3,7 @@
 import os
 import logging
 import numpy as np
+from time import time
 from tqdm import tqdm
 from scipy.optimize import linprog
 
@@ -25,9 +26,9 @@ def get_target_dist(dataset, predictions, max_topk, policy, personal=False):
     quality_level = dataset.corpus.quality_level
     item_quality = np.array(list(item2quality.values()))
 
-    if policy == 'par':  # equal
+    if policy in ['par']:  # equal
         target_dist = np.ones(quality_level) / quality_level
-    elif policy == 'cat':  # proportional to the ratio in the item set
+    elif policy in ['cat', 'test']:  # proportional to the ratio in the item set
         target_dist = np.zeros(quality_level)
         for q in range(quality_level):
             target_dist[q] = (item_quality == q).sum()
@@ -47,8 +48,8 @@ def get_target_dist(dataset, predictions, max_topk, policy, personal=False):
         q_h = get_original_dist(origin_rec_items, item2quality, quality_level)  # original dist
 
         dataset_name, model_name = dataset.corpus.dataset, type(dataset.model).__name__
-        # model_name, policy = 'test', 'equal'
-        dist_path = os.path.join('../data/{}/pu-{}-{}.npy'.format(dataset_name, model_name, policy))
+        seed = dataset.model.random_seed
+        dist_path = os.path.join('../data/{}/pu-{}_{}-{}.npy'.format(dataset_name, model_name, seed, policy))
         target_dist = solve_per_target_dist(q_h, target_dist, path=dist_path)  # solve
     else:  # share global target distribution
         target_dist = [target_dist] * len(dataset)
@@ -101,9 +102,20 @@ def solve_per_target_dist(q_h, target_dist, path=None):
         b = (q_h - np.expand_dims(target_dist, 0).transpose()).sum(1)[:-1]  # [#level-1]
         bounds = np.stack([np.zeros_like(lim), lim], axis=1)  # [#user, 2]
         weight = np.ones_like(lim)
-        res = linprog(c=weight, A_eq=A, b_eq=b, bounds=bounds)
+        # res = linprog(c=weight, A_eq=A, b_eq=b, bounds=bounds)
+        start_time = time()
+        var_max = 100
+        res_x = np.array([])
+        for i in range(int(np.ceil(user_num / var_max))):
+            begin, end = i * var_max, (i + 1) * var_max
+            A_split, bounds_split = A[:, begin:end], bounds[begin:end, :]
+            weight_split = weight[begin:end]
+            b_split = (q_h[:, begin:end] - np.expand_dims(target_dist, 0).transpose()).sum(1)[:-1]
+            res = linprog(c=weight_split, A_eq=A_split, b_eq=b_split, bounds=bounds_split)
+            res_x = np.concatenate([res_x, res.x])
+        logging.info('{}s'.format(time() - start_time))
 
-        p_u = q_h - np.expand_dims(res.x, 0) * tile_grad  # [#level, #user]
+        p_u = q_h - np.expand_dims(res_x, 0) * tile_grad  # [#level, #user]
         p_u = p_u.transpose()
 
         logging.info('Save personal target distribution to {}'.format(path))
@@ -123,6 +135,9 @@ def naive_boost(dataset, predictions, coef=0.1):
     if dataset.corpus.dataset in ['QK-article-1M']:
         item_meta_df = dataset.corpus.item_meta_df
         item2quality = dict(zip(item_meta_df['item_id'], item_meta_df['item_score3']))
+    elif dataset.corpus.dataset in ['CMCC']:
+        item_meta_df = dataset.corpus.item_meta_df
+        item2quality = dict(zip(item_meta_df['item_id'], item_meta_df['overall_score']))
     else:
         item2quality = dataset.item2quality
     tmp_pred = predictions.copy()
@@ -234,7 +249,7 @@ def reg_exp(dataset, predictions, max_topk, policy='par', personal=False, lambda
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     rerank_dataset = MMRDataset(dataset, predictions)
-    dataloader = DataLoader(dataset=rerank_dataset, batch_size=8, num_workers=5)
+    dataloader = DataLoader(dataset=rerank_dataset, batch_size=81, num_workers=5)
 
     sort_idx = list()
     for rerank_res in tqdm(dataloader, leave=False, ncols=100, mininterval=1, desc='Rerank'):

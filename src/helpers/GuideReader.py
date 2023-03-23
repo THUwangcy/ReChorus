@@ -9,7 +9,7 @@ from helpers.SeqReader import SeqReader
 class GuideReader(SeqReader):
     def __init__(self, args):
         super().__init__(args)
-        candidate_dataset = ['ml-500k', 'cmcc', 'QK-article-1M']
+        candidate_dataset = ['ml-500k', 'CMCC', 'QK-article-1M']
         if self.dataset in candidate_dataset:
             self._build_sets()
 

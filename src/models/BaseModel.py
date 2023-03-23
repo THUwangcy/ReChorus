@@ -37,6 +37,7 @@ class BaseModel(nn.Module):
 
     def __init__(self, args, corpus: BaseReader):
         super(BaseModel, self).__init__()
+        self.random_seed = args.random_seed
         self.device = args.device
         self.model_path = args.model_path
         self.buffer = args.buffer

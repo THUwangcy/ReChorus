@@ -50,7 +50,7 @@ def main():
     logging.info('Device: {}'.format(args.device))
 
     # Read data
-    corpus_path = os.path.join(args.path, args.dataset, reader_name + '.pkl')
+    corpus_path = os.path.join(args.path, args.dataset, init_args.reader_name + '.pkl')
     if not args.regenerate and os.path.exists(corpus_path):
         logging.info('Load corpus from {}'.format(corpus_path))
         corpus = pickle.load(open(corpus_path, 'rb'))
@@ -83,11 +83,15 @@ def main():
 
 
 def save_rec_results(dataset, runner, topk):
-    result_path = os.path.join(args.path, args.dataset, 'rec-{}.csv'.format(init_args.model_name))
+    if args.rerank is None:
+        result_path = os.path.join(args.path, args.dataset, 'rec-{}.csv'.format(init_args.model_name))
+    else:
+        result_path = os.path.join(args.path, args.dataset, 'rec-{}-{}.csv'.format(init_args.model_name, args.rerank))
     logging.info('Saving top-{} recommendation results to: {}'.format(topk, result_path))
     predictions = runner.predict(dataset)  # n_users, n_candidates
     sort_idx = (-predictions).argsort(axis=1)
-    # sort_idx = runner.pred_sort(dataset, predictions)
+    if args.rerank is not None:
+        sort_idx = runner.pred_sort(dataset, predictions)
     users, rec_items, pred_scores = list(), list(), list()
     for i in range(len(dataset)):
         candidates = dataset[i]['item_id']
@@ -109,10 +113,10 @@ if __name__ == '__main__':
     init_parser.add_argument('--runner_name', type=str, default=None, help='Choose a runner object.')
     init_args, init_extras = init_parser.parse_known_args()
     model_class = eval('{0}.{0}'.format(init_args.model_name))
-    reader_name = model_class.reader if init_args.reader_name is None else init_args.reader_name
-    reader_class = eval('{0}.{0}'.format(reader_name))
-    runner_name = model_class.runner if init_args.runner_name is None else init_args.runner_name
-    runner_class = eval('{0}.{0}'.format(runner_name))
+    init_args.reader_name = model_class.reader if init_args.reader_name is None else init_args.reader_name
+    reader_class = eval('{0}.{0}'.format(init_args.reader_name))
+    init_args.runner_name = model_class.runner if init_args.runner_name is None else init_args.runner_name
+    runner_class = eval('{0}.{0}'.format(init_args.runner_name))
 
     # Args
     parser = argparse.ArgumentParser(description='')
