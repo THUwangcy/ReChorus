@@ -12,16 +12,108 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 
 
-"""
-    Get target exposure distribution for each user.
-    1. policy
-        a) par: each quality share the same exposure
-        b) cat: the exposure proportional to the ratio in the item set
-    2. personal
-        a) False: use global target distribution for each user
-        b) True: solve personal target distribution with linprog
-"""
-def get_target_dist(dataset, predictions, max_topk, policy, personal=False):
+def pct(dataset, predictions, max_topk, policy='par', personal=True, lambda_=0.5):
+    """
+    Personalized Calibration Target (PCT)
+    :param dataset: the evaluation dataset
+    :param predictions: relevance scores of candidate items for each instance in dataset
+    :param max_topk: the length of recommendation lists
+    :param policy: the policy to determine the overall target group exposure distribution \hat{q}
+        a) par: each quality share the same exposure (Equal)
+        b) cat: the exposure proportional to the ratio in the item set (AvgEqual)
+    :param personal: whether to use personalized calibration targets
+        a) False: use the overall target group exposure distribution for each user
+        b) True: solve personalized target distribution with linprog (PCT-Solver)
+    :param lambda_: the tradeoff hyperparameter in reranking
+    :return: the sorted idx of candidate items after reranking
+    """
+    class PCTDataset(Dataset):
+        def __init__(self, inter_dataset, inter_pred):
+            self.inter_dataset = inter_dataset
+            self.inter_pred = inter_pred
+            self.sort_idx = (-inter_pred).argsort()
+            self.item2quality = inter_dataset.corpus.item2quality
+            self.quality_level = inter_dataset.corpus.quality_level
+            self.pos_weight = [1 / np.log2(pos + 2) for pos in range(max_topk)]
+
+            """ PCT-Solver """
+            self.target_exp = get_target_dist(inter_dataset, policy, personal)
+
+        def __len__(self):
+            return len(self.inter_dataset)
+
+        def __getitem__(self, idx):  # rerank for a single user
+            """ PCT-Reranker """
+            selected = set()
+            tmp_pred = self.inter_pred[idx].copy()
+            rec_lst = np.ones_like(tmp_pred, dtype=np.int32) * -1  # final recommended items idx
+
+            candidates = self.inter_dataset[idx]['item_id']
+            quality_sign = [int(self.item2quality[item]) for item in candidates]
+
+            user_target_exp = self.target_exp[idx] * np.sum(self.pos_weight)
+            cur_exp = np.zeros(self.quality_level, dtype=np.float)
+
+            # 1. First Iteration
+            for pos in range(max_topk):  # for each position to be recommended
+                for k in self.sort_idx[idx]:
+                    quality = quality_sign[k]
+                    assume_exp = cur_exp[quality] + self.pos_weight[pos]
+                    if assume_exp <= user_target_exp[quality] and candidates[k] not in selected:
+                        cur_exp[quality] = assume_exp
+                        selected.add(candidates[k])
+                        rec_lst[pos] = k
+                        tmp_pred[k] = -np.inf
+                        break
+
+            # 2. Second Iteration
+            for pos in range(max_topk):
+                if rec_lst[pos] == -1:  # all the quality exceed the target exposure
+                    quality_score = np.ones(self.quality_level) * -1  # score of top-item for each quality
+                    item_idx = np.ones(self.quality_level) * -1
+                    for r, k in enumerate(self.sort_idx[idx]):
+                        q = quality_sign[k]
+                        if quality_score[q] == -1 and candidates[k] not in selected:
+                            assume_exp = cur_exp.copy()
+                            assume_exp[q] += self.pos_weight[pos]
+                            disparity = ((assume_exp - user_target_exp) ** 2).sum() / 2
+                            quality_score[q] = lambda_ * (1. / (r + 1)) - (1 - lambda_) * disparity
+                            item_idx[q] = k
+                            if (quality_score < 0).sum() == 0:
+                                break
+                    max_k = int(item_idx[np.argmax(quality_score)])
+                    quality = quality_sign[max_k]
+                    cur_exp[quality] += self.pos_weight[pos]
+                    selected.add(candidates[max_k])
+                    rec_lst[pos] = max_k
+                    tmp_pred[max_k] = -np.inf
+
+            rec_lst[max_topk:] = (-tmp_pred).argsort()[:-max_topk]
+            return rec_lst
+
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    rerank_dataset = PCTDataset(dataset, predictions)
+    dataloader = DataLoader(dataset=rerank_dataset, batch_size=8, num_workers=5)
+
+    sort_idx = list()
+    for rerank_res in tqdm(dataloader, leave=False, ncols=100, mininterval=1, desc='Rerank'):
+        sort_idx.append(rerank_res.numpy())
+
+    return np.concatenate(sort_idx, axis=0)
+
+
+def get_target_dist(dataset, policy, personal=False):
+    """
+    Get the target group exposure distribution \hat{q}_u for each user.
+    :param dataset: the evaluation dataset
+    :param policy:
+        a) par: each quality share the same exposure (Equal)
+        b) cat: the exposure proportional to the ratio in the item set (AvgEqual)
+    :param personal:
+        a) False: use the overall target group exposure distribution for each user
+        b) True: solve personalized target distribution with linprog (PCT-Solver)
+    :return: \hat{q}_u
+    """
     item2quality = dataset.corpus.item2quality
     quality_level = dataset.corpus.quality_level
     item_quality = np.array(list(item2quality.values()))
@@ -36,102 +128,79 @@ def get_target_dist(dataset, predictions, max_topk, policy, personal=False):
     else:
         raise ValueError('Non-implemented policy. Choose from [par / cat].')
 
-    if personal:  # solve personal target distribution
-        origin_rec_items = list()
-        origin_order = (-predictions).argsort(axis=1)[:, :max_topk]
+    if personal:  # solve personal target distribution (PCT-Solver)
+        p_u = list()
         for i in range(len(dataset)):
-            candidates = dataset[i]['item_id']
-            sort_lst = origin_order[i]
-            origin_rec_items.append([candidates[idx] for idx in sort_lst])
-        origin_rec_items = np.array(origin_rec_items)
-
-        q_h = get_original_dist(origin_rec_items, item2quality, quality_level)  # original dist
+            p_u.append(dataset.corpus.p_u[dataset[i]['user_id']])
+        p_u = np.array(p_u)
 
         dataset_name, model_name = dataset.corpus.dataset, type(dataset.model).__name__
         seed = dataset.model.random_seed
         dist_path = os.path.join('../data/{}/pu-{}_{}-{}.npy'.format(dataset_name, model_name, seed, policy))
-        target_dist = solve_per_target_dist(q_h, target_dist, path=dist_path)  # solve
+        target_dist = solve_per_target_dist(p_u, target_dist, path=dist_path)  # solve
     else:  # share global target distribution
         target_dist = [target_dist] * len(dataset)
 
     return target_dist  # [#test, #level]
 
 
-def get_original_dist(origin_rec_item, item2quality, quality_level):
+def solve_per_target_dist(p_u, q_hat, path=None):
     """
-    Calculate original exposure distributions of different users.
-    :return: user-specific original exposure distribution, [#user, #level]
-    """
-    logging.info('Calculating original exposure distribution...')
-    q_h = list()
-    for u in range(origin_rec_item.shape[0]):
-        dist = [0] * quality_level
-        for rank, item in enumerate(origin_rec_item[u]):
-            quality = item2quality[item]
-            delta = 1 / np.log2(rank + 2)
-            dist[quality] += delta
-        dist = dist / np.sum(dist)
-        q_h.append(dist)
-    return np.array(q_h)
-
-
-def solve_per_target_dist(q_h, target_dist, path=None):
-    """
-    :param q_h: user original exposure distribution, [#user, #level]
-    :param target_dist: target exposure distribution, [#level]
+    Core PCT-Solver.
+    :param p_u: user historical interest distribution, [#user, #level]
+    :param q_hat: target group exposure distribution, [#level]
     :param path: save and load path
-    :return: personal target exposure distribution, [#user, #level]
+    :return: personalized target group exposure distribution \hat{q}_u, [#user, #level]
     """
     if os.path.exists(path) and 'test' not in path:
         logging.info('Load personal target distribution from {}'.format(path))
-        p_u = np.load(path)
+        q_hat_u = np.load(path)
     else:
         logging.info('Solving personal target distribution... (may take a few minutes)')
-        user_num = q_h.shape[0]
-        q_h = q_h.transpose()  # [#level, #user]
-        gradient = q_h.mean(1) - target_dist  # [#level]
+        user_num = p_u.shape[0]
+        p_u = p_u.transpose()  # [#level, #user]
+        gradient = p_u.mean(1) - q_hat  # [#level]
         grad_direction = gradient / np.sqrt((gradient ** 2).sum())
         tile_grad = np.array([grad_direction] * user_num).transpose()  # [#level, #user]
 
         lim = tile_grad.copy()
-        lim = np.where(tile_grad > 0, q_h / (tile_grad + 1e-10), lim)
-        lim = np.where(tile_grad < 0, (q_h - 1) / (tile_grad + 1e-10), lim)
+        lim = np.where(tile_grad > 0, p_u / (tile_grad + 1e-10), lim)
+        lim = np.where(tile_grad < 0, (p_u - 1) / (tile_grad + 1e-10), lim)
         lim = lim.min(0)  # [#user]
 
         A = tile_grad[:-1]  # [#level-1, #user]
-        b = (q_h - np.expand_dims(target_dist, 0).transpose()).sum(1)[:-1]  # [#level-1]
         bounds = np.stack([np.zeros_like(lim), lim], axis=1)  # [#user, 2]
         weight = np.ones_like(lim)
+        # b = (p_u - np.expand_dims(q_hat, 0).transpose()).sum(1)[:-1]  # [#level-1]
         # res = linprog(c=weight, A_eq=A, b_eq=b, bounds=bounds)
-        start_time = time()
-        var_max = 100
+
+        chunk_size = 5000
         res_x = np.array([])
-        for i in range(int(np.ceil(user_num / var_max))):
-            begin, end = i * var_max, (i + 1) * var_max
+        for i in range(int(np.ceil(user_num / chunk_size))):
+            begin, end = i * chunk_size, (i + 1) * chunk_size
             A_split, bounds_split = A[:, begin:end], bounds[begin:end, :]
             weight_split = weight[begin:end]
-            b_split = (q_h[:, begin:end] - np.expand_dims(target_dist, 0).transpose()).sum(1)[:-1]
+            b_split = (p_u[:, begin:end] - np.expand_dims(q_hat, 0).transpose()).sum(1)[:-1]
             res = linprog(c=weight_split, A_eq=A_split, b_eq=b_split, bounds=bounds_split)
             res_x = np.concatenate([res_x, res.x])
-        logging.info('{}s'.format(time() - start_time))
 
-        p_u = q_h - np.expand_dims(res_x, 0) * tile_grad  # [#level, #user]
-        p_u = p_u.transpose()
+        q_hat_u = p_u - np.expand_dims(res_x, 0) * tile_grad  # [#level, #user]
+        q_hat_u = q_hat_u.transpose()
 
         logging.info('Save personal target distribution to {}'.format(path))
-        np.save(path, p_u)
+        np.save(path, q_hat_u)
 
-    return p_u
+    return q_hat_u
 
 
 """
-    Reranking algorithms
-    1. Boost
+    Baselines
+    1. Boosting
     2. TFROM (SIGIR'21)
     3. RegExp (SIGIR'22)
-    4. PER (ours)
+    4. Calibrated (Recsys'18)
 """
-def naive_boost(dataset, predictions, coef=0.1):
+def boosting(dataset, predictions, coef=0.1):
     if dataset.corpus.dataset in ['QK-article-1M']:
         item_meta_df = dataset.corpus.item_meta_df
         item2quality = dict(zip(item_meta_df['item_id'], item_meta_df['item_score3']))
@@ -158,7 +227,7 @@ def tfrom(dataset, predictions, max_topk, policy='par', personal=False):
     quality_level = dataset.corpus.quality_level
     test_num = predictions.shape[0]
 
-    target_dist = get_target_dist(dataset, predictions, max_topk, policy, personal)
+    target_dist = get_target_dist(dataset, policy, personal)
 
     target_exp = np.zeros(quality_level)  # target exposure up to now
     cur_exp = np.zeros(quality_level, dtype=np.float)  # current exposure up to now
@@ -205,7 +274,7 @@ def reg_exp(dataset, predictions, max_topk, policy='par', personal=False, lambda
             self.quality_level = inter_dataset.corpus.quality_level
 
             self.pos_weight = [1 / np.log2(pos + 2) for pos in range(max_topk)]
-            self.target_exp = get_target_dist(inter_dataset, inter_pred, max_topk, policy, personal)
+            self.target_exp = get_target_dist(inter_dataset, policy, personal)
 
         def __len__(self):
             return len(self.inter_dataset)
@@ -258,17 +327,15 @@ def reg_exp(dataset, predictions, max_topk, policy='par', personal=False, lambda
     return np.concatenate(sort_idx, axis=0)
 
 
-def per(dataset, predictions, max_topk, policy='par', personal=True, lambda_=0.5):
-    class SlackDataset(Dataset):
+def calibrated(dataset, predictions, max_topk, lambda_=1e-4):
+    class CalibratedDataset(Dataset):
         def __init__(self, inter_dataset, inter_pred):
             self.inter_dataset = inter_dataset
             self.inter_pred = inter_pred
-            self.sort_idx = (-inter_pred).argsort()
             self.item2quality = inter_dataset.corpus.item2quality
             self.quality_level = inter_dataset.corpus.quality_level
 
             self.pos_weight = [1 / np.log2(pos + 2) for pos in range(max_topk)]
-            self.target_exp = get_target_dist(inter_dataset, inter_pred, max_topk, policy, personal)
 
         def __len__(self):
             return len(self.inter_dataset)
@@ -276,54 +343,46 @@ def per(dataset, predictions, max_topk, policy='par', personal=True, lambda_=0.5
         def __getitem__(self, idx):  # rerank for a single user
             selected = set()
             tmp_pred = self.inter_pred[idx].copy()
-            rec_lst = np.ones_like(tmp_pred, dtype=np.int32) * -1  # final recommended items idx
+            rec_lst = np.zeros_like(tmp_pred, dtype=np.int32)
 
             candidates = self.inter_dataset[idx]['item_id']
             quality_sign = [int(self.item2quality[item]) for item in candidates]
 
-            user_target_exp = self.target_exp[idx] * np.sum(self.pos_weight)
+            uid = self.inter_dataset[idx]['user_id']
+            user_target_exp = np.array(self.inter_dataset.corpus.p_u[uid])
             cur_exp = np.zeros(self.quality_level, dtype=np.float)
 
-            # 1. fill in the positions with slack
-            for pos in range(max_topk):  # for each position to be recommended
-                for k in self.sort_idx[idx]:
-                    quality = quality_sign[k]
-                    assume_exp = cur_exp[quality] + self.pos_weight[pos]
-                    if assume_exp <= user_target_exp[quality] and candidates[k] not in selected:
-                        cur_exp[quality] = assume_exp
-                        selected.add(candidates[k])
-                        rec_lst[pos] = k
-                        tmp_pred[k] = -np.inf
-                        break
+            for rank in range(max_topk):  # for each rec position
+                max_score, max_idx = -np.inf, -1
+                possible_exp = list()
+                for q in range(self.quality_level):
+                    tmp_exp = cur_exp.copy()
+                    tmp_exp[q] += self.pos_weight[rank]
+                    possible_exp.append(tmp_exp)
 
-            # 2. fill in the blanks with MMR
-            for pos in range(max_topk):
-                if rec_lst[pos] == -1:  # all the quality exceed the target exposure
-                    quality_score = np.ones(self.quality_level) * -1  # score of top-item for each quality
-                    item_idx = np.ones(self.quality_level) * -1
-                    for r, k in enumerate(self.sort_idx[idx]):
-                        q = quality_sign[k]
-                        if quality_score[q] == -1 and candidates[k] not in selected:
-                            assume_exp = cur_exp.copy()
-                            assume_exp[q] += self.pos_weight[pos]
-                            disparity = ((assume_exp - user_target_exp) ** 2).sum() / 2
-                            quality_score[q] = lambda_ * (1. / (r + 1)) - (1 - lambda_) * disparity
-                            item_idx[q] = k
-                            if (quality_score < 0).sum() == 0:
-                                break
-                    max_k = int(item_idx[np.argmax(quality_score)])
-                    quality = quality_sign[max_k]
-                    cur_exp[quality] += self.pos_weight[pos]
-                    selected.add(candidates[max_k])
-                    rec_lst[pos] = max_k
-                    tmp_pred[max_k] = -np.inf
+                for i in range(len(candidates)):  # for each candidate item
+                    if i in selected:
+                        continue
+                    assume_exp = possible_exp[quality_sign[i]]
+                    p = np.clip(user_target_exp, 1e-6, 1)
+                    q = np.clip(assume_exp, 1e-6, 1)
+                    kl = np.where(user_target_exp != 0, p * np.log(p / q), 0).sum()
+                    score = lambda_ * tmp_pred[i] - (1 - lambda_) * kl
+                    if score > max_score:
+                        max_score = score
+                        max_idx = i
+
+                selected.add(max_idx)
+                rec_lst[rank] = max_idx
+                tmp_pred[max_idx] = -np.inf
+                cur_exp[quality_sign[max_idx]] += self.pos_weight[rank]
 
             rec_lst[max_topk:] = (-tmp_pred).argsort()[:-max_topk]
             return rec_lst
 
     torch.multiprocessing.set_sharing_strategy('file_system')
-    rerank_dataset = SlackDataset(dataset, predictions)
-    dataloader = DataLoader(dataset=rerank_dataset, batch_size=8, num_workers=5)
+    rerank_dataset = CalibratedDataset(dataset, predictions)
+    dataloader = DataLoader(dataset=rerank_dataset, batch_size=10, num_workers=10)
 
     sort_idx = list()
     for rerank_res in tqdm(dataloader, leave=False, ncols=100, mininterval=1, desc='Rerank'):

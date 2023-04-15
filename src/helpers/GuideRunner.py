@@ -22,7 +22,7 @@ class GuideRunner(BaseRunner):
     @staticmethod
     def parse_runner_args(parser):
         parser.add_argument('--rerank', type=str, default=None,
-                            help='Reranking method: Boost, RegExp, TFROM, PER')
+                            help='Reranking method: Boost, Calibrated, RegExp, TFROM, PCT')
         parser.add_argument('--exp_policy', type=str, default='par',
                             help='Target exposure policy: par, cat')
         parser.add_argument('--personal', type=int, default=0,
@@ -30,8 +30,26 @@ class GuideRunner(BaseRunner):
         parser.add_argument('--coef', type=float, default=0.1,
                             help='Coefficient of boosting')
         parser.add_argument('--lambda_', type=float, default=0.5,
-                            help='Lambda in RegExp and PER algorithm')
+                            help='Lambda in RegExp and PCT algorithm')
         return BaseRunner.parse_runner_args(parser)
+
+    @staticmethod
+    def get_exp_dist(origin_rec_item, item2quality, quality_level):
+        """
+        Calculate exposure distributions of different users.
+        :return: user-specific original exposure distribution, [#user, #level]
+        """
+        logging.info('Calculating original exposure distribution...')
+        q_h = list()
+        for u in range(origin_rec_item.shape[0]):
+            dist = [0] * quality_level
+            for rank, item in enumerate(origin_rec_item[u]):
+                quality = item2quality[item]
+                delta = 1 / np.log2(rank + 2)
+                dist[quality] += delta
+            dist = dist / np.sum(dist)
+            q_h.append(dist)
+        return np.array(q_h)
 
     @staticmethod
     def evaluate_metrics(dataset: BaseModel.Dataset, sort_idx: np.ndarray,
@@ -46,12 +64,15 @@ class GuideRunner(BaseRunner):
         # get top rec_items
         rec_items = list()
         rec_quality = list()
+        p_u = list()
         item2quality = dataset.corpus.item2quality
         for i in range(len(dataset)):
             candidates = dataset[i]['item_id']
             sort_lst = sort_idx[i][:max(topk)]
             rec_items.append([candidates[idx] for idx in sort_lst])
             rec_quality.append([item2quality[candidates[idx]] for idx in sort_lst])
+            p_u.append(dataset.corpus.p_u[dataset[i]['user_id']])
+        p_u = np.array(p_u)
 
         evaluations = dict()
         target_items = dataset.data['item_id']
@@ -71,34 +92,19 @@ class GuideRunner(BaseRunner):
                 elif metric == 'NDCG':
                     ndcg_lst = ndcg_(hit, gt_rank, target_items, all_item)
                     evaluations[key] = ndcg_lst.mean()
-
-                    eval_key = 'REO@{}'.format(k)
-                    group_ndcg = list()
-                    for quality in range(int(target_quality.max()) + 1):
-                        group_ndcg.append(ndcg_lst[target_quality == quality].mean())
-                    evaluations[eval_key] = np.std(group_ndcg) / np.mean(group_ndcg)
-
-                    eval_key = 'CV@{}'.format(k)
-                    evaluations[eval_key] = np.std(ndcg_lst) / np.mean(ndcg_lst)
-
-                    eval_key = '{}_HQI@{}'.format(metric, k)
-                    evaluations[eval_key] = ndcg_(hit, gt_rank, target_items, hqi_group).mean()
-                    residual_group = all_item - hqi_group
-                    eval_key = '{}_nonHQI@{}'.format(metric, k)
-                    evaluations[eval_key] = ndcg_(hit, gt_rank, target_items, residual_group).mean()
                 elif metric == 'COV':
                     # evaluations[key] = coverage_(rec_k_items, all_item)
-                    eval_key = '{}_HQI@{}'.format(metric, k)
+                    eval_key = '{}_m@{}'.format(metric, k)
                     evaluations[eval_key] = coverage_(rec_k_items, hqi_group)
-                elif metric == 'RATIO':
-                    eval_key = '{}_HQI@{}'.format(metric, k)
+                elif metric == 'EXP':
+                    eval_key = '{}_m@{}'.format(metric, k)
                     evaluations[eval_key] = ratio_(rec_k_items, hqi_group)
-                elif metric == 'PEN':
-                    eval_key = '{}_HQI@{}'.format(metric, k)
-                    hqi_mask = np.isin(rec_k_items, list(hqi_group))
-                    evaluations[eval_key] = (hqi_mask.sum(1) > 0).mean()
-                elif metric == 'QS':
-                    evaluations[key] = np.array(rec_quality)[:, :k].mean()
+                elif metric == 'KL':
+                    exp_dist = GuideRunner.get_exp_dist(rec_k_items, item2quality, dataset.corpus.quality_level)
+                    p_u = np.clip(p_u, 1e-6, 1)
+                    exp_dist = np.clip(exp_dist, 1e-6, 1)
+                    kl = (p_u * np.log(p_u / exp_dist)).sum(1).mean()
+                    evaluations[key] = kl
                 else:
                     raise ValueError('Undefined evaluation metric: {}.'.format(metric))
 
@@ -124,11 +130,13 @@ class GuideRunner(BaseRunner):
     def pred_sort(self, dataset: BaseModel.Dataset, predictions: np.ndarray):
         if dataset.phase in ['dev', 'test']:
             if self.rerank == 'Boost':
-                return naive_boost(dataset, predictions, coef=self.coef)
+                return boosting(dataset, predictions, coef=self.coef)
             if self.rerank == 'RegExp':
                 return reg_exp(dataset, predictions, max(self.topk), self.exp_policy, self.personal, self.lambda_)
             if self.rerank == 'TFROM':
                 return tfrom(dataset, predictions, max(self.topk), self.exp_policy, self.personal)
-            if self.rerank == 'PER':
-                return per(dataset, predictions, max(self.topk), self.exp_policy, self.personal, self.lambda_)
+            if self.rerank == 'PCT':
+                return pct(dataset, predictions, max(self.topk), self.exp_policy, self.personal, self.lambda_)
+            if self.rerank == 'Calibrated':
+                return calibrated(dataset, predictions, max(self.topk), self.lambda_)
         return (-predictions).argsort(axis=1)
