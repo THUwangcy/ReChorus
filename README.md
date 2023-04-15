@@ -2,17 +2,13 @@
 
 This is the source code for the paper "Two-sided Calibration for Quality-aware Responsible Recommendation".
 
-
-
 The main modifications compared to the original ReChorus framework center in these files:
 
 - `helpers\`
-  - `GuideReader.py`: additionally group items according to quality annotations and calculate users' historical interest distributions
+  - `GuideReader.py`: group items according to quality annotations and calculate users' historical interest distributions
   - `GuideRunner.py`: implement new evaluation metrics for two-sided calibration and call different reranking methods
 - `utils\`
   - `rerankers.py`: implement all the reranking methods, including the proposed PCT and baselines
-
-
 
 The additional hyper-parameters are explained as follows:
 
@@ -23,9 +19,7 @@ The additional hyper-parameters are explained as follows:
 | personal   | 1       | Whether to use the personalized target exposure distributions solved by the PCT-Solver |
 | lambda_    | 0.5     | Tradeoff hyperparameter in MMR                                                         |
 
-
-
-We first train a valina recommender (e.g., SASRec on the CMCC-Q dataset):
+We first train a vanilla recommender (e.g., SASRec on the CMCC-Q dataset):
 
 ```bash
 python main.py --model_name=SASRec --emb_size=64 --lr=1e-4 --l2=1e-6 --dataset=CMCC --topk=10 --reader_name=GuideReader --runner_name=GuideRunner --gpu=0
