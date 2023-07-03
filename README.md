@@ -1,5 +1,7 @@
 # Personalized Calibration Targets (PCT)
 
+![model](./log/_static/model.png)
+
 This is the source code for the paper:
 *Chenyang Wang, Yankai Liu, Yuanqing Yu, Weizhi Ma, Min Zhang, Yiqun Liu, Haitao Zeng, Junlan Feng and Chao Deng. [Two-sided Calibration for Quality-aware Responsible Recommendation](). In RecSys'23.*
 
