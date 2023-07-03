@@ -4,7 +4,7 @@
 
 This is our public implementation for the paper:
 
-*Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target-Interest Distillation for Multi-Interest Recommendation](). In CIKM'22.*
+*Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target-Interest Distillation for Multi-Interest Recommendation](https://dl.acm.org/doi/abs/10.1145/3511808.3557464). In CIKM'22.*
 
 ### Getting Started
 
@@ -80,7 +80,13 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food`
 ## Citation
 
 ```
-TBD
+@inproceedings{wang2022target,
+  title={Target Interest Distillation for Multi-Interest Recommendation},
+  author={Wang, Chenyang and Wang, Zhefan and Liu, Yankai and Ge, Yang and Ma, Weizhi and Zhang, Min and Liu, Yiqun and Feng, Junlan and Deng, Chao and Ma, Shaoping},
+  booktitle={Proceedings of the 31st ACM International Conference on Information \& Knowledge Management},
+  pages={2007--2016},
+  year={2022}
+}
 ```
 
 ## Contact
