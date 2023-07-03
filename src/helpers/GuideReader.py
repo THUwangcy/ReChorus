@@ -25,8 +25,8 @@ class GuideReader(SeqReader):
         self.item2quality = dict(zip(self.item_meta_df['item_id'], self.item_meta_df['i_quality']))
         self.quality_level = int(self.item_meta_df['i_quality'].max()) + 1
 
-        self.item_set = set(self.item_meta_df['item_id'])  # 商品全集
-        self.HQI_set = set(self.item_meta_df[self.item_meta_df['i_quality'] > 0]['item_id'])
+        self.item_set = set(self.item_meta_df['item_id'])
+        self.HQI_set = set(self.item_meta_df[self.item_meta_df['i_quality'] > 0]['item_id'])  # high-quality item set
 
         print("#HQI: {}, #HQI frac: {}".format(len(self.HQI_set), len(self.HQI_set)/len(self.item_set)))
 

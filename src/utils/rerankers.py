@@ -12,15 +12,15 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 
 
-def pct(dataset, predictions, max_topk, policy='par', personal=True, lambda_=0.5):
+def pct(dataset, predictions, max_topk, policy='Equal', personal=True, lambda_=0.5):
     """
     Personalized Calibration Target (PCT)
     :param dataset: the evaluation dataset
     :param predictions: relevance scores of candidate items for each instance in dataset
     :param max_topk: the length of recommendation lists
     :param policy: the policy to determine the overall target group exposure distribution \hat{q}
-        a) par: each quality share the same exposure (Equal)
-        b) cat: the exposure proportional to the ratio in the item set (AvgEqual)
+        a) Equal: each quality share the same exposure
+        b) AvgEqual: the exposure proportional to the ratio in the item set
     :param personal: whether to use personalized calibration targets
         a) False: use the overall target group exposure distribution for each user
         b) True: solve personalized target distribution with linprog (PCT-Solver)
@@ -107,8 +107,8 @@ def get_target_dist(dataset, policy, personal=False):
     Get the target group exposure distribution \hat{q}_u for each user.
     :param dataset: the evaluation dataset
     :param policy:
-        a) par: each quality share the same exposure (Equal)
-        b) cat: the exposure proportional to the ratio in the item set (AvgEqual)
+        a) Equal: each quality share the same exposure
+        b) AvgEqual: the exposure proportional to the ratio in the item set
     :param personal:
         a) False: use the overall target group exposure distribution for each user
         b) True: solve personalized target distribution with linprog (PCT-Solver)
@@ -118,15 +118,15 @@ def get_target_dist(dataset, policy, personal=False):
     quality_level = dataset.corpus.quality_level
     item_quality = np.array(list(item2quality.values()))
 
-    if policy in ['par']:  # equal
+    if policy in ['Equal']:  # equal
         target_dist = np.ones(quality_level) / quality_level
-    elif policy in ['cat', 'test']:  # proportional to the ratio in the item set
+    elif policy in ['AvgEqual', 'test']:  # proportional to the ratio in the item set
         target_dist = np.zeros(quality_level)
         for q in range(quality_level):
             target_dist[q] = (item_quality == q).sum()
         target_dist /= len(item_quality)
     else:
-        raise ValueError('Non-implemented policy. Choose from [par / cat].')
+        raise ValueError('Non-implemented policy. Choose from [Equal / AvgEqual].')
 
     if personal:  # solve personal target distribution (PCT-Solver)
         p_u = list()
@@ -195,30 +195,11 @@ def solve_per_target_dist(p_u, q_hat, path=None):
 
 """
     Baselines
-    1. Boosting
-    2. TFROM (SIGIR'21)
-    3. RegExp (SIGIR'22)
-    4. Calibrated (Recsys'18)
+    1. TFROM (SIGIR'21)
+    2. RegExp (SIGIR'22)
+    3. Calibrated (Recsys'18)
 """
-def boosting(dataset, predictions, coef=0.1):
-    if dataset.corpus.dataset in ['QK-article-1M']:
-        item_meta_df = dataset.corpus.item_meta_df
-        item2quality = dict(zip(item_meta_df['item_id'], item_meta_df['item_score3']))
-    elif dataset.corpus.dataset in ['CMCC']:
-        item_meta_df = dataset.corpus.item_meta_df
-        item2quality = dict(zip(item_meta_df['item_id'], item_meta_df['overall_score']))
-    else:
-        item2quality = dataset.item2quality
-    tmp_pred = predictions.copy()
-    for i in tqdm(range(len(dataset)), leave=False, ncols=100, mininterval=1, desc='Rerank'):
-        candidates = dataset[i]['item_id']
-        for idx in range(len(candidates)):
-            quality = item2quality[candidates[idx]]
-            tmp_pred[i][idx] += coef * quality
-    return (-tmp_pred).argsort(axis=1)
-
-
-def tfrom(dataset, predictions, max_topk, policy='par', personal=False):
+def tfrom(dataset, predictions, max_topk, policy='Equal', personal=False):
     # rank_weight = [1 for r in range(max_topk)]
     rank_weight = [1 / np.log2(r + 2) for r in range(max_topk)]  # weight of different ranking pos
 
@@ -265,7 +246,7 @@ def tfrom(dataset, predictions, max_topk, policy='par', personal=False):
     return sort_idx
 
 
-def reg_exp(dataset, predictions, max_topk, policy='par', personal=False, lambda_=1e-4):
+def reg_exp(dataset, predictions, max_topk, policy='Equal', personal=False, lambda_=1e-4):
     class MMRDataset(Dataset):
         def __init__(self, inter_dataset, inter_pred):
             self.inter_dataset = inter_dataset

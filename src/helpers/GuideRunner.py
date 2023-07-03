@@ -22,15 +22,13 @@ class GuideRunner(BaseRunner):
     @staticmethod
     def parse_runner_args(parser):
         parser.add_argument('--rerank', type=str, default=None,
-                            help='Reranking method: Boost, Calibrated, RegExp, TFROM, PCT')
-        parser.add_argument('--exp_policy', type=str, default='par',
-                            help='Target exposure policy: par, cat')
-        parser.add_argument('--personal', type=int, default=0,
-                            help='Whether to solve personalized target exposure')
-        parser.add_argument('--coef', type=float, default=0.1,
-                            help='Coefficient of boosting')
+                            help='Reranking method: Calibrated, RegExp, TFROM, PCT')
+        parser.add_argument('--target_dist', type=str, default='Equal',
+                            help='Target group exposure distribution: Equal, AvgEqual')
+        parser.add_argument('--personal', type=int, default=1,
+                            help='Whether to solve personalized calibration targets')
         parser.add_argument('--lambda_', type=float, default=0.5,
-                            help='Lambda in RegExp and PCT algorithm')
+                            help='Lambda in RegExp and PCT')
         return BaseRunner.parse_runner_args(parser)
 
     @staticmethod
@@ -39,7 +37,7 @@ class GuideRunner(BaseRunner):
         Calculate exposure distributions of different users.
         :return: user-specific original exposure distribution, [#user, #level]
         """
-        logging.info('Calculating original exposure distribution...')
+        # logging.info('Calculating original exposure distribution...')
         q_h = list()
         for u in range(origin_rec_item.shape[0]):
             dist = [0] * quality_level
@@ -76,7 +74,6 @@ class GuideRunner(BaseRunner):
 
         evaluations = dict()
         target_items = dataset.data['item_id']
-        target_quality = np.array([item2quality[i] for i in target_items])
         all_item = dataset.corpus.item_set
         hqi_group = dataset.corpus.HQI_set
 
@@ -113,9 +110,8 @@ class GuideRunner(BaseRunner):
     def __init__(self, args):
         super().__init__(args)
         self.rerank = args.rerank
-        self.exp_policy = args.exp_policy
+        self.target_dist = args.target_dist
         self.personal = args.personal
-        self.coef = args.coef
         self.lambda_ = args.lambda_
 
     def evaluate(self, dataset: BaseModel.Dataset, topks: list, metrics: list) -> Dict[str, float]:
@@ -129,14 +125,12 @@ class GuideRunner(BaseRunner):
 
     def pred_sort(self, dataset: BaseModel.Dataset, predictions: np.ndarray):
         if dataset.phase in ['dev', 'test']:
-            if self.rerank == 'Boost':
-                return boosting(dataset, predictions, coef=self.coef)
-            if self.rerank == 'RegExp':
-                return reg_exp(dataset, predictions, max(self.topk), self.exp_policy, self.personal, self.lambda_)
-            if self.rerank == 'TFROM':
-                return tfrom(dataset, predictions, max(self.topk), self.exp_policy, self.personal)
-            if self.rerank == 'PCT':
-                return pct(dataset, predictions, max(self.topk), self.exp_policy, self.personal, self.lambda_)
             if self.rerank == 'Calibrated':
                 return calibrated(dataset, predictions, max(self.topk), self.lambda_)
+            if self.rerank == 'RegExp':
+                return reg_exp(dataset, predictions, max(self.topk), self.target_dist, self.personal, self.lambda_)
+            if self.rerank == 'TFROM':
+                return tfrom(dataset, predictions, max(self.topk), self.target_dist, self.personal)
+            if self.rerank == 'PCT':
+                return pct(dataset, predictions, max(self.topk), self.target_dist, self.personal, self.lambda_)
         return (-predictions).argsort(axis=1)
