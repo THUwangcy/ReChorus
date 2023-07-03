@@ -128,6 +128,7 @@ The table below lists the results of these models in `Grocery_and_Gourmet_Food` 
 | [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py)      | 0.4376 | 0.3263 | 4.3s      | √          | √         | √          |
 | [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py)       | 0.4668 | 0.3414 | 4.9s      | √          | √         | √          |
 | [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py)             | 0.5191 | 0.3901 | 9.9s      | √          | √         | √          |
+| [ContraKDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraKDA.py) | 0.5282 | 0.3992 | 13.6s     | √          | √         | √          |
 
 For fair comparison, the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
 
@@ -174,10 +175,16 @@ git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
 ```
 
-- *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target Interest Distillation for Multi-Interest Recommendation](). In CIKM'22.*
+- *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target Interest Distillation for Multi-Interest Recommendation](https://dl.acm.org/doi/abs/10.1145/3511808.3557464). In CIKM'22.*
 
 ```bash
 git clone -b CIKM22 https://github.com/THUwangcy/ReChorus.git
+```
+
+- *Chenyang Wang, Yankai Liu, Yuanqing Yu, Weizhi Ma, Min Zhang, Yiqun Liu, Haitao Zeng, Junlan Feng and Chao Deng. [Two-sided Calibration for Quality-aware Responsible Recommendation](). In RecSys'23.*
+
+```bash
+git clone -b RecSys23 https://github.com/THUwangcy/ReChorus.git
 ```
 
 ## Contact

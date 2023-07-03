@@ -40,3 +40,5 @@ python main.py --model_name ContraRec --emb_size 64 --lr 1e-4 --l2 1e-6 --histor
 
 python main.py --model_name TiMiRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 --add_pos 1 --add_trm 1 --stage pretrain --dataset 'Grocery_and_Gourmet_Food'
 python main.py --model_name TiMiRec --emb_size 64 --lr 1e-4 --l2 1e-6 --history_max 20 --K 6 --add_pos 1 --add_trm 1 --stage finetune --temp 1 --n_layers 1 --check_epoch 10 --dataset 'Grocery_and_Gourmet_Food'
+
+python main.py --model_name ContraKDA --emb_size 64 --include_attr 0 --freq_rand 0 --lr 1e-3 --l2 1e-6 --num_heads 4 --history_max 20 --contra_gamma 0.1 --ccc_temp 0.2 --dataset 'Grocery_and_Gourmet_Food'
