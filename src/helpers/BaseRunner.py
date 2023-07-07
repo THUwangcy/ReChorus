@@ -216,21 +216,8 @@ class BaseRunner(object):
         predictions = list()
         dl = DataLoader(dataset, batch_size=self.eval_batch_size, shuffle=False, num_workers=self.num_workers,
                         collate_fn=dataset.collate_batch, pin_memory=self.pin_memory)
-        for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):
-            
-            # randomly shuffle the items to avoid models remembering the first item being the target
-            item_ids = batch['item_id']
-            # for each row (sample), get random indices and shuffle the original items
-            indices = torch.argsort(torch.rand(*item_ids.shape), dim=-1)
-            batch['item_id'] = item_ids[torch.arange(item_ids.shape[0]).unsqueeze(-1), indices]
-
+        for batch in tqdm(dl, leave=False, ncols=100, mininterval=1, desc='Predict'):            
             prediction = dataset.model(utils.batch_to_gpu(batch, dataset.model.device))['prediction']
-            # shuffle the predictions back so that the prediction scores match the original order (first item is the target)
-            restored_prediction = torch.zeros(*prediction.shape).to(prediction.device)
-            # use the random indices to shuffle back
-            restored_prediction[torch.arange(item_ids.shape[0]).unsqueeze(-1), indices] = prediction
-            prediction = restored_prediction
-
             predictions.extend(prediction.cpu().data.numpy())
         predictions = np.array(predictions)
 
