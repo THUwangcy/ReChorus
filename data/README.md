@@ -40,5 +40,5 @@ We describe the required files below (recommend to open `Amazon.ipynb` or `Movie
 
 
 
-You can also implement a new reader class based on [BaseReader.py](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py) and read data in your own style, as long as the basic information is included. Then assign your model with the new reader and begin to use new members of the reader when preparing batches in the model.
+You can also implement a new reader class based on [BaseReader.py](https://github.com/THUwangcy/ReChorus/tree/ReChorus1.0/src/helpers/BaseReader.py) and read data in your own style, as long as the basic information is included. Then assign your model with the new reader and begin to use new members of the reader when preparing batches in the model.
 
