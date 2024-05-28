@@ -44,7 +44,7 @@ The configurations are shown in `Topk_Amazon.sh`
 | Model                                                                                             | HR@5   | NDCG@5 | Time/iter | Sequential | Knowledge | Time-aware |
 |:------------------------------------------------------------------------------------------------- |:------:|:------:|:---------:|:----------:|:---------:|:----------:|
 | [MostPop](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/POP.py)            | 0.2065 | 0.1301 | -         |            |           |            |
-| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py)              | 0.3549 | 0.2486 | 2.5s      |            |           |            |
+| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPRMF.py)              | 0.3549 | 0.2486 | 2.5s      |            |           |            |
 | [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py)              | 0.3237 | 0.2221 | 3.4s      |            |           |            |
 | [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py)      | 0.3705 | 0.2564 | 6.1s      |            |           |            |
 | [BUIR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BUIR.py)              | 0.3701 | 0.2567 | 3.3s      |            |           |            |
