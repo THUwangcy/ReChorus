@@ -1,29 +1,40 @@
-![logo](./log/_static/logo.png)
+![logo](./docs/_static/logo2.0.png)
 ---
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-ReChorus is a general PyTorch framework for Top-K recommendation with implicit feedback, especially for research purpose. It aims to provide a fair benchmark to compare different state-of-the-art algorithms. We hope this can partially alleviate the problem that different papers adopt non-comparable experimental settings, so as to form a "Chorus" of recommendation algorithms. 
 
-This framework is especially suitable for researchers to compare algorithms under the same experimental setting, and newcomers to get familiar with classical methods. The characteristics of our framework can be summarized as follows:
+ReChorus2.0 is a modular and task-flexible PyTorch library for recommendation, especially for research purpose. It aims to provide researchers a flexible framework to implement various recommendation tasks, compare different algorithms, and adapt to diverse and highly-customized data inputs. We hope ReChorus2.0 can serve as a more convinient and user-friendly tool for researchers, so as to form a "Chorus" of recommendation tasks and algorithms.
 
+The previous version of ReChorus can be found at [ReChorus1.0](https://github.com/THUwangcy/ReChorus/tree/ReChorus1.0)
+## What's New in ReChorus2.0:
+
+- **New Tasks**: Newly supporting the context-aware top-k recommendation and CTR prediction task. Newly supporting the Impression-based re-ranking task.
+- **New Models**: Adding Context-aware Recommenders and Impression-based Re-ranking Models. Listed below.
+- **New dataset format**: Supporting various contextual feature input. Customizing candidate item lists in training and evaluation. Supporting variable length positive and negative samples.
+- **Task Flexible**: Each model can serve for different tasks, and task switching is conveniently achieved by altering *model mode*.
+  
+
+This framework is especially suitable for researchers to choose or implement desired experimental settings, and compare algorithms under the same setting. The characteristics of our framework can be summarized as follows:
+
+- **Modular**: primary functions modularized into distinct components: runner, model, and reader, facilitating code comprehension and integration of new features.
+  
 - **Swift**: concentrate on your model design ***in a single file*** and implement new models quickly.
-
-- **Easy**: the framework is accomplished in ***less than a thousand lines of code***, which is easy to use with clean codes and adequate comments.
 
 - **Efficient**: multi-thread batch preparation, special implementations for the evaluation, and around 90% GPU utilization during training for deep models.
 
 - **Flexible**: implement new readers or runners for different datasets and experimental settings, and each model can be assigned with specific helpers.
 
-## Structre
+## Structure
 
 Generally, ReChorus decomposes the whole process into three modules:
 
 - [Reader](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseReader.py): read dataset into DataFrame and append necessary information to each instance
-- [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation
-- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate ranking scores and prepare batches
+- [Runner](https://github.com/THUwangcy/ReChorus/tree/master/src/helpers/BaseRunner.py): control the training process and model evaluation, including evaluation metrics.
+- [Model](https://github.com/THUwangcy/ReChorus/tree/master/src/models/BaseModel.py): define how to generate output (predicted labels or ranking scores) and prepare batches.
 
-![logo](./log/_static/module.png)
+![logo](./docs/_static/module_new.png)
+
 
 ## Getting Started
 
@@ -48,17 +59,35 @@ cd src
 python main.py --model_name BPRMF --emb_size 64 --lr 1e-3 --l2 1e-6 --dataset Grocery_and_Gourmet_Food
 ```
 
-5. (optional) Run jupyter notebook in `data` folder to download and build new datasets, or prepare your own datasets according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
+5. (optional) Run jupyter notebook in `dataset` folder to download and build new datasets, or prepare your own datasets according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/data/README.md) in `data`
 
 6. (optional) Implement your own models according to [Guideline](https://github.com/THUwangcy/ReChorus/tree/master/src/README.md) in `src`
+
+## Tasks & Settings
+
+The tasks & settings are listed below
+
+<table>
+<tr><th> Tasks </th><th> Runner </th><th> Metrics </th><th> Loss Functions</th><th> Reader </th><th> BaseModel </th><th> Models</th><th> Model Modes </th></tr>
+<tr><td rowspan="3"> Top-k Recommendation </td><td rowspan="3"> BaseRunner </td><td rowspan="3"> HitRate NDCG </td><td rowspan="3"> BPR </td><td> BaseReader </td><td> BaseModel.GeneralModel </td><td> general </td><td> '' </td></tr>
+<tr><td> SeqReader </td><td> BaseModel.SequentialModel </td><td> sequential </td><td> '' </td></tr>
+<tr><td> ContextReader </td><td> BaseContextModel.ContextModel </td><td> context </td><td> 'TopK' </td></tr>
+<tr><td> CTR Prediction </td><td> CTRRunner </td><td> BPR, BCE </td><td> AUC Logloss </td><td> ContextReader </td><td> BaseContextModel.ContextCTRModel </td><td> context </td><td> 'CTR' </td></tr>
+<tr><td rowspan="4"> Impression-based Ranking </td><td rowspan="4"> ImpressionRunner </td><td rowspan="4"> HitRate NDCG MAP </td><td rowspan="4"> List-level BPR, Listnet loss, Softmax cross entropy loss, Attention rank </td><td> ImpressionReader </td><td> BaseImpressionModel.ImpressionModel </td><td> general </td><td> 'Impression' </td></tr>
+<tr><td> ImpressionSeqReader </td><td> BaseImpressionModel.ImpressionSeqModel </td><td> sequential </td><td> 'Impression' </td></tr>
+<tr><td> ImpressionReader </td><td> BaseRerankerModel.RerankModel </td><td> reranker </td><td> 'General' </td></tr>
+<tr><td> ImpressionSeqReader </td><td> BaseRerankerModel.RerankSeqModel </td><td> reranker </td><td> 'Sequential' </td></tr>
+</table>
+
 
 ## Arguments
 
 The main arguments are listed below.
 
-| Args            | Default   | Description                                                             |
-| --------------- | --------- | ----------------------------------------------------------------------- |
+| Args            | Default   | Description                |
+| --------------- | --------- | -------------------------- |
 | model_name      | 'BPRMF'   | The name of the model class.                                            |
+| model_mode      | ''        | The task mode for the model to implement.                               |
 | lr              | 1e-3      | Learning rate.                                                          |
 | l2              | 0         | Weight decay in optimizer.                                              |
 | test_all        | 0         | Wheter to rank all the items during evaluation.                         |
@@ -81,7 +110,7 @@ The main arguments are listed below.
 
 We have implemented the following methods (still updating):
 
-**General Recommender**
+**General Recommenders**
 
 - [Bayesian personalized ranking from implicit feedback](https://arxiv.org/pdf/1205.2618.pdf?source=post_page) (BPRMF [UAI'09])
 - [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf?source=post_page---------------------------) (NeuMF [WWW'17])
@@ -90,7 +119,7 @@ We have implemented the following methods (still updating):
 - [Bootstrapping User and Item Representations for One-Class Collaborative Filtering](https://arxiv.org/pdf/2105.06323) (BUIR [SIGIR'21])
 - [Towards Representation Alignment and Uniformity in Collaborative Filtering](https://arxiv.org/pdf/2206.12811.pdf) (DirectAU [KDD'22])
 
-**Sequential Recommender**
+**Sequential Recommenders**
 
 - [Factorizing Personalized Markov Chains for Next-Basket Recommendation](https://dl.acm.org/doi/pdf/10.1145/1772690.1772773?casa_token=hhM2wEArOQEAAAAA:r_vhs7X8VE0rJ7FF5aZ4i-P-z1mSlBABdw5O9p0cuOahTOQ8D3FVyX6_d58sbQFiV1q1vdVHB-wKqw) (FPMC [WWW'10])
 - [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939) (GRU4Rec [ICLR'16])
@@ -105,38 +134,45 @@ We have implemented the following methods (still updating):
 - [Sequential Recommendation with Multiple Contrast Signals](https://dl.acm.org/doi/pdf/10.1145/3522673) (ContraRec [TOIS'22])
 - [Target Interest Distillation for Multi-Interest Recommendation]() (TiMiRec [CIKM'22])
 
-The table below lists the results of these models in `Grocery_and_Gourmet_Food` dataset (151.3k entries). Leave-one-out is applied to split data: the most recent interaction of each user for testing, the second recent item for validation, and the remaining items for training. We randomly sample 99 negative items for each test case to rank together with the ground-truth item (also support ranking over all the items with `--test_all 1`).
+**Context-aware Recommenders**
 
-| Model                                                                                             | HR@5   | NDCG@5 | Time/iter | Sequential | Knowledge | Time-aware |
-|:------------------------------------------------------------------------------------------------- |:------:|:------:|:---------:|:----------:|:---------:|:----------:|
-| [MostPop](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/POP.py)            | 0.2065 | 0.1301 | -         |            |           |            |
-| [BPRMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BPR.py)              | 0.3549 | 0.2486 | 2.5s      |            |           |            |
-| [NeuMF](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/NCF.py)              | 0.3237 | 0.2221 | 3.4s      |            |           |            |
-| [LightGCN](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/LightGCN.py)      | 0.3705 | 0.2564 | 6.1s      |            |           |            |
-| [BUIR](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/BUIR.py)              | 0.3701 | 0.2567 | 3.3s      |            |           |            |
-| [DirectAU](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/DirectAU.py)      | 0.3911 | 0.2779 | 3.3s      |            |           |            |
-| [FPMC](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/FPMC.py)           | 0.3594 | 0.2785 | 3.4s      | √          |           |            |
-| [GRU4Rec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/GRU4Rec.py)     | 0.3659 | 0.2614 | 4.9s      | √          |           |            |
-| [NARM](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/NARM.py)           | 0.3650 | 0.2617 | 7.5s      | √          |           |            |
-| [Caser](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Caser.py)         | 0.3526 | 0.2499 | 7.8s      | √          |           |            |
-| [SASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SASRec.py)       | 0.3917 | 0.2942 | 5.5s      | √          |           |            |
-| [ComiRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ComiRec.py)     | 0.3753 | 0.2675 | 4.5s      | √          |           |            |
-| [TiMiRec+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiMiRec.py)    | 0.4020 | 0.3016 | 8.8s      | √          |           |            |
-| [ContraRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraRec.py) | 0.4251 | 0.3285 | 5.6s      | √          |           |            |
-| [TiSASRec](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/TiSASRec.py)   | 0.3949 | 0.2945 | 7.6s      | √          |           | √          |
-| [CFKG](https://github.com/THUwangcy/ReChorus/tree/master/src/models/general/CFKG.py)              | 0.4199 | 0.2984 | 8.7s      |            | √         |            |
-| [SLRC+](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/SLRCPlus.py)      | 0.4376 | 0.3263 | 4.3s      | √          | √         | √          |
-| [Chorus](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/Chorus.py)       | 0.4668 | 0.3414 | 4.9s      | √          | √         | √          |
-| [KDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/KDA.py)             | 0.5191 | 0.3901 | 9.9s      | √          | √         | √          |
-| [ContraKDA](https://github.com/THUwangcy/ReChorus/tree/master/src/models/sequential/ContraKDA.py) | 0.5282 | 0.3992 | 13.6s     | √          | √         | √          |
+General Context-aware Recommenders
+- [Factorization Machines](https://ieeexplore.ieee.org/document/5694074) (FM [ICDM'10])
+- [Wide {\&} Deep Learning for Recommender Systems](https://dl.acm.org/doi/pdf/10.1145/2988450.2988454) (WideDeep [DLRS@Recsys'16])
+- [Attentional Factorization Machines: Learning the Weight of Feature Interactions via Attention Networks](https://arxiv.org/pdf/1708.04617) (AFM [IJCAI'17])
+- [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247) (DeepFM [IJCAI'17])
+- [Deep & Cross Network for Ad Click Predictions](https://dl.acm.org/doi/pdf/10.1145/3124749.3124754) (DCN [KDD'17])
+- [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921) (AutoInt [CIKM'18])
+- [xdeepfm: Combining explicit and implicit feature interactions for recommender systems](https://arxiv.org/pdf/1803.05170.pdf%E2%80%8B%E2%80%8B) (xDeepFM [KDD'18])
+- [Deep interest evolution network for click-through rate prediction](https://aaai.org/ojs/index.php/AAAI/article/view/4545/4423) (DIEN [AAAI'19])
+- [DCN v2: Improved deep & cross network and practical lessons for web-scale learning to rank systems](https://arxiv.org/pdf/2008.13535) (DCNv2 [WWW'21])
+- [Looking at CTR Prediction Again: Is Attention All You Need?](https://arxiv.org/pdf/2105.05563) (SAM [SIGIR'21])
+- [CAN: feature co-action network for click-through rate prediction](https://dl.acm.org/doi/abs/10.1145/3488560.3498435) (CAN [WSDM'22])
+- [FinalMLP: an enhanced two-stream MLP model for CTR prediction](https://ojs.aaai.org/index.php/AAAI/article/download/25577/25349) (FinalMLP [AAAI'23])
 
-For fair comparison, the embedding size is set to 64. We strive to tune all the other hyper-parameters to obtain the best performance for each model (may be not optimal now, which will be updated if better scores are achieved). Current commands are listed in [run.sh](https://github.com/THUwangcy/ReChorus/tree/master/src/run.sh).  We repeat each experiment 5 times with different random seeds and report the average score (see [exp.py](https://github.com/THUwangcy/ReChorus/tree/master/src/exp.py)). All experiments are conducted with a single GTX-1080Ti GPU.
+Sequential Context-aware Recommenders
+- [Deep interest network for click-through rate prediction](https://arxiv.org/pdf/1706.06978) (DIN [KDD'18])
+- [End-to-end user behavior retrieval in click-through rateprediction model](https://arxiv.org/pdf/2108.04468) (ETA [CoRR'18])
+- [Sampling is all you need on modeling long-term user behaviors for CTR prediction](https://arxiv.org/pdf/2205.10249) (SDIM[CIKM'22])
+
+**Impression-based Re-ranking Models**
+- [Personalized Re-ranking for Recommendatio](https://arxiv.org/pdf/1904.06813) (PRM [RecSys'19])
+- [SetRank: Learning a Permutation-Invariant Ranking Model for Information Retrieval](https://arxiv.org/pdf/1912.05891) (SIGIR [SIGIR'20])
+- [Multi-Level Interaction Reranking with User Behavior History](https://arxiv.org/pdf/2204.09370) (MIR[SIGIR'22])
+
+
+Experimental results and corresponding configurations are shown in XXX.
+
 
 ## Citation
 
 **If you find ReChorus is helpful to your research, please cite either of the following papers. Thanks!**
 
 ```
+@inproceedings{to be released,
+  title={ReChorus2.0: A Modular and Task-Flexible Recommendation Library},
+}
+
 @inproceedings{wang2020make,
   title={Make it a chorus: knowledge-and time-aware item modeling for sequential recommendation},
   author={Wang, Chenyang and Zhang, Min and Ma, Weizhi and Liu, Yiqun and Ma, Shaoping},
@@ -157,6 +193,7 @@ For fair comparison, the embedding size is set to 64. We strive to tune all the 
 
 This is also our public implementation for the following papers (codes and datasets to reproduce the results can be found at corresponding branch):
 
+
 - *Chenyang Wang, Min Zhang, Weizhi Ma, Yiqun Liu, and Shaoping Ma. [Make It a Chorus: Knowledge- and Time-aware Item Modeling for Sequential Recommendation](http://www.thuir.cn/group/~mzhang/publications/SIGIR2020Wangcy.pdf). In SIGIR'20.*
 
 ```bash
@@ -175,21 +212,17 @@ git clone -b TOIS21 https://github.com/THUwangcy/ReChorus.git
 git clone -b TOIS22 https://github.com/THUwangcy/ReChorus.git
 ```
 
-- *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target Interest Distillation for Multi-Interest Recommendation](https://dl.acm.org/doi/abs/10.1145/3511808.3557464). In CIKM'22.*
+- *Chenyang Wang, Zhefan Wang, Yankai Liu, Yang Ge, Weizhi Ma, Min Zhang, Yiqun Liu, Junlan Feng, Chao Deng, and Shaoping Ma. [Target Interest Distillation for Multi-Interest Recommendation](). In CIKM'22.*
 
 ```bash
 git clone -b CIKM22 https://github.com/THUwangcy/ReChorus.git
 ```
 
-- *Chenyang Wang, Yankai Liu, Yuanqing Yu, Weizhi Ma, Min Zhang, Yiqun Liu, Haitao Zeng, Junlan Feng and Chao Deng. [Two-sided Calibration for Quality-aware Responsible Recommendation](). In RecSys'23.*
-
-```bash
-git clone -b RecSys23 https://github.com/THUwangcy/ReChorus.git
-```
-
 ## Contact
 
-Chenyang Wang (THUwangcy@gmail.com)
+**ReChorus 1.0**: Chenyang Wang (THUwangcy@gmail.com)
+
+**ReChorus 2.0**: Jiayu Li (lijiayu997@gmail.com), Hanyu Li (l-hy12@outlook.com)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 

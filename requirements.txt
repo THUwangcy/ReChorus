@@ -1,6 +1,8 @@
-torch==1.13.1
-numpy==1.22.0
+torch==1.12.1
+numpy==1.22.3
 ipython==8.10.0
 jupyter==1.0.0
-tqdm==4.51.0
-pandas==0.24.2
+tqdm==4.66.1
+pandas==1.4.4
+pickle
+yaml
