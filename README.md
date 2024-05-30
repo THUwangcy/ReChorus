@@ -144,15 +144,15 @@ General Context-aware Recommenders
 - [Deep & Cross Network for Ad Click Predictions](https://dl.acm.org/doi/pdf/10.1145/3124749.3124754) (DCN [KDD'17])
 - [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921) (AutoInt [CIKM'18])
 - [xdeepfm: Combining explicit and implicit feature interactions for recommender systems](https://arxiv.org/pdf/1803.05170.pdf%E2%80%8B%E2%80%8B) (xDeepFM [KDD'18])
-- [Deep interest evolution network for click-through rate prediction](https://aaai.org/ojs/index.php/AAAI/article/view/4545/4423) (DIEN [AAAI'19])
 - [DCN v2: Improved deep & cross network and practical lessons for web-scale learning to rank systems](https://arxiv.org/pdf/2008.13535) (DCNv2 [WWW'21])
 - [Looking at CTR Prediction Again: Is Attention All You Need?](https://arxiv.org/pdf/2105.05563) (SAM [SIGIR'21])
-- [CAN: feature co-action network for click-through rate prediction](https://dl.acm.org/doi/abs/10.1145/3488560.3498435) (CAN [WSDM'22])
 - [FinalMLP: an enhanced two-stream MLP model for CTR prediction](https://ojs.aaai.org/index.php/AAAI/article/download/25577/25349) (FinalMLP [AAAI'23])
 
 Sequential Context-aware Recommenders
 - [Deep interest network for click-through rate prediction](https://arxiv.org/pdf/1706.06978) (DIN [KDD'18])
 - [End-to-end user behavior retrieval in click-through rateprediction model](https://arxiv.org/pdf/2108.04468) (ETA [CoRR'18])
+- [Deep interest evolution network for click-through rate prediction](https://aaai.org/ojs/index.php/AAAI/article/view/4545/4423) (DIEN [AAAI'19])
+- [CAN: feature co-action network for click-through rate prediction](https://dl.acm.org/doi/abs/10.1145/3488560.3498435) (CAN [WSDM'22])
 - [Sampling is all you need on modeling long-term user behaviors for CTR prediction](https://arxiv.org/pdf/2205.10249) (SDIM[CIKM'22])
 
 **Impression-based Re-ranking Models**
