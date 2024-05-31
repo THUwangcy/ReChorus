@@ -169,8 +169,11 @@ Experimental results and corresponding configurations are shown in XXX.
 **If you find ReChorus is helpful to your research, please cite either of the following papers. Thanks!**
 
 ```
-@inproceedings{to be released,
-  title={ReChorus2.0: A Modular and Task-Flexible Recommendation Library},
+@article{li2024rechorus2,
+  title={ReChorus2. 0: A Modular and Task-Flexible Recommendation Library},
+  author={Li, Jiayu and Li, Hanyu and He, Zhiyu and Ma, Weizhi and Sun, Peijie and Zhang, Min and Ma, Shaoping},
+  journal={arXiv preprint arXiv:2405.18058},
+  year={2024}
 }
 
 @inproceedings{wang2020make,
