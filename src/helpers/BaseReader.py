@@ -15,7 +15,7 @@ class BaseReader(object):
     def parse_data_args(parser):
         parser.add_argument('--path', type=str, default='data/',
                             help='Input data dir.')
-        parser.add_argument('--dataset', type=str, default='MINDCTRTiny',
+        parser.add_argument('--dataset', type=str, default='Grocery_and_Gourmet_Food',
                             help='Choose a dataset.')
         parser.add_argument('--sep', type=str, default='\t',
                             help='sep of csv file.')

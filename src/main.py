@@ -154,7 +154,7 @@ def save_rec_results(dataset, runner, topk):
 
 if __name__ == '__main__':
 	init_parser = argparse.ArgumentParser(description='Model')
-	init_parser.add_argument('--model_name', type=str, default='SASRec_test', help='Choose a model to run.')
+	init_parser.add_argument('--model_name', type=str, default='SASRec', help='Choose a model to run.')
 	init_parser.add_argument('--model_mode', type=str, default='', 
 							 help='Model mode(i.e., suffix), for context-aware models to select "CTR" or "TopK" Ranking task;\
             						for general/seq models to select Normal (no suffix, model_mode="") or "Impression" setting;\

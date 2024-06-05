@@ -180,7 +180,7 @@ class DINCTR(ContextSeqCTRModel, DINBase):
 		out_dict['label'] = feed_dict['label'].view(-1)
 		return out_dict
 
-class DINRanking(ContextSeqModel, DINBase):
+class DINTopK(ContextSeqModel, DINBase):
 	reader = 'ContextSeqReader'
 	runner = 'BaseRunner'
 	extra_log_args = ['emb_size','att_layers','add_historical_situations']

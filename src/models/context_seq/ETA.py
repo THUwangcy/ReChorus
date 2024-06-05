@@ -297,7 +297,7 @@ class ETACTR(ContextSeqCTRModel, ETABase):
 		out_dict['label'] = feed_dict['label'].view(-1)
 		return out_dict
 
-class ETARanking(ContextSeqModel, ETABase):
+class ETATopK(ContextSeqModel, ETABase):
 	reader = 'ContextSeqReader'
 	runner = 'BaseRunner'
 	extra_log_args = ['emb_size','add_historical_situations']

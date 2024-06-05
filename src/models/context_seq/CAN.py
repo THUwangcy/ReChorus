@@ -140,7 +140,7 @@ class CANBase(DIENBase):
 		outputs = torch.cat(outputs,dim=-1)
 		return outputs
  	
-class CANRanking(ContextSeqModel, CANBase):
+class CANTopK(ContextSeqModel, CANBase):
 	reader, runner = 'ContextSeqReader', 'BaseRunner'
 	extra_log_args = ['emb_size','evolving_gru_type','fcn_hidden_layers']
 	
@@ -162,7 +162,7 @@ class CANRanking(ContextSeqModel, CANBase):
 			loss += self.alpha_aux*self.aux_loss(out_dict)
 		return loss
 
-	class Dataset(DIENRanking.Dataset):
+	class Dataset(DIENTopK.Dataset):
 		def _get_feed_dict(self, index):
 			feed_dict = super()._get_feed_dict(index)
 			return feed_dict

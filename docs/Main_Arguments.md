@@ -8,7 +8,7 @@ The main arguments are listed below.
 | model_mode      | ''        | The task mode for the model to implement.                               |
 | lr              | 1e-3      | Learning rate.                                                          |
 | l2              | 0         | Weight decay in optimizer.                                              |
-| test_all        | 0         | Wheter to rank all the items during evaluation.                         |
+| test_all        | 0         | Wheter to rank all the items during evaluation. (only work in Top-K recommendation tasks)|
 | metrics         | 'NDCG,HR' | The list of evaluation metrics (seperated by comma).                    |
 | topk            | '5,10,20' | The list of K in evaluation metrics (seperated by comma).               |
 | num_workers     | 5         | Number of processes when preparing batches.                             |

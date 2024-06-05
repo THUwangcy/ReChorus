@@ -214,7 +214,7 @@ class DIENBase(DINBase):
 						neg_history[u][i] = neg
 				self.data['neg_user_his'] = neg_history	
 
-class DIENRanking(ContextSeqModel, DIENBase):
+class DIENTopK(ContextSeqModel, DIENBase):
 	reader, runner = 'ContextSeqReader', 'BaseRunner'
 	extra_log_args = ['emb_size','evolving_gru_type','fcn_hidden_layers']
 	

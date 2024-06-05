@@ -149,7 +149,7 @@ class SDIMCTR(ContextSeqCTRModel, SDIMBase):
 		out_dict['label'] = feed_dict['label'].view(-1)
 		return out_dict
 
-class SDIMRanking(ContextSeqModel, SDIMBase):
+class SDIMTopK(ContextSeqModel, SDIMBase):
 	reader = 'ContextSeqReader'
 	runner = 'BaseRunner'
 	extra_log_args = ['emb_size','add_historical_situations']
