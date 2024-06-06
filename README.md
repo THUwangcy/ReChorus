@@ -13,7 +13,7 @@ The previous version of ReChorus can be found at [ReChorus1.0](https://github.co
 
 ## TODO
 - [x] Check out the test_all parameter
-- [ ] Add tutorial for 3 basic tasks
+- [x] Add tutorial for 3 basic tasks
 - [ ] Answer existing issues
 
 ## What's New in ReChorus2.0:
