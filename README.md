@@ -11,11 +11,6 @@ ReChorus2.0 is a modular and task-flexible PyTorch library for recommendation, e
 
 The previous version of ReChorus can be found at [ReChorus1.0](https://github.com/THUwangcy/ReChorus/tree/ReChorus1.0)
 
-## TODO
-- [x] Check out the test_all parameter
-- [x] Add tutorial for 3 basic tasks
-- [ ] Answer existing issues
-
 ## What's New in ReChorus2.0:
 
 - **New Tasks**: Newly supporting the context-aware top-k recommendation and CTR prediction task. Newly supporting the Impression-based re-ranking task.
