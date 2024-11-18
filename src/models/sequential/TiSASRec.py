@@ -48,7 +48,7 @@ class TiSASRec(SequentialModel):
         for u, user_df in corpus.all_df.groupby('user_id'):
             time_seqs = user_df['time'].values
             interval_matrix = np.abs(time_seqs[:, None] - time_seqs[None, :])
-            min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFF)
+            min_interval = np.min(interval_matrix + (interval_matrix <= 0) * 0xFFFFFFFF)
             self.user_min_interval[u] = min_interval
 
         self._define_params()
