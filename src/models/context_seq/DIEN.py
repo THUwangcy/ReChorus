@@ -295,7 +295,7 @@ class DynamicGRU(nn.Module):
 		if gru_type == "AUGRU":
 			self.gru_cell = AUGRUCell(input_size, hidden_size, bias=bias)
 		elif gru_type == "AGRU":
-			self.gru_cell = AUGRUCell(input_size, hidden_size, bias=bias)
+			self.gru_cell = AGRUCell(input_size, hidden_size, bias=bias)
 	
 	def forward(self, packed_seq_emb, attn_score=None, h=None):
 		assert isinstance(packed_seq_emb, nn.utils.rnn.PackedSequence) and isinstance(
@@ -345,3 +345,25 @@ class AUGRUCell(nn.Module):
 		new_gate = torch.tanh(i_n + reset_gate * h_n)
 		hy = hx + update_gate * (new_gate - hx)
 		return hy
+
+class AGRUCell(nn.Module):
+    r"""AGRUCell with attentional update gate
+        Reference1: GRUCell from https://github.com/emadRad/lstm-gru-pytorch/blob/master/lstm_gru.ipynb
+	Reference2: FuxiCTR https://github.com/reczoo/FuxiCTR/blob/v2.0.1/model_zoo/DIEN/src/DIEN.py#L264C1-L284C18
+    """
+    def __init__(self, input_size, hidden_size, bias=True):
+        super(AGRUCell, self).__init__()
+        self.x2h = nn.Linear(input_size, 3 * hidden_size, bias=bias)
+        self.h2h = nn.Linear(hidden_size, 3 * hidden_size, bias=bias)
+
+    def forward(self, x, hx, attn):
+    	gate_x = self.x2h(x) 
+        gate_h = self.h2h(hx)
+        
+        i_u, i_r, i_n = gate_x.chunk(3, 1)
+        h_u, h_r, h_n = gate_h.chunk(3, 1)
+        
+        reset_gate = F.sigmoid(i_r + h_r)
+        new_gate = F.tanh(i_n + reset_gate * h_n)
+        hy = hx + attn.view(-1, 1) * (new_gate - hx)
+        return hy
