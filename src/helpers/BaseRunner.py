@@ -93,7 +93,7 @@ class BaseRunner(object):
 		self.topk = [int(x) for x in args.topk.split(',')]
 		self.metrics = [m.strip().upper() for m in args.metric.split(',')]
 		self.main_metric = '{}@{}'.format(self.metrics[0], self.topk[0]) if not len(args.main_metric) else args.main_metric # early stop based on main_metric
-		self.main_topk = int(self.main_metric.split("@")[1])
+		self.main_topk = int(self.main_metric.split("@")[1]) if "@" in self.main_metric else 0
 		self.time = None  # will store [start_time, last_step_time]
 
 		self.log_path = os.path.dirname(args.log_file) # path to save predictions
