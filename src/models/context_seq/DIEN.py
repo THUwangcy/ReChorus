@@ -94,7 +94,7 @@ class DIENBase(DINBase):
 
     def get_neg_embeddings(self, feed_dict):
         history_item_emb = torch.stack([self.embedding_dict[f](feed_dict['history_neg_'+f]) if f.endswith('_c') or f.endswith('_id')
-                    else self.embedding_dict['history_'+f](feed_dict[f].float().unsqueeze(-1))
+                    else self.embedding_dict[f](feed_dict['history_neg_'+f].float().unsqueeze(-1))
                     for f in self.item_context],dim=-2) # batch * feature num * emb size
         if self.add_historical_situations:
             history_situ_emb = torch.stack([self.embedding_dict[f](feed_dict['history_'+f]) if f.endswith('_c') or f.endswith('_id')
