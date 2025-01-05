@@ -53,7 +53,7 @@ class DIENBase(DINBase):
         self.item_context = ['item_id']+corpus.item_feature_names
         self.situation_context = corpus.situation_feature_names
         self.gru_emb_size = self.embedding_size * (len(self.item_context)+self.add_historical_situations*len(self.situation_context))
-        self.fcn_embedding_size = self.embedding_size*(len(self.user_context)+len(self.situation_context)+len(self.item_context))+\
+        self.fcn_embedding_size = self.embedding_size*(len(self.user_context)+len(self.situation_context)*(1+self.add_historical_situations)+len(self.item_context))+\
                         self.gru_emb_size*3
     
     def _define_init(self, args,corpus):
@@ -90,7 +90,7 @@ class DIENBase(DINBase):
     def get_all_embeddings(self, feed_dict):
         history_emb, target_emb, user_feats_emb, situ_feats_emb = DINBase.get_all_embedding(self, feed_dict, merge_all=False)    
         return target_emb, history_emb, user_feats_emb.flatten(start_dim=-2), situ_feats_emb.flatten(start_dim=-2)\
-                      if not self.add_historical_situations else None
+                      if situ_feats_emb is not None else None
 
     def get_neg_embeddings(self, feed_dict):
         history_item_emb = torch.stack([self.embedding_dict[f](feed_dict['history_neg_'+f]) if f.endswith('_c') or f.endswith('_id')

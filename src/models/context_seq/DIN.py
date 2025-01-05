@@ -113,9 +113,9 @@ class DINBase(object):
 					else self.embedding_dict[f](feed_dict[f].float().unsqueeze(-1))
 					for f in self.situation_context],dim=-2) # batch * feature num * emb size
 		else:
-			situ_feats_emb = []
+			situ_feats_emb = None
 		# historical situation embedding
-		if self.add_historical_situations:
+		if self.add_historical_situations and len(self.situation_context):
 			history_situ_emb = torch.stack([self.embedding_dict[f](feed_dict['history_'+f]) if f.endswith('_c') or f.endswith('_id')
 					else self.embedding_dict[f](feed_dict['history_'+f].float().unsqueeze(-1))
 					for f in self.situation_context],dim=-2) # batch * feature num * emb size
@@ -128,7 +128,7 @@ class DINBase(object):
 
 		if merge_all:
 			item_num = item_feats_emb.shape[1]
-			if len(situ_feats_emb):
+			if situ_feats_emb is not None:
 				all_context = torch.cat([item_feats_emb, user_feats_emb.unsqueeze(1).repeat(1,item_num,1,1),
 							situ_feats_emb.unsqueeze(1).repeat(1,item_num,1,1)],dim=-2).flatten(start_dim=-2)
 			else:
