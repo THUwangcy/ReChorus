@@ -73,13 +73,15 @@ Experimental results and corresponding configurations are shown in [Demo Script 
 **If you find ReChorus is helpful to your research, please cite either of the following papers. Thanks!**
 
 ```
-@article{li2024rechorus2,
+@inproceedings{li2024rechorus2,
   title={ReChorus2. 0: A Modular and Task-Flexible Recommendation Library},
   author={Li, Jiayu and Li, Hanyu and He, Zhiyu and Ma, Weizhi and Sun, Peijie and Zhang, Min and Ma, Shaoping},
-  journal={arXiv preprint arXiv:2405.18058},
+  booktitle={Proceedings of the 18th ACM Conference on Recommender Systems},
+  pages={454--464},
   year={2024}
 }
-
+```
+```
 @inproceedings{wang2020make,
   title={Make it a chorus: knowledge-and time-aware item modeling for sequential recommendation},
   author={Wang, Chenyang and Zhang, Min and Ma, Weizhi and Liu, Yiqun and Ma, Shaoping},
@@ -87,6 +89,8 @@ Experimental results and corresponding configurations are shown in [Demo Script 
   pages={109--118},
   year={2020}
 }
+```
+```
 @article{王晨阳2021rechorus,
   title={ReChorus: 一个综合, 高效, 易扩展的轻量级推荐算法框架},
   author={王晨阳 and 任一 and 马为之 and 张敏 and 刘奕群 and 马少平},
