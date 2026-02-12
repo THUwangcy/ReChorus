@@ -1,5 +1,5 @@
 python==3.10.4
-torch==1.12.1
+torch==2.2.0
 cudatoolkit==10.2.89
 numpy==1.22.3
 ipython==8.10.0
